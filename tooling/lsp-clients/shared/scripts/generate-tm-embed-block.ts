@@ -37,7 +37,7 @@ const languages: LanguageConfig[] = [
     },
     {
         id: 'python',
-        aliases: ['py'],
+        aliases: ['py', 'oboe'],
         scopeName: 'source.python',
         contentName: 'meta.embedded.python'
     },
