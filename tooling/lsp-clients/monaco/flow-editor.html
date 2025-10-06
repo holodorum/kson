@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+
+<head>
+    <title>KSON Flow Editor</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- React Flow CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@xyflow/react@12.3.2/dist/style.css">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0a0a;
+            color: #e0e0e0;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .header {
+            background: #1a1a1a;
+            padding: 15px 20px;
+            border-bottom: 1px solid #333;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .toggle-btn {
+            background: #2563eb;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .toggle-btn:hover {
+            background: #1d4ed8;
+        }
+
+        .main-container {
+            height: calc(100vh - 52px);
+            position: relative;
+        }
+
+        #react-flow-container {
+            width: 100%;
+            height: 100%;
+        }
+
+        .react-flow__node {
+            background: #1a1a1a !important;
+            border: 1px solid #333 !important;
+            border-radius: 8px !important;
+            padding: 10px 14px !important;
+            color: #e0e0e0 !important;
+            width: auto !important;
+            min-width: 120px !important;
+        }
+
+        .react-flow__node.selected {
+            border-color: #2563eb !important;
+        }
+
+        .react-flow__handle,
+        .react-flow__edge.selected .react-flow__edge-path {
+            background: #2563eb !important;
+            stroke: #2563eb !important;
+        }
+
+        .react-flow__edge-path {
+            stroke: #666 !important;
+        }
+
+        .react-flow__controls,
+        .react-flow__minimap {
+            background: #1a1a1a !important;
+            border: 1px solid #333 !important;
+        }
+
+        .react-flow__controls-button {
+            background: #1a1a1a !important;
+            border-bottom: 1px solid #333 !important;
+            color: #e0e0e0 !important;
+        }
+
+        .react-flow__controls-button:hover {
+            background: #2a2a2a !important;
+        }
+
+        .react-flow__background {
+            background: #0a0a0a !important;
+        }
+
+        #monaco-editor-container {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 0;
+            height: 100%;
+            background: #1e1e1e;
+            border-left: 1px solid #333;
+            box-shadow: -2px 0 10px rgba(0, 0, 0, 0.5);
+            display: flex;
+            flex-direction: column;
+            transition: width 0.3s;
+        }
+
+        #monaco-editor-container.visible {
+            width: 50%;
+        }
+
+        .editor-header {
+            background: #252526;
+            padding: 12px 16px;
+            border-bottom: 1px solid #333;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .editor-header h2 {
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .close-btn {
+            background: transparent;
+            border: none;
+            color: #888;
+            cursor: pointer;
+            font-size: 20px;
+            width: 24px;
+            height: 24px;
+            border-radius: 4px;
+        }
+
+        .close-btn:hover {
+            background: #3a3a3a;
+            color: #e0e0e0;
+        }
+
+        #monaco-editor-root {
+            flex: 1;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <h1>KSON Flow Editor</h1>
+        <button class="toggle-btn" onclick="toggleEditor()">Toggle Editor</button>
+    </div>
+
+    <div class="main-container">
+        <div id="react-flow-container"></div>
+
+        <div id="monaco-editor-container">
+            <div class="editor-header">
+                <h2>KSON Editor</h2>
+                <button class="close-btn" onclick="toggleEditor()">×</button>
+            </div>
+            <div id="monaco-editor-root"></div>
+        </div>
+    </div>
+
+    <script type="module">
+        import React from 'react';
+        import { createRoot } from 'react-dom/client';
+        import { ReactFlow, Controls, MiniMap, Background, applyNodeChanges, applyEdgeChanges, addEdge } from '@xyflow/react';
+        import { createKsonEditor } from './src/index.js';
+
+        let currentWrapper = null;
+
+        // Toggle editor visibility
+        window.toggleEditor = function() {
+            const container = document.getElementById('monaco-editor-container');
+            container.classList.toggle('visible');
+        };
+
+        // Initialize React Flow
+        const initialNodes = [
+            {
+                id: '1',
+                type: 'default',
+                data: { label: 'Trigger' },
+                position: { x: 50, y: 250 },
+                sourcePosition: 'right',
+                targetPosition: 'left',
+            },
+            {
+                id: '2',
+                type: 'default',
+                data: { label: 'Python Transform' },
+                position: { x: 300, y: 250 },
+                sourcePosition: 'right',
+                targetPosition: 'left',
+            },
+            {
+                id: '3',
+                type: 'default',
+                data: { label: 'Output' },
+                position: { x: 550, y: 250 },
+                sourcePosition: 'right',
+                targetPosition: 'left',
+            },
+        ];
+
+        const initialEdges = [
+            { id: 'e1-2', source: '1', target: '2', animated: true },
+            { id: 'e2-3', source: '2', target: '3', animated: true },
+        ];
+
+        function Flow() {
+            const [nodes, setNodes] = React.useState(initialNodes);
+            const [edges, setEdges] = React.useState(initialEdges);
+
+            const onNodesChange = React.useCallback(
+                (changes) => setNodes((nds) => applyNodeChanges(changes, nds)),
+                []
+            );
+
+            const onEdgesChange = React.useCallback(
+                (changes) => setEdges((eds) => applyEdgeChanges(changes, eds)),
+                []
+            );
+
+            const onConnect = React.useCallback(
+                (params) => setEdges((eds) => addEdge(params, eds)),
+                []
+            );
+
+            return React.createElement(
+                ReactFlow,
+                {
+                    nodes: nodes,
+                    edges: edges,
+                    onNodesChange: onNodesChange,
+                    onEdgesChange: onEdgesChange,
+                    onConnect: onConnect,
+                    fitView: true,
+                },
+                React.createElement(Controls),
+                React.createElement(MiniMap, {
+                    nodeColor: () => '#2563eb',
+                    maskColor: 'rgba(0, 0, 0, 0.6)'
+                }),
+                React.createElement(Background, {
+                    variant: 'dots',
+                    gap: 12,
+                    size: 1,
+                    color: '#333'
+                })
+            );
+        }
+
+        // Mount React Flow
+        const flowContainer = document.getElementById('react-flow-container');
+        const root = createRoot(flowContainer);
+        root.render(React.createElement(Flow));
+
+        // Initialize Monaco Editor
+        async function startEditor() {
+            if (currentWrapper) {
+                console.log('Editor already started');
+                return;
+            }
+
+            const rootElement = document.getElementById('monaco-editor-root');
+
+            currentWrapper = await createKsonEditor({
+                rootElement,
+                editorAppConfig: {
+                    codeResources: {
+                        modified: {
+                            text: 'version: v1\n' +
+                                '\'$schema\': \'https://docs.getorchestra.io/docs/core-concepts/pipelines/schema\'\n' +
+                                'name: Test\n' +
+                                'pipeline:\n' +
+                                '  \'6ff210eb-e7e3-4c0b-a51d-a7bff7fb302a\':\n' +
+                                '    tasks:\n' +
+                                '      \'7eab1a2d-30b0-41e3-8418-29358c900412\':\n' +
+                                '        integration: PYTHON\n' +
+                                '        integration_job: PYTHON_EXECUTE_SCRIPT\n' +
+                                '        parameters:\n' +
+                                '          package_manager: PIP\n' +
+                                '          python_version: \'3.12\'\n' +
+                                '          source: INLINE\n' +
+                                '          code: \'2+2\'\n' +
+                                '          .\n' +
+                                '        depends_on: <>\n' +
+                                '        name: \'run python\'\n' +
+                                '        tags: <>\n' +
+                                '        .\n' +
+                                '      .\n' +
+                                '    depends_on: <>\n' +
+                                '    name: \'\'\n' +
+                                '    .\n' +
+                                '  \'dc72809e-bd1b-4bf7-afbe-bb00e3188b5a\':\n' +
+                                '    tasks:\n' +
+                                '      \'fd07c82b-1552-4a09-bf08-956fd0effba5\':\n' +
+                                '        integration: PYTHON\n' +
+                                '        integration_job: PYTHON_EXECUTE_SCRIPT\n' +
+                                '        parameters:\n' +
+                                '          package_manager: PIP\n' +
+                                '          python_version: \'3.12\'\n' +
+                                '          source: INLINE\n' +
+                                '          code: \'1 + 1\'\n' +
+                                '          .\n' +
+                                '        depends_on: <>\n' +
+                                '        name: a\n' +
+                                '        tags: <>\n' +
+                                '        .\n' +
+                                '      \'5010b00c-be26-4f80-a215-5b16ea4261aa\':\n' +
+                                '        integration: PYTHON\n' +
+                                '        integration_job: PYTHON_EXECUTE_SCRIPT\n' +
+                                '        parameters:\n' +
+                                '          package_manager: PIP\n' +
+                                '          python_version: \'3.12\'\n' +
+                                '          source: INLINE\n' +
+                                '          code: \'2\'\n' +
+                                '          .\n' +
+                                '        depends_on: <>\n' +
+                                '        name: group\n' +
+                                '        tags: <>\n' +
+                                '        .\n' +
+                                '      \'8d90fbff-621d-4063-997a-a403cc59d6a2\':\n' +
+                                '        integration: PYTHON\n' +
+                                '        integration_job: PYTHON_EXECUTE_SCRIPT\n' +
+                                '        parameters:\n' +
+                                '          package_manager: PIP\n' +
+                                '          python_version: \'3.12\'\n' +
+                                '          source: INLINE\n' +
+                                '          code: \'3\'\n' +
+                                '          .\n' +
+                                '        depends_on: <>\n' +
+                                '        name: group\n' +
+                                '        tags: <>\n' +
+                                '        .\n' +
+                                '      .\n' +
+                                '    depends_on:\n' +
+                                '      - \'6ff210eb-e7e3-4c0b-a51d-a7bff7fb302a\'\n' +
+                                '    condition: "${{ task_groups[\'6ff210eb-e7e3-4c0b-a51d-a7bff7fb302a\'].all().status in [\'SUCCEEDED\', \'WARNING\'] and tasks[\'7eab1a2d-30b0-41e3-8418-29358c900412\'].TASK_RUN_ID == COMPLETED }}"\n' +
+                                '    name: \'\'\n' +
+                                '    .\n' +
+                                '  .\n' +
+                                'schedule:\n' +
+                                '  - name: \'Daily at 8am\'\n' +
+                                '    cron: \'0 8 ? * * *\'\n' +
+                                '    timezone: \'Europe/Berlin\'\n' +
+                                '    .\n' +
+                                'sensors: {}\n' +
+                                'webhook:\n' +
+                                '  enabled: false',
+                            uri: '/test.kson'
+                        }
+                    }
+                }
+            });
+
+            currentWrapper.start(rootElement).then(() => {
+                console.log('KSON editor started successfully');
+            }).catch((error) => {
+                console.error('Failed to start editor:', error);
+            });
+        }
+
+        // Start the editor
+        startEditor();
+    </script>
+</body>
+
+</html>
