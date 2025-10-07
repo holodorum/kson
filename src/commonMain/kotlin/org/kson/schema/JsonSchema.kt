@@ -39,7 +39,12 @@ class JsonObjectSchema(
 ) : JsonSchema {
 
   override fun descriptionWithDefault(): String {
-    return description ?: "JSON Object Schema"
+    val titleAndDescription = if (title != null && description != null) {
+        "$title: $description"
+    } else {
+      null
+    }
+    return titleAndDescription ?: description ?: title ?: "JSON Object Schema"
   }
 
   /**
