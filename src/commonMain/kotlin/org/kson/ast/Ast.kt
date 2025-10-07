@@ -325,6 +325,42 @@ class ObjectPropertyNodeImpl(
 ) :
     ObjectPropertyNode, AstNodeImpl(location), Documented {
     override fun toSourceInternal(indent: Indent, nextNode: AstNode?, compileTarget: CompileTarget): String {
+        // HACK: Convert "statement" and "condition" properties with string values to embed blocks when writing KSON
+        if (compileTarget is Kson &&
+            key is ObjectKeyNodeImpl &&
+            value is StringNodeImpl) {
+            val keyName = (key.key as? StringNodeImpl)?.stringContent
+            val embedTag = when (keyName) {
+                "statement" -> "sql"
+                "condition" -> "oboe"
+                else -> null
+            }
+            if (embedTag != null) {
+                val embedBlock = EmbedBlockNode(
+                    embedTagNode = QuotedStringNode(embedTag, DoubleQuote, value.location),
+                    metadataTagNode = null,
+                    embedContentNode = value,
+                    embedDelim = EmbedDelim.Percent,
+                    location = location
+                )
+                return when (compileTarget.formatConfig.formattingStyle) {
+                    FormattingStyle.DELIMITED -> {
+                        val delimitedPropertyIndent = indent.clone(true)
+                        key.toSourceWithNext(indent, embedBlock, compileTarget) + " " +
+                            embedBlock.toSourceWithNext(delimitedPropertyIndent, nextNode, compileTarget)
+                    }
+                    FormattingStyle.COMPACT -> {
+                        key.toSourceWithNext(indent, embedBlock, compileTarget) + " " +
+                            embedBlock.toSourceWithNext(indent.next(true), nextNode, compileTarget)
+                    }
+                    FormattingStyle.PLAIN -> {
+                        key.toSourceWithNext(indent, embedBlock, compileTarget) + " " +
+                            embedBlock.toSourceWithNext(indent.next(true), nextNode, compileTarget)
+                    }
+                }
+            }
+        }
+
         return when (compileTarget) {
             is Kson -> {
                 when (compileTarget.formatConfig.formattingStyle) {
@@ -725,7 +761,7 @@ class EmbedBlockNode(
     private val embedTag: String = embedTagNode?.stringContent ?: ""
     private val metadataTag: String = metadataTagNode?.stringContent ?: ""
     private val embedContent: String by lazy {
-        embedDelim.unescapeEmbedContent(embedContentNode.stringContent)
+        embedDelim.unescapeEmbedContent(embedContentNode.processedStringContent)
     }
 
     override fun toSourceInternal(indent: Indent, nextNode: AstNode?, compileTarget: CompileTarget): String {
