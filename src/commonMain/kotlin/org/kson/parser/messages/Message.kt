@@ -808,6 +808,16 @@ enum class MessageType(
             val reference = parsedArgs.getArg("Reference")
             return "Failed to resolve schema reference: $reference"
         }
+    },
+    CRON_INVALID_EXPRESSION(MessageSeverity.WARNING) {
+        override fun expectedArgs(): List<String> {
+            return listOf("Error details")
+        }
+
+        override fun doFormat(parsedArgs: ParsedErrorArgs): String {
+            val errorDetails = parsedArgs.getArg("Error details")
+            return "$errorDetails"
+        }
     };
 
     /**
