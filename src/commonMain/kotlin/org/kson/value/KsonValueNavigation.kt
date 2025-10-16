@@ -1,5 +1,6 @@
 package org.kson.value
 
+import org.kson.parser.Location
 import kotlin.collections.iterator
 
 /**
@@ -249,5 +250,77 @@ object KsonValueNavigation {
             }
         }
         return result
+    }
+
+    /**
+     * Find the most specific (deepest/smallest) KsonValue at a given location.
+     *
+     * This searches the tree for the smallest node that contains the target location.
+     * Useful for IDE features like hover, go-to-definition, etc.
+     *
+     * @param root The root node to start searching from
+     * @param targetLocation The location to find a node at
+     * @return The most specific node at that location, or null if not found
+     *
+     * Example:
+     * ```kotlin
+     * // Find the node at line 5, column 10
+     * val location = Location(
+     *     start = Coordinates(5, 10),
+     *     end = Coordinates(5, 10),
+     *     startOffset = 0,
+     *     endOffset = 0
+     * )
+     * val node = findValueAtLocation(root, location)
+     * ```
+     */
+    fun findValueAtLocation(
+        root: KsonValue,
+        targetLocation: Location
+    ): KsonValue? {
+        var mostSpecific: KsonValue? = null
+        val smallestSize = Int.MAX_VALUE
+
+        walkTree(root) { node, _, _ ->
+            if (locationContainsLocation(node.location, targetLocation)) {
+                val size = calculateLocationSize(node.location)
+                if (size < smallestSize) {
+                    mostSpecific = node
+                }
+            }
+        }
+
+        return mostSpecific
+    }
+
+    /**
+     * Check if a container location contains a target location.
+     */
+    private fun locationContainsLocation(
+        containerLocation: Location,
+        targetLocation: Location
+    ): Boolean {
+        val targetStart = targetLocation.start
+        val containerStart = containerLocation.start
+        val containerEnd = containerLocation.end
+
+        // Target must start at or after container start
+        if (targetStart.line < containerStart.line) return false
+        if (targetStart.line == containerStart.line && targetStart.column < containerStart.column) return false
+
+        // Target must start at or before container end
+        if (targetStart.line > containerEnd.line) return false
+        if (targetStart.line == containerEnd.line && targetStart.column > containerEnd.column) return false
+
+        return true
+    }
+
+    /**
+     * Calculate a size metric for a location (for finding smallest/most specific).
+     */
+    private fun calculateLocationSize(location: Location): Int {
+        val lines = location.end.line - location.start.line
+        val chars = location.end.column - location.start.column
+        return lines * 100000 + chars
     }
 }
