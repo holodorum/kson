@@ -1,8 +1,26 @@
+@file:OptIn(ExperimentalJsExport::class)
+@file:JsExport
+
 package org.kson
 
-import org.kson.value.*
+import org.kson.value.KsonValue as InternalKsonValue
+import org.kson.value.KsonObject as InternalKsonObject
+import org.kson.value.KsonList as InternalKsonList
+import org.kson.value.KsonString as InternalKsonString
+import org.kson.value.KsonNumber as InternalKsonNumber
+import org.kson.value.EmbedBlock as InternalKsonEmbedBlock
+import org.kson.value.KsonBoolean as InternalKsonBoolean
+import org.kson.value.KsonNull as InternalKsonNull
+import org.kson.value.EmbedBlock as InternalEmbedBlock
+import org.kson.value.KsonObjectProperty as InternalKsonObjectProperty
+import org.kson.value.KsonValueNavigation
 import org.kson.schema.ResolvedRef
 import org.kson.schema.SchemaIdLookup
+import org.kson.parser.Location
+import org.kson.parser.Coordinates
+import org.kson.parser.NumberParser
+import kotlin.js.ExperimentalJsExport
+import kotlin.js.JsExport
 
 /**
  * Tooling utilities for IDE features like hover information and completions.
@@ -33,25 +51,27 @@ object KsonTooling {
      * @return The [ResolvedRef] containing the sub-schema at that location, or null if not found
      */
     fun navigateSchemaByDocumentPath(
-        schemaValue: KsonValue,
+        schemaValue: String,
         documentPathTokens: List<String>,
         currentBaseUri: String = ""
     ): ResolvedRef? {
+        val schemaValue = Kson.analyze(schemaValue).ksonValue ?: return null
+
         if (documentPathTokens.isEmpty()) {
-            return ResolvedRef(schemaValue, currentBaseUri)
+            return ResolvedRef(schemaValue.toInternal(), currentBaseUri)
         }
 
-        var node: KsonValue? = schemaValue
+        var node: InternalKsonValue? = schemaValue.toInternal()
         var updatedBaseUri = currentBaseUri
 
         for (token in documentPathTokens) {
-            if (node !is KsonObject) {
+            if (node !is InternalKsonObject) {
                 return null
             }
 
             // Track $id changes for proper URI resolution
             node.propertyLookup[$$"$id"]?.let { idValue ->
-                if (idValue is KsonString) {
+                if (idValue is InternalKsonString) {
                     val fullyQualifiedId = SchemaIdLookup.resolveUri(idValue.value, updatedBaseUri)
                     updatedBaseUri = fullyQualifiedId.toString()
                 }
@@ -82,7 +102,7 @@ object KsonTooling {
      *
      * Looks for "items" or "additionalItems" schema properties.
      */
-    private fun navigateArrayItems(schemaNode: KsonObject): KsonValue? {
+    private fun navigateArrayItems(schemaNode: InternalKsonObject): InternalKsonValue? {
         // Try "items" first (most common case)
         schemaNode.propertyLookup["items"]?.let { return it }
 
@@ -98,13 +118,13 @@ object KsonTooling {
      * 2. Pattern matching via "patternProperties"
      * 3. Fallback to "additionalProperties"
      */
-    private fun navigateObjectProperty(schemaNode: KsonObject, propertyName: String): KsonValue? {
+    private fun navigateObjectProperty(schemaNode: InternalKsonObject, propertyName: String): InternalKsonValue? {
         // Try direct property lookup in "properties"
-        val properties = schemaNode.propertyLookup["properties"] as? KsonObject
+        val properties = schemaNode.propertyLookup["properties"] as? InternalKsonObject
         properties?.propertyLookup?.get(propertyName)?.let { return it }
 
         // Try pattern properties - check all patterns for a match
-        val patternProperties = schemaNode.propertyLookup["patternProperties"] as? KsonObject
+        val patternProperties = schemaNode.propertyLookup["patternProperties"] as? InternalKsonObject
         patternProperties?.propertyMap?.forEach { (pattern, property) ->
             try {
                 if (Regex(pattern).containsMatchIn(propertyName)) {
@@ -128,35 +148,35 @@ object KsonTooling {
      * @param schemaNode The schema node to extract information from
      * @return Formatted markdown string, or null if no hover info available
      */
-    fun extractSchemaHoverInfo(schemaNode: KsonValue): String? {
-        if (schemaNode !is KsonObject) return null
+    fun extractSchemaHoverInfo(schemaNode: InternalKsonValue): String? {
+        if (schemaNode !is InternalKsonObject) return null
 
         val props = schemaNode.propertyLookup
 
         return buildString {
             // Title (bold header)
-            (props["title"] as? KsonString)?.value?.let {
+            (props["title"] as? InternalKsonString)?.value?.let {
                 append("**$it**\n\n")
             }
 
             // Description (main documentation)
-            (props["description"] as? KsonString)?.value?.let {
+            (props["description"] as? InternalKsonString)?.value?.let {
                 append("$it\n\n")
             }
 
             // Type information
             when (val typeValue = props["type"]) {
-                is KsonString -> {
+                is InternalKsonString -> {
                     append("*Type:* `${typeValue.value}`\n\n")
                 }
-                is KsonList -> {
+                is InternalKsonList -> {
                     // Union type: ["string", "number"]
-                    val types = typeValue.elements.mapNotNull { (it as? KsonString)?.value }
+                    val types = typeValue.elements.mapNotNull { (it as? InternalKsonString)?.value }
                     if (types.isNotEmpty()) {
                         append("*Type:* `${types.joinToString(" | ")}`\n\n")
                     }
                 }
-                is KsonBoolean, is KsonNull, is KsonNumber, is KsonObject, is EmbedBlock, null -> {
+                is InternalKsonBoolean, is InternalKsonNull, is InternalKsonNumber, is InternalKsonObject, is InternalEmbedBlock, null -> {
                     // These types are not expected for the "type" property in a schema
                     // We simply don't add type information in these cases
                 }
@@ -168,37 +188,37 @@ object KsonTooling {
             }
 
             // Enum values
-            (props["enum"] as? KsonList)?.let { enumList ->
+            (props["enum"] as? InternalKsonList)?.let { enumList ->
                 val values = enumList.elements.joinToString(", ") { "`${formatValueForDisplay(it)}`" }
                 append("*Allowed values:* $values\n\n")
             }
 
             // Pattern constraint
-            (props["pattern"] as? KsonString)?.value?.let {
+            (props["pattern"] as? InternalKsonString)?.value?.let {
                 append("*Pattern:* `$it`\n\n")
             }
 
             // Numeric constraints
-            (props["minimum"] as? KsonNumber)?.let {
+            (props["minimum"] as? InternalKsonNumber)?.let {
                 append("*Minimum:* ${it.value.asString}\n\n")
             }
-            (props["maximum"] as? KsonNumber)?.let {
+            (props["maximum"] as? InternalKsonNumber)?.let {
                 append("*Maximum:* ${it.value.asString}\n\n")
             }
 
             // String length constraints
-            (props["minLength"] as? KsonNumber)?.let {
+            (props["minLength"] as? InternalKsonNumber)?.let {
                 append("*Min length:* ${it.value.asString}\n\n")
             }
-            (props["maxLength"] as? KsonNumber)?.let {
+            (props["maxLength"] as? InternalKsonNumber)?.let {
                 append("*Max length:* ${it.value.asString}\n\n")
             }
 
             // Array length constraints
-            (props["minItems"] as? KsonNumber)?.let {
+            (props["minItems"] as? InternalKsonNumber)?.let {
                 append("*Min items:* ${it.value.asString}\n\n")
             }
-            (props["maxItems"] as? KsonNumber)?.let {
+            (props["maxItems"] as? InternalKsonNumber)?.let {
                 append("*Max items:* ${it.value.asString}\n\n")
             }
         }.takeIf { it.isNotEmpty() }
@@ -208,15 +228,15 @@ object KsonTooling {
      * Format a KsonValue for display in hover info.
      * Converts values to a readable string representation.
      */
-    private fun formatValueForDisplay(value: KsonValue): String {
+    private fun formatValueForDisplay(value: InternalKsonValue): String {
         return when (value) {
-            is KsonString -> value.value
-            is KsonNumber -> value.value.asString
-            is KsonBoolean -> value.value.toString()
-            is KsonNull -> "null"
-            is KsonList -> "[${value.elements.joinToString(", ") { formatValueForDisplay(it) }}]"
-            is KsonObject -> "{...}" // Don't expand objects in hover
-            is EmbedBlock -> "<embed>" // Show that it's an embed block
+            is InternalKsonList -> "[${value.elements.joinToString(",") { formatValueForDisplay(it) }}]"
+            is InternalKsonBoolean -> value.value.toString()
+            is InternalKsonEmbedBlock -> "<embed>"
+            is InternalKsonNull -> "null"
+            is InternalKsonNumber -> value.value.asString
+            is InternalKsonObject -> "{...}"
+            is InternalKsonString -> value.value
         }
     }
 
@@ -231,9 +251,9 @@ object KsonTooling {
      * @return Formatted hover text, or null if no schema info available
      */
     fun getSchemaHoverInfo(
-        documentRoot: KsonValue,
-        documentNode: KsonValue,
-        schemaValue: KsonValue
+        documentRoot: InternalKsonValue,
+        documentNode: InternalKsonValue,
+        schemaValue: String
     ): String? {
         // Step 1: Build path from document root to target node
         val documentPath = KsonValueNavigation.buildPathTokens(documentRoot, documentNode)
@@ -245,5 +265,119 @@ object KsonTooling {
 
         // Step 3: Extract and format hover information
         return extractSchemaHoverInfo(resolvedSchemaRef.resolvedValue)
+    }
+
+    /**
+     * Get schema hover information for a position in a document.
+     *
+     * This is a convenience method that finds the KsonValue at the given position
+     * and then retrieves schema hover information for it.
+     *
+     * @param documentRoot The root of the document being edited (internal KsonValue)
+     * @param schemaValue The schema for the document (internal KsonValue)
+     * @param line The zero-based line number
+     * @param column The zero-based column number
+     * @return Formatted hover text, or null if no schema info available
+     */
+    fun getSchemaInfoAtLocation(
+        documentRoot: String,
+        schemaValue: String,
+        line: Int,
+        column: Int
+    ): String? {
+        // Parse the document to get internal representation with proper locations
+        val documentRootValue = KsonCore.parseToAst(documentRoot).ksonValue ?: return null
+
+        // Create a location from the position
+        val location = Location(
+            start = Coordinates(line, column),
+            end = Coordinates(line, column),
+            startOffset = 0,
+            endOffset = 0
+        )
+
+        // Step 1: Find the KsonValue at the given location using KsonValueNavigation
+        val targetNode = KsonValueNavigation.findValueAtLocation(documentRootValue, location) ?: return null
+
+        // Step 2: Use existing getSchemaHoverInfo logic
+        return getSchemaHoverInfo(documentRootValue, targetNode, schemaValue)
+    }
+}
+
+
+/**
+ * Convert a public [KsonValue] to an internal [InternalKsonValue].
+ *
+ * This allows the public API to accept public types while working with internal types internally.
+ */
+fun KsonValue.toInternal(): InternalKsonValue {
+    // Create a dummy location since public types don't have full location information
+    val location = Location(
+        start = Coordinates(this.start.line, this.start.column),
+        end = Coordinates(this.end.line, this.end.column),
+        startOffset = 0,
+        endOffset = 0
+    )
+
+    return when (this) {
+        is KsonValue.KsonObject -> {
+            InternalKsonObject(
+                propertyMap = this.properties.mapKeys { (key, _) -> key.value }.mapValues { (key, value) ->
+                    val keyString = this.properties.keys.first { it.value == key }
+                    InternalKsonObjectProperty(
+                        propName = keyString.toInternal() as InternalKsonString,
+                        propValue = value.toInternal()
+                    )
+                },
+                location = location
+            )
+        }
+        is KsonValue.KsonArray -> {
+            InternalKsonList(
+                elements = this.elements.map { it.toInternal() },
+                location = location
+            )
+        }
+        is KsonValue.KsonString -> {
+            InternalKsonString(
+                value = this.value,
+                location = location
+            )
+        }
+        is KsonValue.KsonNumber.Integer -> {
+            InternalKsonNumber(
+                value = NumberParser.ParsedNumber.Integer(this.value.toString()),
+                location = location
+            )
+        }
+        is KsonValue.KsonNumber.Decimal -> {
+            InternalKsonNumber(
+                value = NumberParser.ParsedNumber.Decimal(this.value.toString()),
+                location = location
+            )
+        }
+        is KsonValue.KsonBoolean -> {
+            InternalKsonBoolean(
+                value = this.value,
+                location = location
+            )
+        }
+        is KsonValue.KsonNull -> {
+            InternalKsonNull(location = location)
+        }
+        is KsonValue.KsonEmbed -> {
+            val tagString = this.tag?.let {
+                InternalKsonString(it, location)
+            }
+            val metadataString = this.metadata?.let {
+                InternalKsonString(it, location)
+            }
+            InternalEmbedBlock(
+                embedTag = tagString,
+                metadataTag = metadataString,
+                embedContent = InternalKsonString(this.content, location),
+                location = location
+            )
+        }
     }
 }

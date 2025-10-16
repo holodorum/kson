@@ -74,6 +74,7 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 implementation(project(":"))
+                implementation(project(":kson-lib"))
             }
         }
         val commonTest by getting {

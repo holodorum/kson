@@ -273,7 +273,7 @@ class SchemaHoverInfoTest {
             }
         """)
 
-        val schema = parseKson("""
+        val schema = """
             {
                 type: "object"
                 properties: {
@@ -294,7 +294,7 @@ class SchemaHoverInfoTest {
                     }
                 }
             }
-        """)
+        """
 
         // Get the "name" node from the document
         val userObj = (document as KsonObject).propertyLookup["user"] as KsonObject
@@ -319,7 +319,7 @@ class SchemaHoverInfoTest {
             }
         """)
 
-        val schema = parseKson("""
+        val schema = """
             {
                 type: "object"
                 properties: {
@@ -338,7 +338,7 @@ class SchemaHoverInfoTest {
                     }
                 }
             }
-        """)
+        """
 
         // Get the second user's name
         val usersArray = (document as KsonObject).propertyLookup["users"] as KsonList
