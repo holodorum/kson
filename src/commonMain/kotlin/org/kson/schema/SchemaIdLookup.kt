@@ -240,6 +240,7 @@ private fun decodeUriEncoding(encoded: String): String {
 private fun resolveJsonPointer(pointer: String, ksonValue: KsonValue, currentBaseUri: String): ResolvedRef? {
     return when (val parseResult = JsonPointerParser(pointer).parse()) {
         is JsonPointerParser.ParseResult.Success -> {
+            // BD TODO - break up into two, walk for ksonvalue, walk for baseURI.
             navigatePointer(ksonValue, parseResult.tokens, currentBaseUri)
         }
 
