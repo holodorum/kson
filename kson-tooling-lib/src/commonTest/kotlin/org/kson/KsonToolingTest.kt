@@ -498,4 +498,46 @@ class KsonToolingTest {
         assertTrue(hoverInfo.contains("A field matching the pattern"))
         assertTrue(hoverInfo.contains("*Type:* `string`"))
     }
+
+    @Test
+    fun testGetSchemaInfoAtLocation_refDefinition() {
+        // Simplified test for $ref resolution
+        val schema = """
+            {
+              "type": "object",
+              "properties": {
+                "items": {
+                  "type": "array",
+                  "items": {
+                    "${'$'}ref": "#/${'$'}defs/Item"
+                  }
+                }
+              },
+              "${'$'}defs": {
+                "Item": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string",
+                      "description": "Item name from ref"
+                    }
+                  }
+                }
+              }
+            }
+        """.trimIndent()
+
+        val document = """
+            items:
+              - name: foo
+        """.trimIndent()
+
+        // Hover over "foo" (line 1, column 11)
+        // This should resolve the $ref to #/$defs/Item and show the name field schema
+        val hoverInfo = KsonTooling.getSchemaInfoAtLocation(document, schema, 1, 11)
+
+        assertNotNull(hoverInfo, "Expected hover info for name field. Got null")
+        assertTrue(hoverInfo.contains("Item name from ref"), "Expected description from resolved ref. Got: $hoverInfo")
+        assertTrue(hoverInfo.contains("*Type:* `string`"), "Expected type from resolved ref. Got: $hoverInfo")
+    }
 }

@@ -37,6 +37,7 @@ object KsonTooling {
      * - For object properties: navigates through "properties" wrapper
      * - For array indices: navigates to "items" schema (all array elements share the same schema)
      * - Falls back to "additionalProperties" or "patternProperties" when specific property not found
+     * - Resolves `$ref` references to their target schemas
      *
      * Example:
      * ```kotlin
@@ -55,13 +56,16 @@ object KsonTooling {
         documentPathTokens: List<String>,
         currentBaseUri: String = ""
     ): ResolvedRef? {
-        val schemaValue = Kson.analyze(schemaValue).ksonValue ?: return null
+        val parsedSchema = Kson.analyze(schemaValue).ksonValue ?: return null
+
+        // Create SchemaIdLookup for resolving $ref references
+        val idLookup = SchemaIdLookup(parsedSchema.toInternal())
 
         if (documentPathTokens.isEmpty()) {
-            return ResolvedRef(schemaValue.toInternal(), currentBaseUri)
+            return ResolvedRef(parsedSchema.toInternal(), currentBaseUri)
         }
 
-        var node: InternalKsonValue? = schemaValue.toInternal()
+        var node: InternalKsonValue? = parsedSchema.toInternal()
         var updatedBaseUri = currentBaseUri
 
         for (token in documentPathTokens) {
@@ -70,7 +74,7 @@ object KsonTooling {
             }
 
             // Track $id changes for proper URI resolution
-            node.propertyLookup[$$"$id"]?.let { idValue ->
+            node.propertyLookup["\$id"]?.let { idValue ->
                 if (idValue is InternalKsonString) {
                     val fullyQualifiedId = SchemaIdLookup.resolveUri(idValue.value, updatedBaseUri)
                     updatedBaseUri = fullyQualifiedId.toString()
@@ -91,6 +95,18 @@ object KsonTooling {
 
             if (node == null) {
                 break
+            }
+
+            // Resolve $ref if present
+            if (node is InternalKsonObject) {
+                val refValue = node.propertyLookup["\$ref"] as? InternalKsonString
+                if (refValue != null) {
+                    val resolved = idLookup.resolveRef(refValue.value, updatedBaseUri)
+                    if (resolved != null) {
+                        node = resolved.resolvedValue
+                        updatedBaseUri = resolved.resolvedValueBaseUri
+                    }
+                }
             }
         }
 
