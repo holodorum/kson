@@ -1,5 +1,6 @@
 package org.kson
 
+import org.kson.schema.SchemaIdLookup
 import org.kson.value.KsonValue as InternalKsonValue
 import org.kson.value.KsonObject as InternalKsonObject
 import org.kson.value.KsonString as InternalKsonString
@@ -16,7 +17,9 @@ class SchemaNavigationTest {
      * Helper to navigate schema and get the result value
      */
     private fun navigateSchema(schema: String, path: List<String>): InternalKsonValue? {
-        val resolved = KsonTooling.navigateSchemaByDocumentPath(schema, path)
+        val resolved = KsonCore.parseToAst(schema).ksonValue?.let {
+            SchemaIdLookup(it).navigateByDocumentPath(path)
+        }
         return resolved?.resolvedValue
     }
 
@@ -30,10 +33,10 @@ class SchemaNavigationTest {
                 }
             }
         """
-        val parsedSchema = Kson.analyze(schema).ksonValue!!
-        val result = KsonTooling.navigateSchemaByDocumentPath(schema, emptyList())
+        val parsedSchema = KsonCore.parseToAst(schema).ksonValue!!
+        val result = navigateSchema(schema, emptyList())
         assertNotNull(result)
-        assertTrue { parsedSchema.toInternal().dataEquals(result.resolvedValue) }
+        assertTrue { parsedSchema.dataEquals(result) }
     }
 
     @Test
@@ -310,14 +313,14 @@ class SchemaNavigationTest {
             }
         """
 
-        val result = KsonTooling.navigateSchemaByDocumentPath(schema, listOf("name"), "")
+        val result = navigateSchema(schema, listOf("name"))
         assertNotNull(result)
 
         // The base URI should be updated based on the $id
         // (This tests the URI tracking functionality)
         assertEquals(
             "string",
-            ((result.resolvedValue as InternalKsonObject).propertyLookup["type"] as? InternalKsonString)?.value
+            ((result as InternalKsonObject).propertyLookup["type"] as? InternalKsonString)?.value
         )
     }
 

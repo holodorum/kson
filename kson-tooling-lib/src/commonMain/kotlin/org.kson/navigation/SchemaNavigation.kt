@@ -1,5 +1,7 @@
 package org.kson.navigation
 
+import org.kson.CompletionItem
+import org.kson.CompletionKind
 import org.kson.schema.SchemaIdLookup
 import org.kson.value.KsonValue as InternalKsonValue
 import org.kson.value.KsonObject as InternalKsonObject
@@ -39,6 +41,41 @@ internal object SchemaNavigation{
         // Step 3: Extract and format hover information
         return resolvedSchemaRef?.resolvedValue?.extractSchemaInfo()
     }
+
+    /**
+     * Get completion suggestions for a node in a document.
+     *
+     * This is the main entry point for IDE completion features.
+     *
+     * When the cursor is at an incomplete value position (e.g., after a colon),
+     * findValueAtLocation might return the parent object instead of a value node.
+     * We need to handle this case and provide completions for ALL possible values
+     * in that object's properties.
+     *
+     * @param documentRoot The root of the document being edited
+     * @param documentNode The specific node at the cursor position
+     * @param schemaValue The schema for the document (as KsonValue)
+     * @return List of completion items
+     */
+    fun getCompletions(
+        documentRoot: InternalKsonValue,
+        documentNode: InternalKsonValue,
+        schemaValue: InternalKsonValue
+    ): List<CompletionItem> {
+        // Step 1: Build path from document root to target node
+        val documentPath = KsonValueNavigation.buildPathTokens(documentRoot, documentNode)
+            ?: return emptyList()
+
+        // Step 2: Navigate to the schema for this node
+        val resolvedSchema = SchemaIdLookup(schemaValue).navigateByDocumentPath(documentPath)
+
+        // Step 3: Extract completions from the schema
+        // extractCompletions will detect if the schema is for an object type
+        // and return property completions instead of value completions
+        return resolvedSchema?.resolvedValue?.extractCompletions()
+            ?: emptyList()
+    }
+
 }
 
 /**
@@ -141,5 +178,131 @@ fun InternalKsonValue.formatValueForDisplay(): String {
         is InternalKsonNumber -> this.value.asString
         is InternalKsonObject -> "{...}"
         is InternalKsonString -> this.value
+    }
+}
+
+/**
+ * Extract completion items from a schema node based on the completion context.
+ *
+ * @param context The completion context (property name or value)
+ * @return List of completion items
+ */
+internal fun InternalKsonValue.extractCompletions(
+): List<CompletionItem> {
+    if (this !is InternalKsonObject) return emptyList()
+    return extractValueCompletions()
+}
+
+/**
+ * Extract property name completions from an object schema.
+ *
+ * Looks at the "properties" field in the schema and creates completion items
+ * for each available property.
+ */
+private fun InternalKsonObject.extractPropertyCompletions(): List<CompletionItem> {
+    val properties = (propertyLookup["properties"] as? InternalKsonObject)
+        ?: return emptyList()
+
+    return properties.propertyLookup.map { (propName, propSchema) ->
+        CompletionItem(
+            label = propName,
+            detail = extractTypeHint(propSchema),
+            documentation = propSchema.extractSchemaInfo(),  // Reuse existing function!
+            kind = CompletionKind.PROPERTY
+        )
+    }
+}
+
+/**
+ * Extract completions from a schema node.
+ *
+ * Provides completions for:
+ * - Object properties (if type is object)
+ * - Enum values (if enum is defined)
+ * - Boolean values (if type is boolean)
+ * - Null value (if type is null or includes null)
+ */
+private fun InternalKsonObject.extractValueCompletions(): List<CompletionItem> {
+    // Check if this schema represents an object type
+    // If so, we should provide property completions instead of value completions
+    val isObjectType = when (val typeValue = propertyLookup["type"]) {
+        is InternalKsonString -> typeValue.value == "object"
+        is InternalKsonList -> {
+            typeValue.elements.any { (it as? InternalKsonString)?.value == "object" }
+        }
+        else -> propertyLookup.containsKey("properties") // Has properties = likely object schema
+    }
+
+    if (isObjectType) {
+        return extractPropertyCompletions()
+    }
+
+    val completions = mutableListOf<CompletionItem>()
+
+    // If enum exists, offer those values
+    (propertyLookup["enum"] as? InternalKsonList)?.let { enumList ->
+        enumList.elements.forEach { enumValue ->
+            completions.add(
+                CompletionItem(
+                    label = enumValue.formatValueForDisplay(),  // Reuse existing function!
+                    detail = "enum value",
+                    documentation = this.extractSchemaInfo(),  // Reuse existing function!
+                    kind = CompletionKind.VALUE
+                )
+            )
+        }
+        return completions
+    }
+
+    // If type is defined, offer type-specific completions
+    when (val typeValue = propertyLookup["type"]) {
+        is InternalKsonString -> {
+            when (typeValue.value) {
+                "boolean" -> {
+                    completions.add(CompletionItem("true", "boolean", null, CompletionKind.VALUE))
+                    completions.add(CompletionItem("false", "boolean", null, CompletionKind.VALUE))
+                }
+                "null" -> {
+                    completions.add(CompletionItem("null", "null", null, CompletionKind.VALUE))
+                }
+            }
+        }
+        is InternalKsonList -> {
+            // Union type - check if it includes boolean or null
+            val types = typeValue.elements.mapNotNull { (it as? InternalKsonString)?.value }
+            if ("boolean" in types) {
+                completions.add(CompletionItem("true", "boolean", null, CompletionKind.VALUE))
+                completions.add(CompletionItem("false", "boolean", null, CompletionKind.VALUE))
+            }
+            if ("null" in types) {
+                completions.add(CompletionItem("null", "null", null, CompletionKind.VALUE))
+            }
+        }
+        else -> {}
+    }
+
+    return completions
+}
+
+/**
+ * Extract a simple type hint string from a schema node.
+ *
+ * This is a simplified version of the type extraction in extractSchemaInfo,
+ * used for the "detail" field in completion items.
+ *
+ * @return Type string (e.g., "string", "number | string"), or null if no type info
+ */
+private fun extractTypeHint(schemaNode: InternalKsonValue): String? {
+    if (schemaNode !is InternalKsonObject) return null
+
+    return when (val typeValue = schemaNode.propertyLookup["type"]) {
+        is InternalKsonString -> typeValue.value
+        is InternalKsonList -> {
+            typeValue.elements
+                .mapNotNull { (it as? InternalKsonString)?.value }
+                .joinToString(" | ")
+                .takeIf { it.isNotEmpty() }
+        }
+        else -> null
     }
 }

@@ -1,5 +1,6 @@
 package org.kson
 
+import org.kson.navigation.extractSchemaInfo
 import org.kson.value.KsonList
 import org.kson.value.KsonObject
 import org.kson.value.KsonValue
@@ -26,7 +27,7 @@ class SchemaHoverInfoTest {
      */
     private fun getHoverInfo(schemaSource: String): String? {
         val schema = parseKson(schemaSource)
-        return KsonTooling.extractSchemaHoverInfo(schema)
+        return schema.extractSchemaInfo()
     }
 
     @Test
@@ -244,7 +245,7 @@ class SchemaHoverInfoTest {
     @Test
     fun testExtractHoverFromNonObjectSchema() {
         val schema = parseKson("true")
-        val hoverInfo = KsonTooling.extractSchemaHoverInfo(schema)
+        val hoverInfo = schema.extractSchemaInfo()
         // Boolean schema (true/false) doesn't have properties to extract
         assertNull(hoverInfo)
     }
@@ -264,14 +265,14 @@ class SchemaHoverInfoTest {
     @Test
     fun testGetSchemaHoverInfoEndToEnd() {
         // Test the full integration: document + schema
-        val document = parseKson("""
+        val document = """
             {
                 user: {
                     name: "John"
                     age: 30
                 }
             }
-        """)
+        """.trimIndent()
 
         val schema = """
             {
@@ -296,13 +297,8 @@ class SchemaHoverInfoTest {
             }
         """
 
-        // Get the "name" node from the document
-        val userObj = (document as KsonObject).propertyLookup["user"] as KsonObject
-        val nameValue = userObj.propertyLookup["name"]
-        assertNotNull(nameValue)
-
         // Get hover info for the name field
-        val hoverInfo = KsonTooling.getSchemaHoverInfo(document, nameValue, schema)
+        val hoverInfo = KsonTooling.getSchemaInfoAtLocation(document, schema, 3, 11 )
         assertNotNull(hoverInfo)
         assertTrue(hoverInfo.contains("User's full name"))
         assertTrue(hoverInfo.contains("*Type:* `string`"))
@@ -310,14 +306,15 @@ class SchemaHoverInfoTest {
 
     @Test
     fun testGetSchemaHoverInfoForNestedArrayElement() {
-        val document = parseKson("""
+        // language="kson"
+        val document = """
             {
                 users: [
                     { name: "Alice" }
                     { name: "Bob" }
                 ]
             }
-        """)
+        """.trimIndent()
 
         val schema = """
             {
@@ -347,7 +344,7 @@ class SchemaHoverInfoTest {
         assertNotNull(nameValue)
 
         // Get hover info
-        val hoverInfo = KsonTooling.getSchemaHoverInfo(document, nameValue, schema)
+        val hoverInfo = KsonTooling.getSchemaInfoAtLocation(document, schema, 4, 13 )
         assertNotNull(hoverInfo)
         assertTrue(hoverInfo.contains("**User Name**"))
         assertTrue(hoverInfo.contains("The name of the user"))

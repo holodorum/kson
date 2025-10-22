@@ -1,5 +1,7 @@
 import {TextDocument} from "vscode-languageserver-textdocument";
 import {
+    CompletionList,
+    CompletionParams,
     Diagnostic,
     DiagnosticSeverity,
     DidOpenTextDocumentParams,
@@ -148,6 +150,89 @@ describe('KsonTextDocumentService', () => {
                 }
             ]
             await assertDiagnostics(content, expected)
+        });
+    });
+
+    describe('Completions', () => {
+        it('should provide enum value completions for status field', async () => {
+            // Using the hardcoded TODO schema, create a document with a todo item
+            const content = `{
+    todos: [
+        {
+            id: "task-1"
+            title: "Test task"
+            status: "todo"
+        }
+    ]
+}`;
+            openDocument(content);
+
+            // Request completions at the position of the "todo" value (line 5, column 25)
+            const params: CompletionParams = {
+                textDocument: {uri: TEST_URI},
+                position: {line: 5, character: 25}
+            };
+
+            const result = await connection.completionHandler(params, {} as any, {} as any, undefined);
+
+            // Should return completions
+            assert.ok(result !== null, 'Should return completions');
+
+            let completionList: CompletionList;
+            if (result instanceof ResponseError) {
+                assert.fail(`Should not have received a ResponseError. Message: ${result.message}`);
+            } else {
+                completionList = result as CompletionList;
+            }
+
+            assert.ok(completionList.items.length > 0, 'Should have completion items');
+
+            // Check that enum values from the schema are included
+            const labels = completionList.items.map(item => item.label);
+            assert.ok(labels.includes('todo'), 'Should include "todo" enum value');
+            assert.ok(labels.includes('in_progress'), 'Should include "in_progress" enum value');
+            assert.ok(labels.includes('blocked'), 'Should include "blocked" enum value');
+            assert.ok(labels.includes('done'), 'Should include "done" enum value');
+            assert.ok(labels.includes('cancelled'), 'Should include "cancelled" enum value');
+        });
+
+        it('should provide priority enum completions', async () => {
+            // Create a document with priority field
+            const content = `{
+    todos: [
+        {
+            id: "task-1"
+            title: "Test task"
+            status: "todo"
+            priority: "high"
+        }
+    ]
+}`;
+            openDocument(content);
+
+            // Request completions at the priority value position
+            const params: CompletionParams = {
+                textDocument: {uri: TEST_URI},
+                position: {line: 6, character: 24}
+            };
+
+            const result = await connection.completionHandler(params, {} as any, {} as any, undefined);
+
+            // Should return completions
+            assert.ok(result !== null, 'Should return completions for priority');
+
+            let completionList: CompletionList;
+            if (result instanceof ResponseError) {
+                assert.fail(`Should not have received a ResponseError. Message: ${result.message}`);
+            } else {
+                completionList = result as CompletionList;
+            }
+
+            assert.ok(completionList.items.length > 0, 'Should have completion items');
+
+            // Check that priority enum values are included (low, medium, high, critical)
+            const labels = completionList.items.map(item => item.label);
+            assert.ok(labels.includes('low') || labels.includes('high'), 'Should include priority enum values');
         });
     });
 });
