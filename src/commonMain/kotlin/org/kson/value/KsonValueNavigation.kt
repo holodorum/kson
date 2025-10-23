@@ -282,7 +282,7 @@ object KsonValueNavigation {
         val smallestSize = Int.MAX_VALUE
 
         walkTree(root) { node, _, _ ->
-            if (locationContainsLocation(node.location, targetLocation)) {
+            if (Location.locationContainsLocation(node.location, targetLocation)) {
                 val size = calculateLocationSize(node.location)
                 if (size < smallestSize) {
                     mostSpecific = node
@@ -291,28 +291,6 @@ object KsonValueNavigation {
         }
 
         return mostSpecific
-    }
-
-    /**
-     * Check if a container location contains a target location.
-     */
-    private fun locationContainsLocation(
-        containerLocation: Location,
-        targetLocation: Location
-    ): Boolean {
-        val targetStart = targetLocation.start
-        val containerStart = containerLocation.start
-        val containerEnd = containerLocation.end
-
-        // Target must start at or after container start
-        if (targetStart.line < containerStart.line) return false
-        if (targetStart.line == containerStart.line && targetStart.column < containerStart.column) return false
-
-        // Target must start at or before container end
-        if (targetStart.line > containerEnd.line) return false
-        if (targetStart.line == containerEnd.line && targetStart.column > containerEnd.column) return false
-
-        return true
     }
 
     /**
