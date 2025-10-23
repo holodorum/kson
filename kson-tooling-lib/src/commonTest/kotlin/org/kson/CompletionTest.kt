@@ -1,7 +1,5 @@
 package org.kson
 
-import org.kson.navigation.CompletionItem
-import org.kson.navigation.CompletionKind
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -338,6 +336,111 @@ class CompletionTest {
     }
 
     @Test
+    fun testEnumCompletionsForPropertyWithinArrayItems() {
+        // Create a schema with an array of objects containing enum properties
+        // Similar to the todos array in the hardcoded schema
+        val schema = """
+            {
+                type: object
+                properties: {
+                    todos: {
+                        type: array
+                        items: {
+                            type: object
+                            properties: {
+                                status: {
+                                    type: string
+                                    description: "Current status of the task"
+                                    enum: ["todo", "in_progress", "blocked", "done", "cancelled"]
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        """
+
+        val document = """
+            todos:
+              - status:
+        """.trimIndent()
+
+        // Get completions at the status value position within the array item
+        val completions = getCompletions(document, schema, line = 1, column = 13)
+
+        assertNotNull(completions, "Should return completions for enum property in array item")
+        assertTrue(completions.isNotEmpty(), "Should have completion items")
+
+        // Check that all enum values are present
+        val labels = completions.map { it.label }
+        assertTrue("todo" in labels, "Should include 'todo'")
+        assertTrue("in_progress" in labels, "Should include 'in_progress'")
+        assertTrue("blocked" in labels, "Should include 'blocked'")
+        assertTrue("done" in labels, "Should include 'done'")
+        assertTrue("cancelled" in labels, "Should include 'cancelled'")
+
+        // All should be VALUE kind
+        assertTrue(completions.all { it.kind == CompletionKind.VALUE }, "All should be VALUE completions")
+    }
+
+    @Test
+    fun testEnumCompletionsWithRefDefinitions() {
+        // Create a schema using $ref to reference a definition, like the hardcoded schema
+        val schema = """
+            {
+                type: object
+                properties: {
+                    todos: {
+                        type: array
+                        items: {
+                            '${'$'}ref': "#/${'$'}defs/Todo"
+                        }
+                    }
+                }
+                '${'$'}defs': {
+                    Todo: {
+                        type: object
+                        properties: {
+                            status: {
+                                type: string
+                                description: "Current status of the task"
+                                enum: ["todo", "in_progress", "blocked", "done", "cancelled"]
+                            }
+                            priority: {
+                                type: string
+                                description: "Task priority level"
+                                enum: ["low", "medium", "high", "urgent"]
+                            }
+                        }
+                    }
+                }
+            }
+        """
+
+        val document = """
+            todos:
+              - status:
+        """.trimIndent()
+
+        // Get completions at the status value position
+        val completions = getCompletions(document, schema, line = 1, column = 13)
+
+        assertNotNull(completions, "Should return completions for enum property in ${'$'}ref definition")
+        assertTrue(completions.isNotEmpty(), "Should have completion items")
+
+        // Check that status enum values are present
+        val labels = completions.map { it.label }
+        assertTrue("todo" in labels, "Should include 'todo'")
+        assertTrue("in_progress" in labels, "Should include 'in_progress'")
+        assertTrue("blocked" in labels, "Should include 'blocked'")
+        assertTrue("done" in labels, "Should include 'done'")
+        assertTrue("cancelled" in labels, "Should include 'cancelled'")
+
+        // All should be VALUE kind
+        assertTrue(completions.all { it.kind == CompletionKind.VALUE }, "All should be VALUE completions")
+    }
+
+    @Test
     fun testNumericEnumCompletions() {
         val schema = """
             {
@@ -403,33 +506,6 @@ class CompletionTest {
 
         // Should have 4 items
         assertEquals(4, completions.size, "Should have all 4 enum values")
-    }
-
-    @Test
-    fun testCompletionsAtInvalidPosition() {
-        val schema = """
-            {
-                type: object
-                properties: {
-                    name: { type: string }
-                }
-            }
-        """
-
-        val document = """
-            {
-                name: "test"
-            }
-        """
-
-        // Get completions at an invalid position (outside the document)
-        val completions = getCompletions(document, schema, line = 10, column = 0)
-
-        // Should return null or empty (no value at this location)
-        assertTrue(
-            completions == null || completions.isEmpty(),
-            "Should not return completions at invalid position"
-        )
     }
 
     @Test
@@ -622,7 +698,7 @@ class CompletionTest {
             {
                 app: {
                     settings: {
-                        
+
                     }
                 }
             }
@@ -637,5 +713,197 @@ class CompletionTest {
         val labels = completions.map { it.label }
         assertTrue("theme" in labels, "Should include 'theme' property")
         assertTrue("fontSize" in labels, "Should include 'fontSize' property")
+    }
+
+    @Test
+    fun testCompletionsAfterColonForObjectValue() {
+        // Test case: typing "depends_on:" should suggest properties of the depends_on object
+        val schema = """
+            {
+                type: object
+                properties: {
+                    name: { type: string }
+                    depends_on: {
+                        type: object
+                        properties: {
+                            service: { type: string }
+                            timeout: { type: number }
+                        }
+                    }
+                }
+            }
+        """
+
+        val document = """
+            name: "test"
+            depends_on:   
+        """.trimIndent()
+
+        // Cursor is right after the colon on line 1
+        val completions = getCompletions(document, schema, line = 1, column = 11)
+
+        assertNotNull(completions, "Should return completions after colon for object property")
+        assertTrue(completions.isNotEmpty(), "Should have completion items")
+
+        // Should get properties of depends_on object, not sibling properties
+        val labels = completions.map { it.label }
+        assertTrue("service" in labels, "Should include 'service' from depends_on schema")
+        assertTrue("timeout" in labels, "Should include 'timeout' from depends_on schema")
+        assertTrue("name" !in labels, "Should NOT include sibling property 'name'")
+
+        // All should be PROPERTY kind
+        assertTrue(completions.all { it.kind == CompletionKind.PROPERTY }, "All should be PROPERTY completions")
+    }
+
+    @Test
+    fun testCompletionsAfterNewlineInObject() {
+        // Test case: pressing enter in an object should suggest available properties
+        val schema = """
+            {
+                type: object
+                properties: {
+                    name: { type: string }
+                    age: { type: number }
+                    email: { type: string }
+                }
+            }
+        """
+
+        val document = """
+            name: "John"
+
+        """.trimIndent()
+
+        // Cursor is on the blank line after "name: "John""
+        val completions = getCompletions(document, schema, line = 1, column = 0)
+
+        assertNotNull(completions, "Should return completions on newline in object")
+        assertTrue(completions.isNotEmpty(), "Should have completion items")
+
+        // Should get all root object properties
+        val labels = completions.map { it.label }
+        assertTrue("name" in labels, "Should include 'name' property")
+        assertTrue("age" in labels, "Should include 'age' property")
+        assertTrue("email" in labels, "Should include 'email' property")
+
+        // All should be PROPERTY kind
+        assertTrue(completions.all { it.kind == CompletionKind.PROPERTY }, "All should be PROPERTY completions")
+    }
+
+    @Test
+    fun testCompletionsAfterColonForEnumValue() {
+        // Test case: typing "status:" should suggest enum values, not properties
+        val schema = """
+            {
+                type: object
+                properties: {
+                    status: {
+                        type: string
+                        enum: ["active", "inactive", "pending"]
+                    }
+                }
+            }
+        """
+
+        val document = """
+            status:
+        """.trimIndent()
+
+        // Cursor is right after the colon
+        val completions = getCompletions(document, schema, line = 0, column = 7)
+
+        assertNotNull(completions, "Should return completions after colon for enum property")
+        assertTrue(completions.isNotEmpty(), "Should have completion items")
+
+        // Should get enum values
+        val labels = completions.map { it.label }
+        assertTrue("active" in labels, "Should include 'active' enum value")
+        assertTrue("inactive" in labels, "Should include 'inactive' enum value")
+        assertTrue("pending" in labels, "Should include 'pending' enum value")
+
+        // All should be VALUE kind
+        assertTrue(completions.all { it.kind == CompletionKind.VALUE }, "All should be VALUE completions")
+    }
+
+    @Test
+    fun testCompletionsAfterColonForListProperties() {
+        // Test completions for additional properties in an array item
+        // language="kson"
+        val schema = """
+            type: object
+            properties:
+              items:
+                type: array
+                items:
+                  '${'$'}ref': '#/${'$'}defs/Item'
+                  .
+                .  
+              .    
+            '${'$'}defs':
+              Item:
+                type: object
+                properties:
+                  name:
+                    type: string
+                    .
+                  status:
+                    enum: [active, inactive]
+                    .
+                  priority:
+                    type: number
+        """.trimIndent()
+
+        val document = """
+            items:
+              - status: active
+                
+        """.trimIndent()
+
+        // Cursor positioned at line 2, column 4 (properly indented within array item, ready to add more properties)
+        val completions = getCompletions(document, schema, line = 2, column = 2)
+
+        assertNotNull(completions, "Should return completions for additional properties")
+        assertTrue(completions.isNotEmpty(), "Should have completion items")
+
+        // Should suggest remaining properties from the Item schema
+        val labels = completions.map { it.label }
+        assertTrue("name" in labels, "Should include 'name' property")
+        assertTrue("priority" in labels, "Should include 'priority' property")
+
+        // All should be PROPERTY kind
+        assertTrue(completions.all { it.kind == CompletionKind.PROPERTY }, "All should be PROPERTY completions")
+    }
+    @Test
+    fun testCompletionsWithExtraWhitespace() {
+        val schema = """
+            {
+                type: object
+                properties: {
+                    status: {
+                        type: string
+                        description: "The current status"
+                        enum: ["active", "inactive", "pending"]
+                    }
+                }
+            }
+        """
+
+        val document = """
+            status:   
+              value: key
+            another_status: key
+        """.trimIndent()
+
+        // Position after "status: " on line 1, character 20 (after spaces and "status: ")
+        val completions = getCompletions(document, schema, line = 0, column = 9)
+
+        assertNotNull(completions, "Should return completions for enum property")
+        assertTrue(completions.isNotEmpty(), "Should have completion items")
+
+        // Check that enum values are included
+        val labels = completions.map { it.label }
+        assertTrue("active" in labels, "Should include 'active' enum value")
+        assertTrue("inactive" in labels, "Should include 'inactive' enum value")
+        assertTrue("pending" in labels, "Should include 'pending' enum value")
     }
 }

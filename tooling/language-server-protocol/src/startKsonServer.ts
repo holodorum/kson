@@ -70,7 +70,7 @@ export function startKsonServer(connection: Connection): void {
             },
 
             completionProvider: {
-                triggerCharacters: ['"', ':', ',', '{', '['],
+                triggerCharacters: ['"', "'", ':', ',', '{', '[', '\n'],
                 resolveProvider: false
             }
         };

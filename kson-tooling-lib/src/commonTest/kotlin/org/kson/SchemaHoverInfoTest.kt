@@ -1,8 +1,6 @@
 package org.kson
 
 import org.kson.navigation.extractSchemaInfo
-import org.kson.value.KsonList
-import org.kson.value.KsonObject
 import org.kson.value.KsonValue
 import kotlin.test.Test
 import kotlin.test.assertNotNull
@@ -297,8 +295,8 @@ class SchemaHoverInfoTest {
             }
         """
 
-        // Get hover info for the name field
-        val hoverInfo = KsonTooling.getSchemaInfoAtLocation(document, schema, 3, 11 )
+        // Get hover info for the name field (line 2, pointing to "John")
+        val hoverInfo = KsonTooling.getSchemaInfoAtLocation(document, schema, 2, 14)
         assertNotNull(hoverInfo)
         assertTrue(hoverInfo.contains("User's full name"))
         assertTrue(hoverInfo.contains("*Type:* `string`"))
@@ -337,14 +335,8 @@ class SchemaHoverInfoTest {
             }
         """
 
-        // Get the second user's name
-        val usersArray = (document as KsonObject).propertyLookup["users"] as KsonList
-        val secondUser = usersArray.elements[1] as KsonObject
-        val nameValue = secondUser.propertyLookup["name"]
-        assertNotNull(nameValue)
-
-        // Get hover info
-        val hoverInfo = KsonTooling.getSchemaInfoAtLocation(document, schema, 4, 13 )
+        // Get hover info (line 2, pointing to "Alice" value)
+        val hoverInfo = KsonTooling.getSchemaInfoAtLocation(document, schema, 2, 17)
         assertNotNull(hoverInfo)
         assertTrue(hoverInfo.contains("**User Name**"))
         assertTrue(hoverInfo.contains("The name of the user"))

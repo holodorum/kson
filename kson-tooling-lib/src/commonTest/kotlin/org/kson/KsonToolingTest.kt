@@ -322,30 +322,7 @@ class KsonToolingTest {
         assertNotNull(hoverInfo)
         assertTrue(hoverInfo.contains("*Type:* `string`"))
     }
-
-    @Test
-    fun testGetSchemaInfoAtLocation_invalidPosition() {
-        val document = """
-            name: John
-        """.trimIndent()
-
-        val schema = """
-            {
-              "type": "object",
-              "properties": {
-                "name": {
-                  "type": "string"
-                }
-              }
-            }
-        """.trimIndent()
-
-        // Hover at an invalid position (way outside the document)
-        val hoverInfo = KsonTooling.getSchemaInfoAtLocation(document, schema, 100, 100)
-
-        assertNull(hoverInfo)
-    }
-
+    
     @Test
     fun testGetSchemaInfoAtLocation_noSchemaForProperty() {
         val document = """

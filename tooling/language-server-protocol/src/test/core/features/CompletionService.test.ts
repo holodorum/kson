@@ -62,6 +62,47 @@ describe('CompletionService', () => {
         }
     });
 
+    it('should return enum value completions', () => {
+        // Create a schema with enum values
+        const schemaContent = `{
+            type: object
+            properties: {
+                status: {
+                    type: string
+                    description: "The current status"
+                    enum: ["active", "inactive", "pending"]
+                }
+            }
+        }`;
+
+        const schemaDocument = TextDocument.create('file:///schema.kson', 'kson', 1, schemaContent);
+
+        // Create a document that matches the schema - use multi-line format like Kotlin tests
+        const docContent = `
+status:    
+  value: key   
+`;
+        const textDoc = TextDocument.create('file:///test.kson', 'kson', 1, docContent);
+        const analysis = Kson.getInstance().analyze(docContent);
+        const document = new KsonDocument(textDoc, analysis, schemaDocument);
+
+        // Try getting completions at the value position (on "active")
+        const position: Position = {line: 1, character: 9}; // Position after the key
+        const completions = completionService.getCompletions(document, position);
+
+        // Verify completions are returned
+        assert.ok(completions !== null, 'Completions should not be null for enum property');
+        if (completions) {
+            assert.ok(completions.items.length > 0, 'Should have completion items');
+
+            // Check that enum values are included
+            const labels = completions.items.map(item => item.label);
+            assert.ok(labels.includes('active'), 'Should include "active" enum value');
+            assert.ok(labels.includes('inactive'), 'Should include "inactive" enum value');
+            assert.ok(labels.includes('pending'), 'Should include "pending" enum value');
+        }
+    });
+
     it('should return boolean value completions', () => {
         // Create a schema with boolean type
         const schemaContent = `{

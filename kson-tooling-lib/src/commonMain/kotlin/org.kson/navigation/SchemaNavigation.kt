@@ -11,71 +11,49 @@ import org.kson.value.KsonNumber as InternalKsonNumber
 import org.kson.value.EmbedBlock as InternalEmbedBlock
 import org.kson.value.KsonBoolean as InternalKsonBoolean
 import org.kson.value.KsonNull as InternalKsonNull
-import org.kson.value.KsonValueNavigation
 
 internal object SchemaNavigation{
     /**
-     * Get schema hover information for a node in a document.
+     * Get hover info for the node in a schema, found by using the
+     * [schemaPath] to navigate the schema
      *
-     * This is the main entry point for IDE hover features.
-     *
-     * @param documentRoot The root of the document being edited
-     * @param documentNode The specific node the cursor is hovering over
      * @param schemaValue The schema for the document (as KsonValue)
-     * @return Formatted hover text, or null if no schema info available
+     * @param schemaPath The schema path for the document
      */
     fun getSchemaInfo(
-        documentRoot: InternalKsonValue,
-        documentNode: InternalKsonValue,
-        schemaValue: InternalKsonValue
+        schemaValue: InternalKsonValue,
+        schemaPath: List<String>
     ): String? {
-        // Step 1: Build path from document root to target node
-        val documentPath = KsonValueNavigation.buildPathTokens(documentRoot, documentNode)
-            ?: return null
+        // Step 1: Navigate to the schema for this node
+        val resolvedSchema = SchemaIdLookup(schemaValue).navigateByDocumentPath(schemaPath)
 
-        // Step 2: Navigate schema to corresponding location
-        val resolvedSchemaRef = SchemaIdLookup(schemaValue).navigateByDocumentPath(
-            documentPathTokens = documentPath
-        )
 
         // Step 3: Extract and format hover information
-        return resolvedSchemaRef?.resolvedValue?.extractSchemaInfo()
+        return resolvedSchema?.resolvedValue?.extractSchemaInfo()
     }
 
     /**
-     * Get completion suggestions for a node in a document.
+     * Get completion suggestions for the node in a schema, found by using the
+     * [schemaPath] to navigate the schema
      *
-     * This is the main entry point for IDE completion features.
-     *
-     * When the cursor is at an incomplete value position (e.g., after a colon),
-     * findValueAtLocation might return the parent object instead of a value node.
-     * We need to handle this case and provide completions for ALL possible values
-     * in that object's properties.
-     *
-     * @param documentRoot The root of the document being edited
-     * @param documentNode The specific node at the cursor position
      * @param schemaValue The schema for the document (as KsonValue)
+     * @param schemaPath The schema path for the document
      * @return List of completion items
      */
     fun getCompletions(
-        documentRoot: InternalKsonValue,
-        documentNode: InternalKsonValue,
-        schemaValue: InternalKsonValue
+        schemaValue: InternalKsonValue,
+        schemaPath: List<String>
     ): List<CompletionItem> {
-        // Step 1: Build path from document root to target node
-        val documentPath = KsonValueNavigation.buildPathTokens(documentRoot, documentNode)
-            ?: return emptyList()
 
-        // Step 2: Navigate to the schema for this node
-        val resolvedSchema = SchemaIdLookup(schemaValue).navigateByDocumentPath(documentPath)
+        // Step 1: Navigate to the schema for this node
+        val resolvedSchema = SchemaIdLookup(schemaValue).navigateByDocumentPath(schemaPath)
 
-        // Step 3: Extract completions from the schema
+        // Step 2: Extract completions from the schema
         // extractCompletions will detect if the schema is for an object type
         // and return property completions instead of value completions
         return resolvedSchema?.resolvedValue?.extractCompletions()
             ?: emptyList()
     }
-
 }
 
 /**
