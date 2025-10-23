@@ -1,0 +1,266 @@
+public final class org/kson/Analysis {
+	public final fun getErrors ()Ljava/util/List;
+	public final fun getKsonValue ()Lorg/kson/KsonValue;
+	public final fun getTokens ()Ljava/util/List;
+}
+
+public final class org/kson/AnyHelper {
+	public static final field INSTANCE Lorg/kson/AnyHelper;
+	public final fun equals (Ljava/lang/Object;Ljava/lang/Object;)Z
+	public final fun hashCode (Ljava/lang/Object;)I
+	public final fun toString (Ljava/lang/Object;)Ljava/lang/String;
+}
+
+public final class org/kson/EnumHelper {
+	public static final field INSTANCE Lorg/kson/EnumHelper;
+	public final fun name (Ljava/lang/Enum;)Ljava/lang/String;
+	public final fun ordinal (Ljava/lang/Enum;)I
+}
+
+public final class org/kson/FormatOptions {
+	public fun <init> ()V
+	public fun <init> (Lorg/kson/IndentType;Lorg/kson/FormattingStyle;)V
+	public synthetic fun <init> (Lorg/kson/IndentType;Lorg/kson/FormattingStyle;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun getFormattingStyle ()Lorg/kson/FormattingStyle;
+	public final fun getIndentType ()Lorg/kson/IndentType;
+}
+
+public final class org/kson/FormattingStyle : java/lang/Enum {
+	public static final field CLASSIC Lorg/kson/FormattingStyle;
+	public static final field COMPACT Lorg/kson/FormattingStyle;
+	public static final field DELIMITED Lorg/kson/FormattingStyle;
+	public static final field PLAIN Lorg/kson/FormattingStyle;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lorg/kson/FormattingStyle;
+	public static fun values ()[Lorg/kson/FormattingStyle;
+}
+
+public abstract class org/kson/IndentType {
+}
+
+public final class org/kson/IndentType$Spaces : org/kson/IndentType {
+	public fun <init> ()V
+	public fun <init> (I)V
+	public synthetic fun <init> (IILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun getSize ()I
+}
+
+public final class org/kson/IndentType$Tabs : org/kson/IndentType {
+	public static final field INSTANCE Lorg/kson/IndentType$Tabs;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class org/kson/Kson {
+	public static final field INSTANCE Lorg/kson/Kson;
+	public final fun analyze (Ljava/lang/String;)Lorg/kson/Analysis;
+	public final fun format (Ljava/lang/String;Lorg/kson/FormatOptions;)Ljava/lang/String;
+	public static synthetic fun format$default (Lorg/kson/Kson;Ljava/lang/String;Lorg/kson/FormatOptions;ILjava/lang/Object;)Ljava/lang/String;
+	public final fun parseSchema (Ljava/lang/String;)Lorg/kson/SchemaResult;
+	public final fun toJson (Ljava/lang/String;Lorg/kson/TranspileOptions$Json;)Lorg/kson/Result;
+	public static synthetic fun toJson$default (Lorg/kson/Kson;Ljava/lang/String;Lorg/kson/TranspileOptions$Json;ILjava/lang/Object;)Lorg/kson/Result;
+	public final fun toYaml (Ljava/lang/String;Lorg/kson/TranspileOptions$Yaml;)Lorg/kson/Result;
+	public static synthetic fun toYaml$default (Lorg/kson/Kson;Ljava/lang/String;Lorg/kson/TranspileOptions$Yaml;ILjava/lang/Object;)Lorg/kson/Result;
+}
+
+public abstract class org/kson/KsonValue {
+	public synthetic fun <init> (Lorg/kson/Position;Lorg/kson/Position;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun getEnd ()Lorg/kson/Position;
+	public final fun getStart ()Lorg/kson/Position;
+	public abstract fun getType ()Lorg/kson/KsonValueType;
+}
+
+public final class org/kson/KsonValue$KsonArray : org/kson/KsonValue {
+	public final fun getElements ()Ljava/util/List;
+	public fun getType ()Lorg/kson/KsonValueType;
+}
+
+public final class org/kson/KsonValue$KsonBoolean : org/kson/KsonValue {
+	public fun getType ()Lorg/kson/KsonValueType;
+	public final fun getValue ()Z
+}
+
+public final class org/kson/KsonValue$KsonEmbed : org/kson/KsonValue {
+	public final fun getContent ()Ljava/lang/String;
+	public final fun getMetadata ()Ljava/lang/String;
+	public final fun getTag ()Ljava/lang/String;
+	public fun getType ()Lorg/kson/KsonValueType;
+}
+
+public final class org/kson/KsonValue$KsonNull : org/kson/KsonValue {
+	public fun getType ()Lorg/kson/KsonValueType;
+}
+
+public abstract class org/kson/KsonValue$KsonNumber : org/kson/KsonValue {
+	public synthetic fun <init> (Lorg/kson/Position;Lorg/kson/Position;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
+}
+
+public final class org/kson/KsonValue$KsonNumber$Decimal : org/kson/KsonValue$KsonNumber {
+	public fun getType ()Lorg/kson/KsonValueType;
+	public final fun getValue ()D
+}
+
+public final class org/kson/KsonValue$KsonNumber$Integer : org/kson/KsonValue$KsonNumber {
+	public fun getType ()Lorg/kson/KsonValueType;
+	public final fun getValue ()I
+}
+
+public final class org/kson/KsonValue$KsonObject : org/kson/KsonValue {
+	public final fun getProperties ()Ljava/util/Map;
+	public fun getType ()Lorg/kson/KsonValueType;
+}
+
+public final class org/kson/KsonValue$KsonString : org/kson/KsonValue {
+	public fun getType ()Lorg/kson/KsonValueType;
+	public final fun getValue ()Ljava/lang/String;
+}
+
+public final class org/kson/KsonValueType : java/lang/Enum {
+	public static final field ARRAY Lorg/kson/KsonValueType;
+	public static final field BOOLEAN Lorg/kson/KsonValueType;
+	public static final field DECIMAL Lorg/kson/KsonValueType;
+	public static final field EMBED Lorg/kson/KsonValueType;
+	public static final field INTEGER Lorg/kson/KsonValueType;
+	public static final field NULL Lorg/kson/KsonValueType;
+	public static final field OBJECT Lorg/kson/KsonValueType;
+	public static final field STRING Lorg/kson/KsonValueType;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lorg/kson/KsonValueType;
+	public static fun values ()[Lorg/kson/KsonValueType;
+}
+
+public final class org/kson/Message {
+	public final fun getEnd ()Lorg/kson/Position;
+	public final fun getMessage ()Ljava/lang/String;
+	public final fun getSeverity ()Lorg/kson/MessageSeverity;
+	public final fun getStart ()Lorg/kson/Position;
+}
+
+public final class org/kson/MessageSeverity : java/lang/Enum {
+	public static final field ERROR Lorg/kson/MessageSeverity;
+	public static final field WARNING Lorg/kson/MessageSeverity;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lorg/kson/MessageSeverity;
+	public static fun values ()[Lorg/kson/MessageSeverity;
+}
+
+public final class org/kson/Position {
+	public final fun getColumn ()I
+	public final fun getLine ()I
+}
+
+public abstract class org/kson/Result {
+}
+
+public final class org/kson/Result$Failure : org/kson/Result {
+	public fun <init> (Ljava/util/List;)V
+	public final fun getErrors ()Ljava/util/List;
+}
+
+public final class org/kson/Result$Success : org/kson/Result {
+	public fun <init> (Ljava/lang/String;)V
+	public final fun getOutput ()Ljava/lang/String;
+}
+
+public abstract class org/kson/SchemaResult {
+}
+
+public final class org/kson/SchemaResult$Failure : org/kson/SchemaResult {
+	public fun <init> (Ljava/util/List;)V
+	public final fun getErrors ()Ljava/util/List;
+}
+
+public final class org/kson/SchemaResult$Success : org/kson/SchemaResult {
+	public fun <init> (Lorg/kson/SchemaValidator;)V
+	public final fun getSchemaValidator ()Lorg/kson/SchemaValidator;
+}
+
+public final class org/kson/SchemaValidator {
+	public final fun validate (Ljava/lang/String;)Ljava/util/List;
+}
+
+public abstract class org/kson/SimpleListIterator {
+	public synthetic fun <init> (Ljava/util/List;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun next ()Ljava/lang/Object;
+}
+
+public final class org/kson/SimpleMapEntry {
+	public fun <init> (Ljava/lang/Object;Ljava/lang/Object;)V
+	public final fun component1 ()Ljava/lang/Object;
+	public final fun component2 ()Ljava/lang/Object;
+	public final fun copy (Ljava/lang/Object;Ljava/lang/Object;)Lorg/kson/SimpleMapEntry;
+	public static synthetic fun copy$default (Lorg/kson/SimpleMapEntry;Ljava/lang/Object;Ljava/lang/Object;ILjava/lang/Object;)Lorg/kson/SimpleMapEntry;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getKey ()Ljava/lang/Object;
+	public final fun getValue ()Ljava/lang/Object;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public abstract class org/kson/SimpleMapIterator {
+	public synthetic fun <init> (Ljava/util/Map;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun next ()Lorg/kson/SimpleMapEntry;
+}
+
+public final class org/kson/Token {
+	public final fun getEnd ()Lorg/kson/Position;
+	public final fun getStart ()Lorg/kson/Position;
+	public final fun getText ()Ljava/lang/String;
+	public final fun getTokenType ()Lorg/kson/TokenType;
+}
+
+public final class org/kson/TokenType : java/lang/Enum {
+	public static final field ANGLE_BRACKET_L Lorg/kson/TokenType;
+	public static final field ANGLE_BRACKET_R Lorg/kson/TokenType;
+	public static final field COLON Lorg/kson/TokenType;
+	public static final field COMMA Lorg/kson/TokenType;
+	public static final field COMMENT Lorg/kson/TokenType;
+	public static final field CURLY_BRACE_L Lorg/kson/TokenType;
+	public static final field CURLY_BRACE_R Lorg/kson/TokenType;
+	public static final field DOT Lorg/kson/TokenType;
+	public static final field EMBED_CLOSE_DELIM Lorg/kson/TokenType;
+	public static final field EMBED_CONTENT Lorg/kson/TokenType;
+	public static final field EMBED_METADATA Lorg/kson/TokenType;
+	public static final field EMBED_OPEN_DELIM Lorg/kson/TokenType;
+	public static final field EMBED_PREAMBLE_NEWLINE Lorg/kson/TokenType;
+	public static final field EMBED_TAG Lorg/kson/TokenType;
+	public static final field EMBED_TAG_STOP Lorg/kson/TokenType;
+	public static final field END_DASH Lorg/kson/TokenType;
+	public static final field EOF Lorg/kson/TokenType;
+	public static final field FALSE Lorg/kson/TokenType;
+	public static final field ILLEGAL_CHAR Lorg/kson/TokenType;
+	public static final field LIST_DASH Lorg/kson/TokenType;
+	public static final field NULL Lorg/kson/TokenType;
+	public static final field NUMBER Lorg/kson/TokenType;
+	public static final field SQUARE_BRACKET_L Lorg/kson/TokenType;
+	public static final field SQUARE_BRACKET_R Lorg/kson/TokenType;
+	public static final field STRING_CLOSE_QUOTE Lorg/kson/TokenType;
+	public static final field STRING_CONTENT Lorg/kson/TokenType;
+	public static final field STRING_OPEN_QUOTE Lorg/kson/TokenType;
+	public static final field TRUE Lorg/kson/TokenType;
+	public static final field UNQUOTED_STRING Lorg/kson/TokenType;
+	public static final field WHITESPACE Lorg/kson/TokenType;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lorg/kson/TokenType;
+	public static fun values ()[Lorg/kson/TokenType;
+}
+
+public abstract class org/kson/TranspileOptions {
+	public abstract fun getRetainEmbedTags ()Z
+}
+
+public final class org/kson/TranspileOptions$Json : org/kson/TranspileOptions {
+	public fun <init> ()V
+	public fun <init> (Z)V
+	public synthetic fun <init> (ZILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun getRetainEmbedTags ()Z
+}
+
+public final class org/kson/TranspileOptions$Yaml : org/kson/TranspileOptions {
+	public fun <init> ()V
+	public fun <init> (Z)V
+	public synthetic fun <init> (ZILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun getRetainEmbedTags ()Z
+}
+

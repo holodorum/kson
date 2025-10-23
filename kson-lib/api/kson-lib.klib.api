@@ -1,0 +1,316 @@
+// Klib ABI Dump
+// Targets: [js, macosArm64.nativeKson]
+// Rendering settings:
+// - Signature version: 2
+// - Show manifest properties: true
+// - Show declarations: true
+
+// Library unique name: <org.kson:kson-lib>
+final enum class org.kson/FormattingStyle : kotlin/Enum<org.kson/FormattingStyle> { // org.kson/FormattingStyle|null[0]
+    enum entry CLASSIC // org.kson/FormattingStyle.CLASSIC|null[0]
+    enum entry COMPACT // org.kson/FormattingStyle.COMPACT|null[0]
+    enum entry DELIMITED // org.kson/FormattingStyle.DELIMITED|null[0]
+    enum entry PLAIN // org.kson/FormattingStyle.PLAIN|null[0]
+
+    final val entries // org.kson/FormattingStyle.entries|#static{}entries[0]
+        final fun <get-entries>(): kotlin.enums/EnumEntries<org.kson/FormattingStyle> // org.kson/FormattingStyle.entries.<get-entries>|<get-entries>#static(){}[0]
+
+    final fun valueOf(kotlin/String): org.kson/FormattingStyle // org.kson/FormattingStyle.valueOf|valueOf#static(kotlin.String){}[0]
+    final fun values(): kotlin/Array<org.kson/FormattingStyle> // org.kson/FormattingStyle.values|values#static(){}[0]
+}
+
+final enum class org.kson/KsonValueType : kotlin/Enum<org.kson/KsonValueType> { // org.kson/KsonValueType|null[0]
+    enum entry ARRAY // org.kson/KsonValueType.ARRAY|null[0]
+    enum entry BOOLEAN // org.kson/KsonValueType.BOOLEAN|null[0]
+    enum entry DECIMAL // org.kson/KsonValueType.DECIMAL|null[0]
+    enum entry EMBED // org.kson/KsonValueType.EMBED|null[0]
+    enum entry INTEGER // org.kson/KsonValueType.INTEGER|null[0]
+    enum entry NULL // org.kson/KsonValueType.NULL|null[0]
+    enum entry OBJECT // org.kson/KsonValueType.OBJECT|null[0]
+    enum entry STRING // org.kson/KsonValueType.STRING|null[0]
+
+    final val entries // org.kson/KsonValueType.entries|#static{}entries[0]
+        final fun <get-entries>(): kotlin.enums/EnumEntries<org.kson/KsonValueType> // org.kson/KsonValueType.entries.<get-entries>|<get-entries>#static(){}[0]
+
+    final fun valueOf(kotlin/String): org.kson/KsonValueType // org.kson/KsonValueType.valueOf|valueOf#static(kotlin.String){}[0]
+    final fun values(): kotlin/Array<org.kson/KsonValueType> // org.kson/KsonValueType.values|values#static(){}[0]
+}
+
+final enum class org.kson/MessageSeverity : kotlin/Enum<org.kson/MessageSeverity> { // org.kson/MessageSeverity|null[0]
+    enum entry ERROR // org.kson/MessageSeverity.ERROR|null[0]
+    enum entry WARNING // org.kson/MessageSeverity.WARNING|null[0]
+
+    final val entries // org.kson/MessageSeverity.entries|#static{}entries[0]
+        final fun <get-entries>(): kotlin.enums/EnumEntries<org.kson/MessageSeverity> // org.kson/MessageSeverity.entries.<get-entries>|<get-entries>#static(){}[0]
+
+    final fun valueOf(kotlin/String): org.kson/MessageSeverity // org.kson/MessageSeverity.valueOf|valueOf#static(kotlin.String){}[0]
+    final fun values(): kotlin/Array<org.kson/MessageSeverity> // org.kson/MessageSeverity.values|values#static(){}[0]
+}
+
+final enum class org.kson/TokenType : kotlin/Enum<org.kson/TokenType> { // org.kson/TokenType|null[0]
+    enum entry ANGLE_BRACKET_L // org.kson/TokenType.ANGLE_BRACKET_L|null[0]
+    enum entry ANGLE_BRACKET_R // org.kson/TokenType.ANGLE_BRACKET_R|null[0]
+    enum entry COLON // org.kson/TokenType.COLON|null[0]
+    enum entry COMMA // org.kson/TokenType.COMMA|null[0]
+    enum entry COMMENT // org.kson/TokenType.COMMENT|null[0]
+    enum entry CURLY_BRACE_L // org.kson/TokenType.CURLY_BRACE_L|null[0]
+    enum entry CURLY_BRACE_R // org.kson/TokenType.CURLY_BRACE_R|null[0]
+    enum entry DOT // org.kson/TokenType.DOT|null[0]
+    enum entry EMBED_CLOSE_DELIM // org.kson/TokenType.EMBED_CLOSE_DELIM|null[0]
+    enum entry EMBED_CONTENT // org.kson/TokenType.EMBED_CONTENT|null[0]
+    enum entry EMBED_METADATA // org.kson/TokenType.EMBED_METADATA|null[0]
+    enum entry EMBED_OPEN_DELIM // org.kson/TokenType.EMBED_OPEN_DELIM|null[0]
+    enum entry EMBED_PREAMBLE_NEWLINE // org.kson/TokenType.EMBED_PREAMBLE_NEWLINE|null[0]
+    enum entry EMBED_TAG // org.kson/TokenType.EMBED_TAG|null[0]
+    enum entry EMBED_TAG_STOP // org.kson/TokenType.EMBED_TAG_STOP|null[0]
+    enum entry END_DASH // org.kson/TokenType.END_DASH|null[0]
+    enum entry EOF // org.kson/TokenType.EOF|null[0]
+    enum entry FALSE // org.kson/TokenType.FALSE|null[0]
+    enum entry ILLEGAL_CHAR // org.kson/TokenType.ILLEGAL_CHAR|null[0]
+    enum entry LIST_DASH // org.kson/TokenType.LIST_DASH|null[0]
+    enum entry NULL // org.kson/TokenType.NULL|null[0]
+    enum entry NUMBER // org.kson/TokenType.NUMBER|null[0]
+    enum entry SQUARE_BRACKET_L // org.kson/TokenType.SQUARE_BRACKET_L|null[0]
+    enum entry SQUARE_BRACKET_R // org.kson/TokenType.SQUARE_BRACKET_R|null[0]
+    enum entry STRING_CLOSE_QUOTE // org.kson/TokenType.STRING_CLOSE_QUOTE|null[0]
+    enum entry STRING_CONTENT // org.kson/TokenType.STRING_CONTENT|null[0]
+    enum entry STRING_OPEN_QUOTE // org.kson/TokenType.STRING_OPEN_QUOTE|null[0]
+    enum entry TRUE // org.kson/TokenType.TRUE|null[0]
+    enum entry UNQUOTED_STRING // org.kson/TokenType.UNQUOTED_STRING|null[0]
+    enum entry WHITESPACE // org.kson/TokenType.WHITESPACE|null[0]
+
+    final val entries // org.kson/TokenType.entries|#static{}entries[0]
+        final fun <get-entries>(): kotlin.enums/EnumEntries<org.kson/TokenType> // org.kson/TokenType.entries.<get-entries>|<get-entries>#static(){}[0]
+
+    final fun valueOf(kotlin/String): org.kson/TokenType // org.kson/TokenType.valueOf|valueOf#static(kotlin.String){}[0]
+    final fun values(): kotlin/Array<org.kson/TokenType> // org.kson/TokenType.values|values#static(){}[0]
+}
+
+final class org.kson/Analysis { // org.kson/Analysis|null[0]
+    final val errors // org.kson/Analysis.errors|{}errors[0]
+        final fun <get-errors>(): kotlin.collections/List<org.kson/Message> // org.kson/Analysis.errors.<get-errors>|<get-errors>(){}[0]
+    final val ksonValue // org.kson/Analysis.ksonValue|{}ksonValue[0]
+        final fun <get-ksonValue>(): org.kson/KsonValue? // org.kson/Analysis.ksonValue.<get-ksonValue>|<get-ksonValue>(){}[0]
+    final val tokens // org.kson/Analysis.tokens|{}tokens[0]
+        final fun <get-tokens>(): kotlin.collections/List<org.kson/Token> // org.kson/Analysis.tokens.<get-tokens>|<get-tokens>(){}[0]
+}
+
+final class org.kson/FormatOptions { // org.kson/FormatOptions|null[0]
+    constructor <init>(org.kson/IndentType = ..., org.kson/FormattingStyle = ...) // org.kson/FormatOptions.<init>|<init>(org.kson.IndentType;org.kson.FormattingStyle){}[0]
+
+    final val formattingStyle // org.kson/FormatOptions.formattingStyle|{}formattingStyle[0]
+        final fun <get-formattingStyle>(): org.kson/FormattingStyle // org.kson/FormatOptions.formattingStyle.<get-formattingStyle>|<get-formattingStyle>(){}[0]
+    final val indentType // org.kson/FormatOptions.indentType|{}indentType[0]
+        final fun <get-indentType>(): org.kson/IndentType // org.kson/FormatOptions.indentType.<get-indentType>|<get-indentType>(){}[0]
+}
+
+final class org.kson/Message { // org.kson/Message|null[0]
+    final val end // org.kson/Message.end|{}end[0]
+        final fun <get-end>(): org.kson/Position // org.kson/Message.end.<get-end>|<get-end>(){}[0]
+    final val message // org.kson/Message.message|{}message[0]
+        final fun <get-message>(): kotlin/String // org.kson/Message.message.<get-message>|<get-message>(){}[0]
+    final val severity // org.kson/Message.severity|{}severity[0]
+        final fun <get-severity>(): org.kson/MessageSeverity // org.kson/Message.severity.<get-severity>|<get-severity>(){}[0]
+    final val start // org.kson/Message.start|{}start[0]
+        final fun <get-start>(): org.kson/Position // org.kson/Message.start.<get-start>|<get-start>(){}[0]
+}
+
+final class org.kson/Position { // org.kson/Position|null[0]
+    final val column // org.kson/Position.column|{}column[0]
+        final fun <get-column>(): kotlin/Int // org.kson/Position.column.<get-column>|<get-column>(){}[0]
+    final val line // org.kson/Position.line|{}line[0]
+        final fun <get-line>(): kotlin/Int // org.kson/Position.line.<get-line>|<get-line>(){}[0]
+}
+
+final class org.kson/SchemaValidator { // org.kson/SchemaValidator|null[0]
+    final fun validate(kotlin/String): kotlin.collections/List<org.kson/Message> // org.kson/SchemaValidator.validate|validate(kotlin.String){}[0]
+}
+
+final class org.kson/SimpleMapEntry { // org.kson/SimpleMapEntry|null[0]
+    constructor <init>(kotlin/Any, kotlin/Any) // org.kson/SimpleMapEntry.<init>|<init>(kotlin.Any;kotlin.Any){}[0]
+
+    final val key // org.kson/SimpleMapEntry.key|{}key[0]
+        final fun <get-key>(): kotlin/Any // org.kson/SimpleMapEntry.key.<get-key>|<get-key>(){}[0]
+    final val value // org.kson/SimpleMapEntry.value|{}value[0]
+        final fun <get-value>(): kotlin/Any // org.kson/SimpleMapEntry.value.<get-value>|<get-value>(){}[0]
+
+    final fun component1(): kotlin/Any // org.kson/SimpleMapEntry.component1|component1(){}[0]
+    final fun component2(): kotlin/Any // org.kson/SimpleMapEntry.component2|component2(){}[0]
+    final fun copy(kotlin/Any = ..., kotlin/Any = ...): org.kson/SimpleMapEntry // org.kson/SimpleMapEntry.copy|copy(kotlin.Any;kotlin.Any){}[0]
+    final fun equals(kotlin/Any?): kotlin/Boolean // org.kson/SimpleMapEntry.equals|equals(kotlin.Any?){}[0]
+    final fun hashCode(): kotlin/Int // org.kson/SimpleMapEntry.hashCode|hashCode(){}[0]
+    final fun toString(): kotlin/String // org.kson/SimpleMapEntry.toString|toString(){}[0]
+}
+
+final class org.kson/Token { // org.kson/Token|null[0]
+    final val end // org.kson/Token.end|{}end[0]
+        final fun <get-end>(): org.kson/Position // org.kson/Token.end.<get-end>|<get-end>(){}[0]
+    final val start // org.kson/Token.start|{}start[0]
+        final fun <get-start>(): org.kson/Position // org.kson/Token.start.<get-start>|<get-start>(){}[0]
+    final val text // org.kson/Token.text|{}text[0]
+        final fun <get-text>(): kotlin/String // org.kson/Token.text.<get-text>|<get-text>(){}[0]
+    final val tokenType // org.kson/Token.tokenType|{}tokenType[0]
+        final fun <get-tokenType>(): org.kson/TokenType // org.kson/Token.tokenType.<get-tokenType>|<get-tokenType>(){}[0]
+}
+
+sealed class org.kson/IndentType { // org.kson/IndentType|null[0]
+    final class Spaces : org.kson/IndentType { // org.kson/IndentType.Spaces|null[0]
+        constructor <init>(kotlin/Int = ...) // org.kson/IndentType.Spaces.<init>|<init>(kotlin.Int){}[0]
+
+        final val size // org.kson/IndentType.Spaces.size|{}size[0]
+            final fun <get-size>(): kotlin/Int // org.kson/IndentType.Spaces.size.<get-size>|<get-size>(){}[0]
+    }
+
+    final object Tabs : org.kson/IndentType { // org.kson/IndentType.Tabs|null[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // org.kson/IndentType.Tabs.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // org.kson/IndentType.Tabs.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // org.kson/IndentType.Tabs.toString|toString(){}[0]
+    }
+}
+
+sealed class org.kson/KsonValue { // org.kson/KsonValue|null[0]
+    abstract val type // org.kson/KsonValue.type|{}type[0]
+        abstract fun <get-type>(): org.kson/KsonValueType // org.kson/KsonValue.type.<get-type>|<get-type>(){}[0]
+    final val end // org.kson/KsonValue.end|{}end[0]
+        final fun <get-end>(): org.kson/Position // org.kson/KsonValue.end.<get-end>|<get-end>(){}[0]
+    final val start // org.kson/KsonValue.start|{}start[0]
+        final fun <get-start>(): org.kson/Position // org.kson/KsonValue.start.<get-start>|<get-start>(){}[0]
+
+    final class KsonArray : org.kson/KsonValue { // org.kson/KsonValue.KsonArray|null[0]
+        final val elements // org.kson/KsonValue.KsonArray.elements|{}elements[0]
+            final fun <get-elements>(): kotlin.collections/List<org.kson/KsonValue> // org.kson/KsonValue.KsonArray.elements.<get-elements>|<get-elements>(){}[0]
+        final val type // org.kson/KsonValue.KsonArray.type|{}type[0]
+            final fun <get-type>(): org.kson/KsonValueType // org.kson/KsonValue.KsonArray.type.<get-type>|<get-type>(){}[0]
+    }
+
+    final class KsonBoolean : org.kson/KsonValue { // org.kson/KsonValue.KsonBoolean|null[0]
+        final val type // org.kson/KsonValue.KsonBoolean.type|{}type[0]
+            final fun <get-type>(): org.kson/KsonValueType // org.kson/KsonValue.KsonBoolean.type.<get-type>|<get-type>(){}[0]
+        final val value // org.kson/KsonValue.KsonBoolean.value|{}value[0]
+            final fun <get-value>(): kotlin/Boolean // org.kson/KsonValue.KsonBoolean.value.<get-value>|<get-value>(){}[0]
+    }
+
+    final class KsonEmbed : org.kson/KsonValue { // org.kson/KsonValue.KsonEmbed|null[0]
+        final val content // org.kson/KsonValue.KsonEmbed.content|{}content[0]
+            final fun <get-content>(): kotlin/String // org.kson/KsonValue.KsonEmbed.content.<get-content>|<get-content>(){}[0]
+        final val metadata // org.kson/KsonValue.KsonEmbed.metadata|{}metadata[0]
+            final fun <get-metadata>(): kotlin/String? // org.kson/KsonValue.KsonEmbed.metadata.<get-metadata>|<get-metadata>(){}[0]
+        final val tag // org.kson/KsonValue.KsonEmbed.tag|{}tag[0]
+            final fun <get-tag>(): kotlin/String? // org.kson/KsonValue.KsonEmbed.tag.<get-tag>|<get-tag>(){}[0]
+        final val type // org.kson/KsonValue.KsonEmbed.type|{}type[0]
+            final fun <get-type>(): org.kson/KsonValueType // org.kson/KsonValue.KsonEmbed.type.<get-type>|<get-type>(){}[0]
+    }
+
+    final class KsonNull : org.kson/KsonValue { // org.kson/KsonValue.KsonNull|null[0]
+        final val type // org.kson/KsonValue.KsonNull.type|{}type[0]
+            final fun <get-type>(): org.kson/KsonValueType // org.kson/KsonValue.KsonNull.type.<get-type>|<get-type>(){}[0]
+    }
+
+    final class KsonObject : org.kson/KsonValue { // org.kson/KsonValue.KsonObject|null[0]
+        final val properties // org.kson/KsonValue.KsonObject.properties|{}properties[0]
+            final fun <get-properties>(): kotlin.collections/Map<org.kson/KsonValue.KsonString, org.kson/KsonValue> // org.kson/KsonValue.KsonObject.properties.<get-properties>|<get-properties>(){}[0]
+        final val type // org.kson/KsonValue.KsonObject.type|{}type[0]
+            final fun <get-type>(): org.kson/KsonValueType // org.kson/KsonValue.KsonObject.type.<get-type>|<get-type>(){}[0]
+    }
+
+    final class KsonString : org.kson/KsonValue { // org.kson/KsonValue.KsonString|null[0]
+        final val type // org.kson/KsonValue.KsonString.type|{}type[0]
+            final fun <get-type>(): org.kson/KsonValueType // org.kson/KsonValue.KsonString.type.<get-type>|<get-type>(){}[0]
+        final val value // org.kson/KsonValue.KsonString.value|{}value[0]
+            final fun <get-value>(): kotlin/String // org.kson/KsonValue.KsonString.value.<get-value>|<get-value>(){}[0]
+    }
+
+    sealed class KsonNumber : org.kson/KsonValue { // org.kson/KsonValue.KsonNumber|null[0]
+        final class Decimal : org.kson/KsonValue.KsonNumber { // org.kson/KsonValue.KsonNumber.Decimal|null[0]
+            final val type // org.kson/KsonValue.KsonNumber.Decimal.type|{}type[0]
+                final fun <get-type>(): org.kson/KsonValueType // org.kson/KsonValue.KsonNumber.Decimal.type.<get-type>|<get-type>(){}[0]
+            final val value // org.kson/KsonValue.KsonNumber.Decimal.value|{}value[0]
+                final fun <get-value>(): kotlin/Double // org.kson/KsonValue.KsonNumber.Decimal.value.<get-value>|<get-value>(){}[0]
+        }
+
+        final class Integer : org.kson/KsonValue.KsonNumber { // org.kson/KsonValue.KsonNumber.Integer|null[0]
+            final val type // org.kson/KsonValue.KsonNumber.Integer.type|{}type[0]
+                final fun <get-type>(): org.kson/KsonValueType // org.kson/KsonValue.KsonNumber.Integer.type.<get-type>|<get-type>(){}[0]
+            final val value // org.kson/KsonValue.KsonNumber.Integer.value|{}value[0]
+                final fun <get-value>(): kotlin/Int // org.kson/KsonValue.KsonNumber.Integer.value.<get-value>|<get-value>(){}[0]
+        }
+    }
+}
+
+sealed class org.kson/Result { // org.kson/Result|null[0]
+    final class Failure : org.kson/Result { // org.kson/Result.Failure|null[0]
+        constructor <init>(kotlin.collections/List<org.kson/Message>) // org.kson/Result.Failure.<init>|<init>(kotlin.collections.List<org.kson.Message>){}[0]
+
+        final val errors // org.kson/Result.Failure.errors|{}errors[0]
+            final fun <get-errors>(): kotlin.collections/List<org.kson/Message> // org.kson/Result.Failure.errors.<get-errors>|<get-errors>(){}[0]
+    }
+
+    final class Success : org.kson/Result { // org.kson/Result.Success|null[0]
+        constructor <init>(kotlin/String) // org.kson/Result.Success.<init>|<init>(kotlin.String){}[0]
+
+        final val output // org.kson/Result.Success.output|{}output[0]
+            final fun <get-output>(): kotlin/String // org.kson/Result.Success.output.<get-output>|<get-output>(){}[0]
+    }
+}
+
+sealed class org.kson/SchemaResult { // org.kson/SchemaResult|null[0]
+    final class Failure : org.kson/SchemaResult { // org.kson/SchemaResult.Failure|null[0]
+        constructor <init>(kotlin.collections/List<org.kson/Message>) // org.kson/SchemaResult.Failure.<init>|<init>(kotlin.collections.List<org.kson.Message>){}[0]
+
+        final val errors // org.kson/SchemaResult.Failure.errors|{}errors[0]
+            final fun <get-errors>(): kotlin.collections/List<org.kson/Message> // org.kson/SchemaResult.Failure.errors.<get-errors>|<get-errors>(){}[0]
+    }
+
+    final class Success : org.kson/SchemaResult { // org.kson/SchemaResult.Success|null[0]
+        constructor <init>(org.kson/SchemaValidator) // org.kson/SchemaResult.Success.<init>|<init>(org.kson.SchemaValidator){}[0]
+
+        final val schemaValidator // org.kson/SchemaResult.Success.schemaValidator|{}schemaValidator[0]
+            final fun <get-schemaValidator>(): org.kson/SchemaValidator // org.kson/SchemaResult.Success.schemaValidator.<get-schemaValidator>|<get-schemaValidator>(){}[0]
+    }
+}
+
+sealed class org.kson/SimpleListIterator { // org.kson/SimpleListIterator|null[0]
+    final fun next(): kotlin/Any? // org.kson/SimpleListIterator.next|next(){}[0]
+}
+
+sealed class org.kson/SimpleMapIterator { // org.kson/SimpleMapIterator|null[0]
+    final fun next(): org.kson/SimpleMapEntry? // org.kson/SimpleMapIterator.next|next(){}[0]
+}
+
+sealed class org.kson/TranspileOptions { // org.kson/TranspileOptions|null[0]
+    abstract val retainEmbedTags // org.kson/TranspileOptions.retainEmbedTags|{}retainEmbedTags[0]
+        abstract fun <get-retainEmbedTags>(): kotlin/Boolean // org.kson/TranspileOptions.retainEmbedTags.<get-retainEmbedTags>|<get-retainEmbedTags>(){}[0]
+
+    final class Json : org.kson/TranspileOptions { // org.kson/TranspileOptions.Json|null[0]
+        constructor <init>(kotlin/Boolean = ...) // org.kson/TranspileOptions.Json.<init>|<init>(kotlin.Boolean){}[0]
+
+        final val retainEmbedTags // org.kson/TranspileOptions.Json.retainEmbedTags|{}retainEmbedTags[0]
+            final fun <get-retainEmbedTags>(): kotlin/Boolean // org.kson/TranspileOptions.Json.retainEmbedTags.<get-retainEmbedTags>|<get-retainEmbedTags>(){}[0]
+    }
+
+    final class Yaml : org.kson/TranspileOptions { // org.kson/TranspileOptions.Yaml|null[0]
+        constructor <init>(kotlin/Boolean = ...) // org.kson/TranspileOptions.Yaml.<init>|<init>(kotlin.Boolean){}[0]
+
+        final val retainEmbedTags // org.kson/TranspileOptions.Yaml.retainEmbedTags|{}retainEmbedTags[0]
+            final fun <get-retainEmbedTags>(): kotlin/Boolean // org.kson/TranspileOptions.Yaml.retainEmbedTags.<get-retainEmbedTags>|<get-retainEmbedTags>(){}[0]
+    }
+}
+
+final object org.kson/AnyHelper { // org.kson/AnyHelper|null[0]
+    final fun equals(kotlin/Any, kotlin/Any): kotlin/Boolean // org.kson/AnyHelper.equals|equals(kotlin.Any;kotlin.Any){}[0]
+    final fun hashCode(kotlin/Any): kotlin/Int // org.kson/AnyHelper.hashCode|hashCode(kotlin.Any){}[0]
+    final fun toString(kotlin/Any): kotlin/String // org.kson/AnyHelper.toString|toString(kotlin.Any){}[0]
+}
+
+final object org.kson/EnumHelper { // org.kson/EnumHelper|null[0]
+    final fun name(kotlin/Enum<*>): kotlin/String // org.kson/EnumHelper.name|name(kotlin.Enum<*>){}[0]
+    final fun ordinal(kotlin/Enum<*>): kotlin/Int // org.kson/EnumHelper.ordinal|ordinal(kotlin.Enum<*>){}[0]
+}
+
+final object org.kson/Kson { // org.kson/Kson|null[0]
+    final fun analyze(kotlin/String): org.kson/Analysis // org.kson/Kson.analyze|analyze(kotlin.String){}[0]
+    final fun format(kotlin/String, org.kson/FormatOptions = ...): kotlin/String // org.kson/Kson.format|format(kotlin.String;org.kson.FormatOptions){}[0]
+    final fun parseSchema(kotlin/String): org.kson/SchemaResult // org.kson/Kson.parseSchema|parseSchema(kotlin.String){}[0]
+    final fun toJson(kotlin/String, org.kson/TranspileOptions.Json = ...): org.kson/Result // org.kson/Kson.toJson|toJson(kotlin.String;org.kson.TranspileOptions.Json){}[0]
+    final fun toYaml(kotlin/String, org.kson/TranspileOptions.Yaml = ...): org.kson/Result // org.kson/Kson.toYaml|toYaml(kotlin.String;org.kson.TranspileOptions.Yaml){}[0]
+}

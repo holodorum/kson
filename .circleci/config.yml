@@ -25,6 +25,11 @@ commands:
           command: "cd buildSrc\n./gradlew --no-daemon check\n"
 
       - run:
+          name: "Check for public API changes"
+          command: "./gradlew checkLegacyAbi || (echo \"⚠️  WARNING: Public API has changed! Please run ./gradlew dumpLegacyAbi and commit the updated .abi files if this is intentional.\" && exit 1)"
+          when: always
+
+      - run:
           name: "Verify Kson project"
           command: "./gradlew --no-daemon check"
 
