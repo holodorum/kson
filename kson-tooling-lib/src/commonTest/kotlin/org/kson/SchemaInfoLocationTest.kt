@@ -1,20 +1,33 @@
 package org.kson
 
-import org.kson.value.KsonValueNavigation
 import kotlin.test.*
 
 /**
  * Tests for [KsonTooling] hover information functionality
  */
-class KsonToolingTest {
+class SchemaInfoLocationTest {
+
+    /**
+     * Helper to get completions at the <caret> position in the document
+     */
+    private fun getInfoAtCaret(schema: String, documentWithCaret: String): String? {
+        val caretMarker = "<caret>"
+        val caretIndex = documentWithCaret.indexOf(caretMarker)
+        require(caretIndex >= 0) { "Document must contain $caretMarker marker" }
+
+        // Calculate line and column
+        val beforeCaret = documentWithCaret.take(caretIndex)
+        val line = beforeCaret.count { it == '\n' }
+        val column = caretIndex - (beforeCaret.lastIndexOf('\n') + 1)
+
+        // Remove caret marker from document
+        val document = documentWithCaret.replace(caretMarker, "")
+
+        return KsonTooling.getSchemaInfoAtLocation(document, schema, line, column)
+    }
 
     @Test
     fun testGetSchemaInfoAtLocation_simpleStringProperty() {
-        val document = """
-            name: John
-            age: 30
-        """.trimIndent()
-
         val schema = """
             {
               "type": "object",
@@ -31,8 +44,10 @@ class KsonToolingTest {
             }
         """.trimIndent()
 
-        // Hover over "John" (line 0, column 6)
-        val hoverInfo = KsonTooling.getSchemaInfoAtLocation(document, schema, 0, 6)
+        val hoverInfo = getInfoAtCaret(schema, """
+            name: <caret>John
+            age: 30
+        """.trimIndent())
 
         assertNotNull(hoverInfo)
         assertTrue(hoverInfo.contains("The person's name"))
@@ -41,11 +56,6 @@ class KsonToolingTest {
 
     @Test
     fun testGetSchemaInfoAtLocation_numberProperty() {
-        val document = """
-            name: John
-            age: 30
-        """.trimIndent()
-
         val schema = """
             {
               "type": "object",
@@ -63,8 +73,10 @@ class KsonToolingTest {
             }
         """.trimIndent()
 
-        // Hover over "30" (line 1, column 5)
-        val hoverInfo = KsonTooling.getSchemaInfoAtLocation(document, schema, 1, 5)
+        val hoverInfo = getInfoAtCaret(schema, """
+            name: John
+            age: <caret>30
+        """.trimIndent())
 
         assertNotNull(hoverInfo)
         assertTrue(hoverInfo.contains("The person's age"))
@@ -75,10 +87,6 @@ class KsonToolingTest {
 
     @Test
     fun testGetSchemaInfoAtLocation_withTitle() {
-        val document = """
-            username: johndoe
-        """.trimIndent()
-
         val schema = """
             {
               "type": "object",
@@ -92,8 +100,9 @@ class KsonToolingTest {
             }
         """.trimIndent()
 
-        // Hover over "johndoe" (line 0, column 10)
-        val hoverInfo = KsonTooling.getSchemaInfoAtLocation(document, schema, 0, 10)
+        val hoverInfo = getInfoAtCaret(schema, """
+            username: <caret>johndoe
+        """.trimIndent())
 
         assertNotNull(hoverInfo)
         assertTrue(hoverInfo.contains("**Username**"))
@@ -102,10 +111,6 @@ class KsonToolingTest {
 
     @Test
     fun testGetSchemaInfoAtLocation_withEnum() {
-        val document = """
-            status: active
-        """.trimIndent()
-
         val schema = """
             {
               "type": "object",
@@ -118,8 +123,9 @@ class KsonToolingTest {
             }
         """.trimIndent()
 
-        // Hover over "active" (line 0, column 8)
-        val hoverInfo = KsonTooling.getSchemaInfoAtLocation(document, schema, 0, 8)
+        val hoverInfo = getInfoAtCaret(schema, """
+            status: <caret>active
+        """.trimIndent())
 
         assertNotNull(hoverInfo)
         assertTrue(hoverInfo.contains("*Allowed values:*"))
@@ -130,10 +136,6 @@ class KsonToolingTest {
 
     @Test
     fun testGetSchemaInfoAtLocation_withPattern() {
-        val document = """
-            email: 'user@example.com'
-        """.trimIndent()
-
         val schema = """
             {
               "type": "object",
@@ -146,20 +148,9 @@ class KsonToolingTest {
             }
         """.trimIndent()
 
-        // Debug: Let's parse and check the document structure
-        val parsedDoc = KsonCore.parseToAst(document).ksonValue
-        println("Parsed document: $parsedDoc")
-
-        // Try hovering at the beginning of the email value
-        val hoverInfo = KsonTooling.getSchemaInfoAtLocation(document, schema, 0, 7)
-
-        if (hoverInfo == null) {
-            println("Hover info is null at position (0, 7)")
-            // Try to find the actual value node
-            val valueNode = KsonValueNavigation.navigateByTokens(parsedDoc!!, listOf("email"))
-            println("Value node: $valueNode")
-            println("Value node location: ${valueNode?.location}")
-        }
+        val hoverInfo = getInfoAtCaret(schema, """
+            email: <caret>'user@example.com'
+        """.trimIndent())
 
         assertNotNull(hoverInfo, "Expected hover info but got null")
         assertTrue(hoverInfo.contains("*Pattern:*"))
@@ -167,12 +158,6 @@ class KsonToolingTest {
 
     @Test
     fun testGetSchemaInfoAtLocation_nestedObject() {
-        val document = """
-            person:
-              name: Alice
-              age: 25
-        """.trimIndent()
-
         val schema = """
             {
               "type": "object",
@@ -194,8 +179,11 @@ class KsonToolingTest {
             }
         """.trimIndent()
 
-        // Hover over "Alice" (line 1, column 8)
-        val hoverInfo = KsonTooling.getSchemaInfoAtLocation(document, schema, 1, 8)
+        val hoverInfo = getInfoAtCaret(schema, """
+            person:
+              name: <caret>Alice
+              age: 25
+        """.trimIndent())
 
         assertNotNull(hoverInfo)
         assertTrue(hoverInfo.contains("Person's name"))
@@ -204,13 +192,6 @@ class KsonToolingTest {
 
     @Test
     fun testGetSchemaInfoAtLocation_arrayItems() {
-        val document = """
-            tags:
-              - kotlin
-              - multiplatform
-              - json
-        """.trimIndent()
-
         val schema = """
             {
               "type": "object",
@@ -228,8 +209,12 @@ class KsonToolingTest {
             }
         """.trimIndent()
 
-        // Hover over "kotlin" (line 1, column 4)
-        val hoverInfo = KsonTooling.getSchemaInfoAtLocation(document, schema, 1, 4)
+        val hoverInfo = getInfoAtCaret(schema, """
+            tags:
+              - <caret>kotlin
+              - multiplatform
+              - json
+        """.trimIndent())
 
         assertNotNull(hoverInfo)
         assertTrue(hoverInfo.contains("A tag value"))
@@ -240,10 +225,6 @@ class KsonToolingTest {
 
     @Test
     fun testGetSchemaInfoAtLocation_withDefault() {
-        val document = """
-            timeout: 5000
-        """.trimIndent()
-
         val schema = """
             {
               "type": "object",
@@ -257,8 +238,9 @@ class KsonToolingTest {
             }
         """.trimIndent()
 
-        // Hover over "5000" (line 0, column 9)
-        val hoverInfo = KsonTooling.getSchemaInfoAtLocation(document, schema, 0, 9)
+        val hoverInfo = getInfoAtCaret(schema, """
+            timeout: <caret>5000
+        """.trimIndent())
 
         assertNotNull(hoverInfo)
         assertTrue(hoverInfo.contains("Request timeout in milliseconds"))
@@ -267,10 +249,6 @@ class KsonToolingTest {
 
     @Test
     fun testGetSchemaInfoAtLocation_stringLengthConstraints() {
-        val document = """
-            password: secret123
-        """.trimIndent()
-
         val schema = """
             {
               "type": "object",
@@ -284,8 +262,9 @@ class KsonToolingTest {
             }
         """.trimIndent()
 
-        // Hover over "secret123" (line 0, column 10)
-        val hoverInfo = KsonTooling.getSchemaInfoAtLocation(document, schema, 0, 10)
+        val hoverInfo = getInfoAtCaret(schema, """
+            password: <caret>secret123
+        """.trimIndent())
 
         assertNotNull(hoverInfo)
         assertTrue(hoverInfo.contains("*Min length:* 8"))
@@ -294,12 +273,6 @@ class KsonToolingTest {
 
     @Test
     fun testGetSchemaInfoAtLocation_arrayConstraints() {
-        val document = """
-            items:
-              - first
-              - second
-        """.trimIndent()
-
         val schema = """
             {
               "type": "object",
@@ -316,19 +289,18 @@ class KsonToolingTest {
             }
         """.trimIndent()
 
-        // Hover over "first" (line 1, column 4)
-        val hoverInfo = KsonTooling.getSchemaInfoAtLocation(document, schema, 1, 4)
+        val hoverInfo = getInfoAtCaret(schema, """
+            items:
+              - <caret>first
+              - second
+        """.trimIndent())
 
         assertNotNull(hoverInfo)
         assertTrue(hoverInfo.contains("*Type:* `string`"))
     }
-    
+
     @Test
     fun testGetSchemaInfoAtLocation_noSchemaForProperty() {
-        val document = """
-            undefinedProp: value
-        """.trimIndent()
-
         val schema = """
             {
               "type": "object",
@@ -336,8 +308,9 @@ class KsonToolingTest {
             }
         """.trimIndent()
 
-        // Hover over "value" (line 0, column 15)
-        val hoverInfo = KsonTooling.getSchemaInfoAtLocation(document, schema, 0, 15)
+        val hoverInfo = getInfoAtCaret(schema, """
+            undefinedProp: <caret>value
+        """.trimIndent())
 
         // Should return null when no schema matches
         assertNull(hoverInfo)
@@ -345,10 +318,6 @@ class KsonToolingTest {
 
     @Test
     fun testGetSchemaInfoAtLocation_additionalProperties() {
-        val document = """
-            customField: customValue
-        """.trimIndent()
-
         val schema = """
             {
               "type": "object",
@@ -359,8 +328,9 @@ class KsonToolingTest {
             }
         """.trimIndent()
 
-        // Hover over "customValue" (line 0, column 13)
-        val hoverInfo = KsonTooling.getSchemaInfoAtLocation(document, schema, 0, 13)
+        val hoverInfo = getInfoAtCaret(schema, """
+            customField: <caret>customValue
+        """.trimIndent())
 
         assertNotNull(hoverInfo)
         assertTrue(hoverInfo.contains("Any additional string field"))
@@ -369,10 +339,6 @@ class KsonToolingTest {
 
     @Test
     fun testGetSchemaInfoAtLocation_unionType() {
-        val document = """
-            value: 123
-        """.trimIndent()
-
         val schema = """
             {
               "type": "object",
@@ -385,8 +351,9 @@ class KsonToolingTest {
             }
         """.trimIndent()
 
-        // Hover over "123" (line 0, column 7)
-        val hoverInfo = KsonTooling.getSchemaInfoAtLocation(document, schema, 0, 7)
+        val hoverInfo = getInfoAtCaret(schema, """
+            value: <caret>123
+        """.trimIndent())
 
         assertNotNull(hoverInfo)
         assertTrue(hoverInfo.contains("Can be either string or number"))
@@ -395,16 +362,6 @@ class KsonToolingTest {
 
     @Test
     fun testGetSchemaInfoAtLocation_deeplyNestedArray() {
-        val document = """
-            matrix:
-              -
-                - 1
-                - 2
-              -
-                - 3
-                - 4
-        """.trimIndent()
-
         val schema = """
             {
               "type": "object",
@@ -423,8 +380,15 @@ class KsonToolingTest {
             }
         """.trimIndent()
 
-        // Hover over "1" in nested array (line 2, column 7)
-        val hoverInfo = KsonTooling.getSchemaInfoAtLocation(document, schema, 2, 7)
+        val hoverInfo = getInfoAtCaret(schema, """
+            matrix:
+              -
+                - <caret>1
+                - 2
+              -
+                - 3
+                - 4
+        """.trimIndent())
 
         assertNotNull(hoverInfo)
         assertTrue(hoverInfo.contains("Matrix cell value"))
@@ -433,10 +397,6 @@ class KsonToolingTest {
 
     @Test
     fun testGetSchemaInfoAtLocation_invalidDocument() {
-        val invalidDocument = """
-            {invalid kson
-        """.trimIndent()
-
         val schema = """
             {
               "type": "object"
@@ -444,18 +404,15 @@ class KsonToolingTest {
         """.trimIndent()
 
         // Should return null for invalid document
-        val hoverInfo = KsonTooling.getSchemaInfoAtLocation(invalidDocument, schema, 0, 5)
+        val hoverInfo = getInfoAtCaret(schema, """
+            {inva<caret>lid kson
+        """.trimIndent())
 
         assertNull(hoverInfo)
     }
 
     @Test
     fun testGetSchemaInfoAtLocation_patternProperties() {
-        val document = """
-            field_1: value1
-            field_2: value2
-        """.trimIndent()
-
         val schema = """
             {
               "type": "object",
@@ -468,8 +425,10 @@ class KsonToolingTest {
             }
         """.trimIndent()
 
-        // Hover over "value1" (line 0, column 9)
-        val hoverInfo = KsonTooling.getSchemaInfoAtLocation(document, schema, 0, 9)
+        val hoverInfo = getInfoAtCaret(schema, """
+            field_1: <caret>value1
+            field_2: value2
+        """.trimIndent())
 
         assertNotNull(hoverInfo)
         assertTrue(hoverInfo.contains("A field matching the pattern"))
@@ -504,14 +463,11 @@ class KsonToolingTest {
             }
         """.trimIndent()
 
-        val document = """
-            items:
-              - name: foo
-        """.trimIndent()
-
-        // Hover over "foo" (line 1, column 11)
         // This should resolve the $ref to #/$defs/Item and show the name field schema
-        val hoverInfo = KsonTooling.getSchemaInfoAtLocation(document, schema, 1, 11)
+        val hoverInfo = getInfoAtCaret(schema, """
+            items:
+              - name: <caret>foo
+        """.trimIndent())
 
         assertNotNull(hoverInfo, "Expected hover info for name field. Got null")
         assertTrue(hoverInfo.contains("Item name from ref"), "Expected description from resolved ref. Got: $hoverInfo")

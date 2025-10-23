@@ -1,30 +1,18 @@
 package org.kson
 
 import org.kson.navigation.extractSchemaInfo
-import org.kson.value.KsonValue
 import kotlin.test.Test
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
-class SchemaHoverInfoTest {
-
-    /**
-     * Helper to parse KSON text to a KsonValue
-     */
-    private fun parseKson(source: String): KsonValue {
-        val result = KsonCore.parseToAst(source)
-        return result.ksonValue ?: run {
-            val errorMessages = result.messages.joinToString("\n") { "${it.location}: ${it.message}" }
-            error("Failed to parse KSON:\n$errorMessages\nSource:\n$source")
-        }
-    }
+class SchemaInfoDisplayTest {
 
     /**
      * Helper to extract hover info from a schema source
      */
     private fun getHoverInfo(schemaSource: String): String? {
-        val schema = parseKson(schemaSource)
+        val schema = KsonCore.parseToAst(schemaSource).ksonValue ?: error("Failed to parse schema:\n$schemaSource")
         return schema.extractSchemaInfo()
     }
 
@@ -242,8 +230,7 @@ class SchemaHoverInfoTest {
 
     @Test
     fun testExtractHoverFromNonObjectSchema() {
-        val schema = parseKson("true")
-        val hoverInfo = schema.extractSchemaInfo()
+        val hoverInfo = getHoverInfo("true")
         // Boolean schema (true/false) doesn't have properties to extract
         assertNull(hoverInfo)
     }
