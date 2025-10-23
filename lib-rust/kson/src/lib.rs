@@ -881,24 +881,198 @@ pub enum KsonValue {
     KsonObject(KsonValueObject),
     KsonArray(KsonValueArray),
     KsonString(KsonValueString),
-    KsonInteger(KsonValueInteger),
-    KsonDecimal(KsonValueDecimal),
+    KsonNumber(KsonNumber),
     KsonBoolean(KsonValueBoolean),
     KsonNull(KsonValueNull),
     KsonEmbed(KsonValueEmbed),
 }
 
+/// A Kson number value
+#[derive(Clone)]
+pub enum KsonNumber {
+    Integer(KsonValueInteger),
+    Decimal(KsonValueDecimal),
+}
+
 impl_kotlin_object_for_enum!(
-    KsonValue,
-    KsonValue::KsonObject where KsonValueObject = KSON_SYMBOLS.kotlin.root.org.kson.KsonValue.KsonObject,
-    KsonValue::KsonArray where KsonValueArray = KSON_SYMBOLS.kotlin.root.org.kson.KsonValue.KsonArray,
-    KsonValue::KsonString where KsonValueString = KSON_SYMBOLS.kotlin.root.org.kson.KsonValue.KsonString,
-    KsonValue::KsonInteger where KsonValueInteger = KSON_SYMBOLS.kotlin.root.org.kson.KsonValue.KsonNumber.Integer,
-    KsonValue::KsonDecimal where KsonValueDecimal = KSON_SYMBOLS.kotlin.root.org.kson.KsonValue.KsonNumber.Decimal,
-    KsonValue::KsonBoolean where KsonValueBoolean = KSON_SYMBOLS.kotlin.root.org.kson.KsonValue.KsonBoolean,
-    KsonValue::KsonNull where KsonValueNull = KSON_SYMBOLS.kotlin.root.org.kson.KsonValue.KsonNull,
-    KsonValue::KsonEmbed where KsonValueEmbed = KSON_SYMBOLS.kotlin.root.org.kson.KsonValue.KsonEmbed,
+    KsonNumber,
+    KsonNumber::Integer where KsonValueInteger = KSON_SYMBOLS.kotlin.root.org.kson.KsonValue.KsonNumber.Integer,
+    KsonNumber::Decimal where KsonValueDecimal = KSON_SYMBOLS.kotlin.root.org.kson.KsonValue.KsonNumber.Decimal,
 );
+
+// Custom FromKotlinObject for KsonValue that handles nested KsonNumber
+impl FromKotlinObject for KsonValue {
+    fn from_kotlin_object(ptr: kson_sys::kson_KNativePtr) -> Self {
+        #[allow(clippy::type_complexity)]
+        static CONSTRUCTOR_MAP: std::sync::LazyLock<
+            Vec<(util::KotlinType, fn(kson_sys::kson_KNativePtr) -> KsonValue)>,
+        > = std::sync::LazyLock::new(|| {
+            vec![
+                (
+                    util::KotlinType {
+                        inner: unsafe {
+                            KSON_SYMBOLS
+                                .kotlin
+                                .root
+                                .org
+                                .kson
+                                .KsonValue
+                                .KsonObject
+                                ._type
+                                .unwrap()()
+                        },
+                    },
+                    |p| KsonValue::KsonObject(KsonValueObject::from_kotlin_object(p)),
+                ),
+                (
+                    util::KotlinType {
+                        inner: unsafe {
+                            KSON_SYMBOLS
+                                .kotlin
+                                .root
+                                .org
+                                .kson
+                                .KsonValue
+                                .KsonArray
+                                ._type
+                                .unwrap()()
+                        },
+                    },
+                    |p| KsonValue::KsonArray(KsonValueArray::from_kotlin_object(p)),
+                ),
+                (
+                    util::KotlinType {
+                        inner: unsafe {
+                            KSON_SYMBOLS
+                                .kotlin
+                                .root
+                                .org
+                                .kson
+                                .KsonValue
+                                .KsonString
+                                ._type
+                                .unwrap()()
+                        },
+                    },
+                    |p| KsonValue::KsonString(KsonValueString::from_kotlin_object(p)),
+                ),
+                (
+                    util::KotlinType {
+                        inner: unsafe {
+                            KSON_SYMBOLS
+                                .kotlin
+                                .root
+                                .org
+                                .kson
+                                .KsonValue
+                                .KsonNumber
+                                .Integer
+                                ._type
+                                .unwrap()()
+                        },
+                    },
+                    |p| {
+                        KsonValue::KsonNumber(KsonNumber::Integer(
+                            KsonValueInteger::from_kotlin_object(p),
+                        ))
+                    },
+                ),
+                (
+                    util::KotlinType {
+                        inner: unsafe {
+                            KSON_SYMBOLS
+                                .kotlin
+                                .root
+                                .org
+                                .kson
+                                .KsonValue
+                                .KsonNumber
+                                .Decimal
+                                ._type
+                                .unwrap()()
+                        },
+                    },
+                    |p| {
+                        KsonValue::KsonNumber(KsonNumber::Decimal(
+                            KsonValueDecimal::from_kotlin_object(p),
+                        ))
+                    },
+                ),
+                (
+                    util::KotlinType {
+                        inner: unsafe {
+                            KSON_SYMBOLS
+                                .kotlin
+                                .root
+                                .org
+                                .kson
+                                .KsonValue
+                                .KsonBoolean
+                                ._type
+                                .unwrap()()
+                        },
+                    },
+                    |p| KsonValue::KsonBoolean(KsonValueBoolean::from_kotlin_object(p)),
+                ),
+                (
+                    util::KotlinType {
+                        inner: unsafe {
+                            KSON_SYMBOLS
+                                .kotlin
+                                .root
+                                .org
+                                .kson
+                                .KsonValue
+                                .KsonNull
+                                ._type
+                                .unwrap()()
+                        },
+                    },
+                    |p| KsonValue::KsonNull(KsonValueNull::from_kotlin_object(p)),
+                ),
+                (
+                    util::KotlinType {
+                        inner: unsafe {
+                            KSON_SYMBOLS
+                                .kotlin
+                                .root
+                                .org
+                                .kson
+                                .KsonValue
+                                .KsonEmbed
+                                ._type
+                                .unwrap()()
+                        },
+                    },
+                    |p| KsonValue::KsonEmbed(KsonValueEmbed::from_kotlin_object(p)),
+                ),
+            ]
+        });
+
+        let is_instance = KSON_SYMBOLS.IsInstance.unwrap();
+        for (type_ptr, constructor_fn) in CONSTRUCTOR_MAP.iter() {
+            if unsafe { is_instance(ptr, type_ptr.inner) } {
+                return constructor_fn(ptr);
+            }
+        }
+
+        unreachable!()
+    }
+}
+
+impl ToKotlinObject for KsonValue {
+    fn to_kotlin_object(&self) -> kson_sys::kson_KNativePtr {
+        match self {
+            KsonValue::KsonObject(inner) => inner.to_kotlin_object(),
+            KsonValue::KsonArray(inner) => inner.to_kotlin_object(),
+            KsonValue::KsonString(inner) => inner.to_kotlin_object(),
+            KsonValue::KsonNumber(inner) => inner.to_kotlin_object(),
+            KsonValue::KsonBoolean(inner) => inner.to_kotlin_object(),
+            KsonValue::KsonNull(inner) => inner.to_kotlin_object(),
+            KsonValue::KsonEmbed(inner) => inner.to_kotlin_object(),
+        }
+    }
+}
 
 impl std::fmt::Debug for KsonValue {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

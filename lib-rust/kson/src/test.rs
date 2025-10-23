@@ -308,7 +308,7 @@ embed:%tag
     assert_eq!(array.end().column(), 7);
 
     // Check list elements
-    let KsonValue::KsonInteger(integer) = &elements[0] else {
+    let KsonValue::KsonNumber(KsonNumber::Integer(integer)) = &elements[0] else {
         panic!("expected integer");
     };
     assert_eq!(integer.value(), 1);
@@ -317,7 +317,7 @@ embed:%tag
     assert_eq!(integer.end().line(), 2);
     assert_eq!(integer.end().column(), 5);
 
-    let KsonValue::KsonDecimal(decimal1) = &elements[1] else {
+    let KsonValue::KsonNumber(KsonNumber::Decimal(decimal1)) = &elements[1] else {
         panic!("expected decimal");
     };
     assert_eq!(decimal1.value(), 2.1);
@@ -326,7 +326,7 @@ embed:%tag
     assert_eq!(decimal1.end().line(), 3);
     assert_eq!(decimal1.end().column(), 7);
 
-    let KsonValue::KsonDecimal(decimal2) = &elements[2] else {
+    let KsonValue::KsonNumber(KsonNumber::Decimal(decimal2)) = &elements[2] else {
         panic!("expected decimal");
     };
     assert_eq!(decimal2.value(), 3e5);
