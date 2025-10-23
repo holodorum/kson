@@ -1,5 +1,6 @@
 package org.kson.value
 
+import org.kson.parser.Coordinates
 import org.kson.parser.Location
 import kotlin.collections.iterator
 
@@ -259,7 +260,7 @@ object KsonValueNavigation {
      * Useful for IDE features like hover, go-to-definition, etc.
      *
      * @param root The root node to start searching from
-     * @param targetLocation The location to find a node at
+     * @param targetPosition The location to find a node at
      * @return The most specific node at that location, or null if not found
      *
      * Example:
@@ -271,18 +272,18 @@ object KsonValueNavigation {
      *     startOffset = 0,
      *     endOffset = 0
      * )
-     * val node = findValueAtLocation(root, location)
+     * val node = findValueAtPosition(root, location)
      * ```
      */
-    fun findValueAtLocation(
+    fun findValueAtPosition(
         root: KsonValue,
-        targetLocation: Location
+        targetPosition: Coordinates
     ): KsonValue? {
         var mostSpecific: KsonValue? = null
         val smallestSize = Int.MAX_VALUE
 
         walkTree(root) { node, _, _ ->
-            if (Location.locationContainsLocation(node.location, targetLocation)) {
+            if (Location.locationContainsPosition(node.location, targetPosition)) {
                 val size = calculateLocationSize(node.location)
                 if (size < smallestSize) {
                     mostSpecific = node

@@ -1,5 +1,6 @@
 package org.kson
 
+import org.kson.parser.Coordinates
 import org.kson.parser.Location
 import org.kson.value.KsonBoolean
 import org.kson.value.KsonList
@@ -431,10 +432,10 @@ class KsonNavigationUtilTest {
 
         // Get the actual location of the 'name' property value
         val nameValue = KsonValueNavigation.navigateByTokens(doc, listOf("name"))!!
-        val targetLocation = nameValue.location
+        val targetLocation = nameValue.location.start
 
         // Find the node at that location
-        val found = KsonValueNavigation.findValueAtLocation(doc, targetLocation)
+        val found = KsonValueNavigation.findValueAtPosition(doc, targetLocation)
 
         assertNotNull(found)
         assertSame(nameValue, found)
@@ -447,7 +448,7 @@ class KsonNavigationUtilTest {
         // Create a location that's way outside the document
         val outsideLocation = Location.create(100, 100, 100, 105, 10000, 10005)
 
-        val found = KsonValueNavigation.findValueAtLocation(doc, outsideLocation)
+        val found = KsonValueNavigation.findValueAtPosition(doc, outsideLocation.start)
 
         assertNull(found)
     }
@@ -468,7 +469,7 @@ class KsonNavigationUtilTest {
         val cityLocation = cityValue.location
 
         // Find the node - should return the string, not the parent object or address object
-        val found = KsonValueNavigation.findValueAtLocation(doc, cityLocation)
+        val found = KsonValueNavigation.findValueAtPosition(doc, cityLocation.start)
 
         assertNotNull(found)
         assertSame(cityValue, found)
@@ -492,7 +493,7 @@ class KsonNavigationUtilTest {
         val numberLocation = numberValue.location
 
         // Should return the number, not any of the parent arrays
-        val found = KsonValueNavigation.findValueAtLocation(doc, numberLocation)
+        val found = KsonValueNavigation.findValueAtPosition(doc, numberLocation.start)
 
         assertNotNull(found)
         assertSame(numberValue, found)
@@ -513,7 +514,7 @@ class KsonNavigationUtilTest {
         val firstUser = KsonValueNavigation.navigateByTokens(doc, listOf("users", "0"))!!
 
         // Use the exact location of the first user object
-        val found = KsonValueNavigation.findValueAtLocation(doc, firstUser.location)
+        val found = KsonValueNavigation.findValueAtPosition(doc, firstUser.location.start)
 
         assertNotNull(found)
         assertSame(firstUser, found)
@@ -535,7 +536,7 @@ class KsonNavigationUtilTest {
             stringValue.location.startOffset
         )
 
-        val found = KsonValueNavigation.findValueAtLocation(doc, startLocation)
+        val found = KsonValueNavigation.findValueAtPosition(doc, startLocation.start)
 
         assertNotNull(found)
         // Should find the string or a containing node
@@ -557,7 +558,7 @@ class KsonNavigationUtilTest {
             stringValue.location.endOffset
         )
 
-        val found = KsonValueNavigation.findValueAtLocation(doc, endLocation)
+        val found = KsonValueNavigation.findValueAtPosition(doc, endLocation.start)
 
         // Depending on boundary handling, might find the node or parent
         // At minimum, should not crash and should return something or null
@@ -569,7 +570,7 @@ class KsonNavigationUtilTest {
         val doc = KsonCore.parseToAst("{}").ksonValue!!
 
         // Use the object's own location
-        val found = KsonValueNavigation.findValueAtLocation(doc, doc.location)
+        val found = KsonValueNavigation.findValueAtPosition(doc, doc.location.start)
 
         assertNotNull(found)
         assertSame(doc, found)
@@ -577,11 +578,28 @@ class KsonNavigationUtilTest {
     }
 
     @Test
+    fun `findValueAtLocation on newline`() {
+        val doc = KsonCore.parseToAst("""
+            outer: 
+              KEY_OF_INTEREST: 
+              
+                another:key
+        """.trimIndent()).ksonValue!!
+
+        // Use the object's own location
+        val found = KsonValueNavigation.findValueAtPosition(doc, Coordinates(2, 0))
+
+        assertNotNull(found)
+        assertTrue(found is KsonObject)
+        assertTrue(found.propertyLookup.containsKey("KEY_OF_INTEREST"), "should contain key")
+    }
+
+    @Test
     fun `findValueAtLocation handles empty array`() {
         val doc = KsonCore.parseToAst("<>").ksonValue!!
 
         // Use the array's own location
-        val found = KsonValueNavigation.findValueAtLocation(doc, doc.location)
+        val found = KsonValueNavigation.findValueAtPosition(doc, doc.location.start)
 
         assertNotNull(found)
         assertSame(doc, found)
@@ -592,7 +610,7 @@ class KsonNavigationUtilTest {
     fun `findValueAtLocation handles single primitive`() {
         val doc = KsonString("test", Location.create(0, 0, 0, 4, 0, 4))
 
-        val found = KsonValueNavigation.findValueAtLocation(doc, doc.location)
+        val found = KsonValueNavigation.findValueAtPosition(doc, doc.location.start)
 
         assertNotNull(found)
         assertSame(doc, found)
@@ -610,7 +628,7 @@ class KsonNavigationUtilTest {
         val innerValue = KsonValueNavigation.navigateByTokens(doc, listOf("outer", "inner"))!!
 
         // The inner value's location should return the inner value, not the outer object
-        val found = KsonValueNavigation.findValueAtLocation(doc, innerValue.location)
+        val found = KsonValueNavigation.findValueAtPosition(doc, innerValue.location.start)
 
         assertNotNull(found)
         assertSame(innerValue, found)
@@ -638,7 +656,7 @@ class KsonNavigationUtilTest {
         // Find a deeply nested value
         val deepValue = KsonValueNavigation.navigateByTokens(doc, listOf("data", "items", "1", "values", "1"))!!
 
-        val found = KsonValueNavigation.findValueAtLocation(doc, deepValue.location)
+        val found = KsonValueNavigation.findValueAtPosition(doc, deepValue.location.start)
 
         assertNotNull(found)
         assertSame(deepValue, found)
@@ -655,7 +673,7 @@ class KsonNavigationUtilTest {
         val beforeLocation = Location.create(0, 0, 0, 0, 0, 0)
 
         // This might find the root or might return null depending on how locations are assigned
-        val found = KsonValueNavigation.findValueAtLocation(doc, beforeLocation)
+        val found = KsonValueNavigation.findValueAtPosition(doc, beforeLocation.start)
 
         // The result is acceptable whether it finds the root or returns null
         assertTrue(found == null || found === doc)
@@ -675,7 +693,7 @@ class KsonNavigationUtilTest {
 
         // When finding a node at the second element's location,
         // it should return the element itself, not the containing list or root object
-        val found = KsonValueNavigation.findValueAtLocation(doc, secondElement.location)
+        val found = KsonValueNavigation.findValueAtPosition(doc, secondElement.location.start)
 
         assertNotNull(found)
         assertSame(secondElement, found)

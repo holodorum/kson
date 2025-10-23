@@ -918,41 +918,19 @@ class LexerTest {
     }
 
     @Test
-    fun testLocationContainsLocation_targetCompletelyInside() {
-        val container = Location.create(
-            firstLine = 0, firstColumn = 0,
-            lastLine = 10, lastColumn = 20,
-            startOffset = 0, endOffset = 100
-        )
-        val target = Location.create(
-            firstLine = 5, firstColumn = 10,
-            lastLine = 5, lastColumn = 15,
-            startOffset = 50, endOffset = 55
-        )
-
-        assertEquals(
-            true,
-            Location.locationContainsLocation(container, target),
-            "Target starting inside container should return true"
-        )
-    }
-
-    @Test
-    fun testLocationContainsLocation_targetStartsAtContainerStart() {
+    fun testlocationContainsPosition_targetStartsAtContainerStart() {
         val container = Location.create(
             firstLine = 2, firstColumn = 5,
             lastLine = 10, lastColumn = 15,
             startOffset = 20, endOffset = 100
         )
-        val target = Location.create(
-            firstLine = 2, firstColumn = 5,
-            lastLine = 2, lastColumn = 10,
-            startOffset = 20, endOffset = 25
+        val target = Coordinates(
+            line = 2, column = 5,
         )
 
         assertEquals(
             true,
-            Location.locationContainsLocation(container, target),
+            Location.locationContainsPosition(container, target),
             "Target starting exactly at container start should return true"
         )
     }
@@ -964,32 +942,14 @@ class LexerTest {
             lastLine = 10, lastColumn = 15,
             startOffset = 20, endOffset = 100
         )
-        val target = Location.create(
-            firstLine = 10, firstColumn = 15,
-            lastLine = 10, lastColumn = 20,
-            startOffset = 100, endOffset = 105
+        val target = Coordinates(
+            line = 10, column = 15,
         )
 
         assertEquals(
             true,
-            Location.locationContainsLocation(container, target),
+            Location.locationContainsPosition(container, target),
             "Target starting exactly at container end should return true"
-        )
-    }
-
-    @Test
-    fun testLocationContainsLocation_targetLocationIsContainerLocation() {
-        val container = Location.create(
-            firstLine = 2, firstColumn = 5,
-            lastLine = 10, lastColumn = 15,
-            startOffset = 20, endOffset = 100
-        )
-        val target = container
-
-        assertEquals(
-            true,
-            Location.locationContainsLocation(container, target),
-            "Target starting and ending at container should return true"
         )
     }
 
@@ -1000,15 +960,11 @@ class LexerTest {
             lastLine = 10, lastColumn = 20,
             startOffset = 50, endOffset = 100
         )
-        val target = Location.create(
-            firstLine = 3, firstColumn = 10,
-            lastLine = 3, lastColumn = 15,
-            startOffset = 30, endOffset = 35
-        )
+        val target = Coordinates(3,10)
 
         assertEquals(
             false,
-            Location.locationContainsLocation(container, target),
+            Location.locationContainsPosition(container, target),
             "Target starting before container line should return false"
         )
     }
@@ -1020,15 +976,11 @@ class LexerTest {
             lastLine = 10, lastColumn = 20,
             startOffset = 50, endOffset = 100
         )
-        val target = Location.create(
-            firstLine = 15, firstColumn = 5,
-            lastLine = 15, lastColumn = 10,
-            startOffset = 150, endOffset = 155
-        )
+        val target = Coordinates(15,5)
 
         assertEquals(
             false,
-            Location.locationContainsLocation(container, target),
+            Location.locationContainsPosition(container, target),
             "Target starting after container line should return false"
         )
     }
@@ -1040,15 +992,11 @@ class LexerTest {
             lastLine = 5, lastColumn = 20,
             startOffset = 50, endOffset = 60
         )
-        val target = Location.create(
-            firstLine = 5, firstColumn = 5,
-            lastLine = 5, lastColumn = 8,
-            startOffset = 45, endOffset = 48
-        )
+        val target = Coordinates(5,5)
 
         assertEquals(
             false,
-            Location.locationContainsLocation(container, target),
+            Location.locationContainsPosition(container, target),
             "Target on same start line but before start column should return false"
         )
     }
@@ -1060,15 +1008,11 @@ class LexerTest {
             lastLine = 5, lastColumn = 20,
             startOffset = 50, endOffset = 60
         )
-        val target = Location.create(
-            firstLine = 5, firstColumn = 25,
-            lastLine = 5, lastColumn = 30,
-            startOffset = 65, endOffset = 70
-        )
+        val target = Coordinates(5,25)
 
         assertEquals(
             false,
-            Location.locationContainsLocation(container, target),
+            Location.locationContainsPosition(container, target),
             "Target on same end line but after end column should return false"
         )
     }
@@ -1080,15 +1024,11 @@ class LexerTest {
             lastLine = 5, lastColumn = 20,
             startOffset = 50, endOffset = 60
         )
-        val target = Location.create(
-            firstLine = 5, firstColumn = 15,
-            lastLine = 5, lastColumn = 18,
-            startOffset = 55, endOffset = 58
-        )
+        val target = Coordinates(5, 15)
 
         assertEquals(
             true,
-            Location.locationContainsLocation(container, target),
+            Location.locationContainsPosition(container, target),
             "Target on same line and within column bounds should return true"
         )
     }
@@ -1102,15 +1042,11 @@ class LexerTest {
         )
 
         // Target on middle line (any column should be valid)
-        val targetMiddle = Location.create(
-            firstLine = 5, firstColumn = 0,
-            lastLine = 5, lastColumn = 100,
-            startOffset = 50, endOffset = 150
-        )
+        val targetMiddle = Coordinates(5, 0)
 
         assertEquals(
             true,
-            Location.locationContainsLocation(container, targetMiddle),
+            Location.locationContainsPosition(container, targetMiddle),
             "Target on middle line should return true regardless of column"
         )
     }
@@ -1124,41 +1060,29 @@ class LexerTest {
         )
 
         // Target on first line, before column
-        val targetBefore = Location.create(
-            firstLine = 5, firstColumn = 9,
-            lastLine = 5, lastColumn = 12,
-            startOffset = 49, endOffset = 52
-        )
+        val targetBefore = Coordinates(5,9)
 
         assertEquals(
             false,
-            Location.locationContainsLocation(container, targetBefore),
+            Location.locationContainsPosition(container, targetBefore),
             "Target on first line but before start column should return false"
         )
 
         // Target on first line, at column
-        val targetAt = Location.create(
-            firstLine = 5, firstColumn = 10,
-            lastLine = 5, lastColumn = 12,
-            startOffset = 50, endOffset = 52
-        )
+        val targetAt = Coordinates(5,10)
 
         assertEquals(
             true,
-            Location.locationContainsLocation(container, targetAt),
+            Location.locationContainsPosition(container, targetAt),
             "Target on first line at start column should return true"
         )
 
         // Target on first line, after column
-        val targetAfter = Location.create(
-            firstLine = 5, firstColumn = 11,
-            lastLine = 5, lastColumn = 13,
-            startOffset = 51, endOffset = 53
-        )
+        val targetAfter = Coordinates(5,11)
 
         assertEquals(
             true,
-            Location.locationContainsLocation(container, targetAfter),
+            Location.locationContainsPosition(container, targetAfter),
             "Target on first line after start column should return true"
         )
     }
@@ -1172,41 +1096,29 @@ class LexerTest {
         )
 
         // Target on last line, before end column
-        val targetBefore = Location.create(
-            firstLine = 10, firstColumn = 10,
-            lastLine = 10, lastColumn = 12,
-            startOffset = 95, endOffset = 97
-        )
+        val targetBefore = Coordinates(10,10)
 
         assertEquals(
             true,
-            Location.locationContainsLocation(container, targetBefore),
+            Location.locationContainsPosition(container, targetBefore),
             "Target on last line before end column should return true"
         )
 
         // Target on last line, at end column
-        val targetAt = Location.create(
-            firstLine = 10, firstColumn = 15,
-            lastLine = 10, lastColumn = 17,
-            startOffset = 100, endOffset = 102
-        )
+        val targetAt = Coordinates(10,15)
 
         assertEquals(
             true,
-            Location.locationContainsLocation(container, targetAt),
+            Location.locationContainsPosition(container, targetAt),
             "Target on last line at end column should return true"
         )
 
         // Target on last line, after end column
-        val targetAfter = Location.create(
-            firstLine = 10, firstColumn = 16,
-            lastLine = 10, lastColumn = 18,
-            startOffset = 101, endOffset = 103
-        )
+        val targetAfter = Coordinates(10,16)
 
         assertEquals(
             false,
-            Location.locationContainsLocation(container, targetAfter),
+            Location.locationContainsPosition(container, targetAfter),
             "Target on last line after end column should return false"
         )
     }

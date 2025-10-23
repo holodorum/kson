@@ -220,24 +220,22 @@ data class Location(
         }
 
         /**
-         * Check if a container location contains a target location.
+         * Check if a container [Location] contains [Coordinates]
          */
-        fun locationContainsLocation(
+        fun locationContainsPosition(
             containerLocation: Location,
-            targetLocation: Location
+            targetPosition: Coordinates
         ): Boolean {
-            val targetStart = targetLocation.start
             val containerStart = containerLocation.start
             val containerEnd = containerLocation.end
 
             // Target must start at or after container start
-            if (targetStart.line < containerStart.line) return false
-            if (targetStart.line == containerStart.line && targetStart.column < containerStart.column) return false
+            if (targetPosition.line < containerStart.line) return false
+            if (targetPosition.line == containerStart.line && targetPosition.column < containerStart.column) return false
 
             // Target must start at or before container end
-            if (targetStart.line > containerEnd.line) return false
-            if (targetStart.line == containerEnd.line && targetStart.column > containerEnd.column) return false
-
+            if (targetPosition.line > containerEnd.line) return false
+            if (targetPosition.line == containerEnd.line && targetPosition.column > containerEnd.column) return false
             return true
         }
     }
