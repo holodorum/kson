@@ -122,7 +122,7 @@ class IndentFormatter(
                         // write out anything we've read before this embed block
                         result.append(prefixWithIndent(lineContent.joinToString(""), nesting.size))
                         // write out the lines of the embed content, indenting the whole block appropriately
-                        result.append(prefixWithIndent(token.value, embedContentIndent, true))
+                        result.append(prefixWithIndent(token.lexeme.text, embedContentIndent, true))
                         tokenIndex++
                         // write the rest of the trailing content from this line
                         while (tokenIndex < line.size) {
