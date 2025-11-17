@@ -30,6 +30,8 @@ interface KsonCoreTestError {
         expectedParseMessageTypes: List<MessageType>,
         maxNestingLevel: Int? = null
     ): List<LoggedMessage> {
+
+        // write out a n_hash.kson file
         val parseResult = if (maxNestingLevel != null) {
             KsonCore.parseToAst(source, CoreCompileConfig(maxNestingLevel = maxNestingLevel))
         } else {

@@ -50,6 +50,8 @@ interface KsonCoreTest {
             yamlSettings = Yaml(retainEmbedTags = false)
         ),
     ) {
+
+        // write out a y_hash.kson file for this test
         try {
             validateYaml(expectedYaml)
         } catch (e: Exception) {
