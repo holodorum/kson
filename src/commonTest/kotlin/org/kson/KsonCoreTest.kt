@@ -8,6 +8,15 @@ import org.kson.testSupport.validateYaml
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 
+data class TestData(
+    val inputKson: String,
+    val expectedKson: String?,
+    val jsonContent: String?,
+    val yamlContent: String?,
+)
+
+internal expect fun writeTest(testData: TestData)
+
 /**
  * Interface to tie together our tests that exercise and verify [KsonCore] behavior on valid Kson and give a home to our
  * custom assertions for these tests.  For tests parsing invalid Kson, see [KsonCoreTestError].
@@ -50,6 +59,10 @@ interface KsonCoreTest {
             yamlSettings = Yaml(retainEmbedTags = false)
         ),
     ) {
+        // Write test suite files
+        writeTest(TestData(source, expectedKsonFromAst, expectedJson, expectedYaml))
+
+
         try {
             validateYaml(expectedYaml)
         } catch (e: Exception) {

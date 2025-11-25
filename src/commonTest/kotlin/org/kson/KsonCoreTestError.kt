@@ -35,7 +35,7 @@ interface KsonCoreTestError {
         } else {
             KsonCore.parseToAst(source)
         }
-
+        writeTest(TestData(source, null, null,null))
         assertEquals(
             expectedParseMessageTypes,
             parseResult.messages.map { it.message.type },
