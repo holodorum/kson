@@ -2,6 +2,8 @@ mod util;
 
 #[cfg(test)]
 mod test;
+#[cfg(test)]
+mod suite_test;
 
 #[macro_use]
 mod macros;
