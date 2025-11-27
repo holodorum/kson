@@ -701,7 +701,7 @@ class QuotedStringNode(
     }
 }
 
-class UnquotedStringNode(sourceTokens: List<Token>) : StringNodeImpl(sourceTokens) {
+open class UnquotedStringNode(sourceTokens: List<Token>) : StringNodeImpl(sourceTokens) {
     override val processedStringContent: String by lazy {
         stringContent
     }
@@ -769,7 +769,13 @@ class NumberNode(sourceTokens: List<Token>) : KsonValueNodeImpl(sourceTokens) {
     }
 }
 
-class TrueNode(sourceTokens: List<Token>) : KsonValueNodeImpl(sourceTokens) {
+abstract class BooleanNode(sourceTokens: List<Token>) : KsonValueNodeImpl(sourceTokens) {
+    abstract val value: Boolean
+}
+
+class TrueNode(sourceTokens: List<Token>) : BooleanNode(sourceTokens) {
+    override val value = true
+
     override fun toSourceInternal(indent: Indent, nextNode: AstNode?, compileTarget: CompileTarget): String {
         return when (compileTarget) {
             is Kson, is Yaml, is Json -> {
@@ -779,7 +785,9 @@ class TrueNode(sourceTokens: List<Token>) : KsonValueNodeImpl(sourceTokens) {
     }
 }
 
-class FalseNode(sourceTokens: List<Token>) : KsonValueNodeImpl(sourceTokens) {
+class FalseNode(sourceTokens: List<Token>) : BooleanNode(sourceTokens) {
+    override val value = false
+
     override fun toSourceInternal(indent: Indent, nextNode: AstNode?, compileTarget: CompileTarget): String {
         return when (compileTarget) {
             is Kson, is Yaml, is Json -> {
