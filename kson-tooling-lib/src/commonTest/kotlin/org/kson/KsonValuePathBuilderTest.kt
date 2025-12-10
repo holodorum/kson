@@ -142,7 +142,7 @@ class KsonValuePathBuilderTest {
         """.trimIndent())
 
         assertNotNull(path)
-        assertEquals(listOf("root", "level1", "level2"), path)
+        assertEquals(listOf("root", "level1", "level2", "level3"), path)
     }
 
     @Test
@@ -169,7 +169,7 @@ class KsonValuePathBuilderTest {
         val column = caretIndex - (beforeCaret.lastIndexOf('\n') + 1)
         val cleanDocument = document.replace(caretMarker, "")
 
-        val path = KsonValuePathBuilder(cleanDocument, Coordinates(line, column)).buildPathToPosition(forDefinition = false)
+        val path = KsonValuePathBuilder(cleanDocument, Coordinates(line, column)).buildPathToPosition(includePropertyKeys = false)
 
         assertNotNull(path)
         assertEquals(emptyList(), path)  // Drops "username", returns empty (parent of root)
@@ -189,7 +189,7 @@ class KsonValuePathBuilderTest {
         val column = caretIndex - (beforeCaret.lastIndexOf('\n') + 1)
         val cleanDocument = document.replace(caretMarker, "")
 
-        val path = KsonValuePathBuilder(cleanDocument, Coordinates(line, column)).buildPathToPosition(forDefinition = true)
+        val path = KsonValuePathBuilder(cleanDocument, Coordinates(line, column)).buildPathToPosition(includePropertyKeys = true)
 
         assertNotNull(path)
         assertEquals(listOf("username"), path)  // Keeps "username" for definition lookup

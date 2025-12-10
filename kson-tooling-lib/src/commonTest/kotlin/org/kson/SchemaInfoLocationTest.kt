@@ -45,7 +45,7 @@ class SchemaInfoLocationTest {
         """.trimIndent()
 
         val hoverInfo = getInfoAtCaret(schema, """
-            name: <caret>John
+            nam<caret>e: John
             age: 30
         """.trimIndent())
 
@@ -472,5 +472,45 @@ class SchemaInfoLocationTest {
         assertNotNull(hoverInfo, "Expected hover info for name field. Got null")
         assertTrue(hoverInfo.contains("Item name from ref"), "Expected description from resolved ref. Got: $hoverInfo")
         assertTrue(hoverInfo.contains("*Type:* `string`"), "Expected type from resolved ref. Got: $hoverInfo")
+    }
+
+    @Test
+    fun testGetSchemaInfoAtLocation_anyOf_combinedInfo() {
+        // When multiple anyOf branches are valid, their info should be combined
+        val schema = """
+            {
+              "type": "object",
+              "properties": {
+                "value": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "description": "String value representation",
+                      "minLength": 1
+                    },
+                    {
+                      "type": "string",
+                      "description": "String value with pattern",
+                      "pattern": "^[A-Z]+"
+                    }
+                  ]
+                }
+              }
+            }
+        """.trimIndent()
+
+        // Both anyOf branches accept strings, so both should be valid
+        val hoverInfo = getInfoAtCaret(schema, """
+            value: <caret>TEST
+        """.trimIndent())
+
+        assertNotNull(hoverInfo, "Expected hover info for value field")
+
+        // Should contain info from both branches, separated
+        assertTrue(hoverInfo.contains("String value representation"), "Expected first branch description. Got: $hoverInfo")
+        assertTrue(hoverInfo.contains("String value with pattern"), "Expected second branch description. Got: $hoverInfo")
+
+        // Should have separator between the two
+        assertTrue(hoverInfo.contains("---"), "Expected separator between branches. Got: $hoverInfo")
     }
 }
