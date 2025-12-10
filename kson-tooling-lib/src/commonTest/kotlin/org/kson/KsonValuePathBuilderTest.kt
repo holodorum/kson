@@ -142,7 +142,7 @@ class KsonValuePathBuilderTest {
         """.trimIndent())
 
         assertNotNull(path)
-        assertEquals(listOf("root", "level1", "level2"), path)
+        assertEquals(listOf("root", "level1", "level2", "level3"), path)
     }
 
     @Test
