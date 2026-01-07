@@ -14,6 +14,7 @@ import org.kson.tools.FormattingStyle
 import org.kson.validation.DuplicateKeyValidator
 import org.kson.validation.IndentValidator
 import org.kson.tools.KsonFormatterConfig
+import org.kson.validation.ValidationContext
 import org.kson.validation.Validator
 import org.kson.value.KsonValue
 import org.kson.value.toKsonValue
@@ -79,7 +80,7 @@ object KsonCore {
         if (!coreCompileConfig.ignoreErrors && !messageSink.hasErrors()) {
             // Run validators
             coreCompileConfig.validators.forEach {
-                it.validate(ast.toKsonValue(), messageSink)
+                it.validate(ast.toKsonValue(), messageSink, coreCompileConfig.validationContext)
             }
         }
         return AstParseResult(ast, tokens, messageSink)
@@ -315,7 +316,12 @@ data class CoreCompileConfig(
     /**
      * List of validators that are run on a complete KsonValue
      */
-    val validators: List<Validator> = listOf(schemaJson)
+    val validators: List<Validator> = listOf(schemaJson),
+
+    /**
+     * Context information for validation (e.g., filepath)
+     */
+    val validationContext: ValidationContext = ValidationContext()
 )
 
 /**
