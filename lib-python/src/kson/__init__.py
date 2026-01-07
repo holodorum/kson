@@ -1192,10 +1192,12 @@ class SchemaValidator:
     def validate(
         self,
         kson: str,
+        filepath: Optional[str],
 
     ) -> List[Message]:
         """Validates the given Kson source against this validator's schema.
         @param kson The Kson source to validate
+        @param filepath Optional filepath of the document being validated, used by validators to determine which rules to apply
 
         @return A list of validation error messages, or empty list if valid
         """
@@ -1207,11 +1209,12 @@ class SchemaValidator:
             b"org/kson/SchemaValidator",
             jni_ref,
             b"validate",
-            b"(Ljava/lang/String;)Ljava/util/List;",
+            b"(Ljava/lang/String;Ljava/lang/String;)Ljava/util/List;",
             "ObjectMethod",
             [
 
                 _python_str_to_java_string(kson),
+                _python_str_to_java_string(filepath) if filepath is not None else ffi.NULL,
             ]
         )
 
@@ -1781,10 +1784,13 @@ class Kson:
     @staticmethod
     def analyze(
         kson: str,
+        filepath: Optional[str],
 
     ) -> Analysis:
         """Statically analyze the given Kson and return an [Analysis] object containing any messages generated along with a
         tokenized version of the source.  Useful for tooling/editor support.
+        @param kson The Kson source to analyze
+        @param filepath Filepath of the document being analyzed
         """
 
         if kson is None:
@@ -1794,11 +1800,12 @@ class Kson:
             b"org/kson/Kson",
             jni_ref,
             b"analyze",
-            b"(Ljava/lang/String;)Lorg/kson/Analysis;",
+            b"(Ljava/lang/String;Ljava/lang/String;)Lorg/kson/Analysis;",
             "ObjectMethod",
             [
 
                 _python_str_to_java_string(kson),
+                _python_str_to_java_string(filepath) if filepath is not None else ffi.NULL,
             ]
         )
 
