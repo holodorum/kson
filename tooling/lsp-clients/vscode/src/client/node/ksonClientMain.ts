@@ -11,13 +11,15 @@ import {
     createClientOptions
 } from '../../config/clientOptions';
 import {StatusBarManager} from '../common/StatusBarManager';
-import { isKsonDialect } from '../../config/languageConfig';
+import { isKsonDialect, initializeLanguageConfig } from '../../config/languageConfig';
 
 /**
  * Node.js-specific activation function for the KSON extension.
  * This handles desktop VS Code environments where we can spawn child processes.
  */
 export async function activate(context: vscode.ExtensionContext) {
+    // Initialize language configuration from package.json
+    initializeLanguageConfig(context.extension.packageJSON);
 
     // Create log output channel
     const logOutputChannel = vscode.window.createOutputChannel('Kson Language Server', {log: true});
