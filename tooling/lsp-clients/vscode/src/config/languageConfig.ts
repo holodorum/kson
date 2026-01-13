@@ -1,7 +1,3 @@
-import * as vscode from 'vscode';
-
-const EXTENSION_ID = 'kson.kson';
-
 export interface LanguageConfiguration {
     languageIds: string[];
     fileExtensions: string[];
@@ -10,21 +6,11 @@ export interface LanguageConfiguration {
 let cachedConfig: LanguageConfiguration | null = null;
 
 /**
- * Get language configuration from the extension's package.json.
- * Result is cached after first call.
+ * Get language configuration. Must be initialized first via initializeLanguageConfig.
  */
 export function getLanguageConfiguration(): LanguageConfiguration {
     if (!cachedConfig) {
-        const packageJson = vscode.extensions.getExtension(EXTENSION_ID)!.packageJSON;
-        const languages = packageJson?.contributes?.languages || [];
-
-        cachedConfig = {
-            languageIds: languages.map((lang: any) => lang.id).filter(Boolean),
-            fileExtensions: languages
-                .flatMap((lang: any) => lang.extensions || [])
-                .filter(Boolean)
-                .map((ext: string) => ext.replace(/^\./, ''))
-        };
+        throw new Error('Language configuration not initialized. Call initializeLanguageConfig first.');
     }
     return cachedConfig;
 }
@@ -36,8 +22,11 @@ export function isKsonDialect(languageId: string): boolean {
     return getLanguageConfiguration().languageIds.includes(languageId);
 }
 
-// For testing only
-export function initializeFromPackageJson(packageJson: any): void {
+/**
+ * Initialize language configuration from extension's package.json.
+ * Call this early in the activate function.
+ */
+export function initializeLanguageConfig(packageJson: any): void {
     const languages = packageJson?.contributes?.languages || [];
     cachedConfig = {
         languageIds: languages.map((lang: any) => lang.id).filter(Boolean),

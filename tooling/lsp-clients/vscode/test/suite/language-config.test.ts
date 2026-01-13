@@ -1,5 +1,5 @@
 import { assert } from './assert';
-import { initializeFromPackageJson, getLanguageConfiguration, isKsonDialect, resetLanguageConfiguration } from '../../src/config/languageConfig';
+import { initializeLanguageConfig, getLanguageConfiguration, isKsonDialect, resetLanguageConfiguration } from '../../src/config/languageConfig';
 
 describe('Language Configuration Tests', () => {
 
@@ -7,7 +7,7 @@ describe('Language Configuration Tests', () => {
     afterEach(() => resetLanguageConfiguration());
 
     function initWithLanguages(languages: any[]) {
-        initializeFromPackageJson({ contributes: { languages } });
+        initializeLanguageConfig({ contributes: { languages } });
     }
 
     describe('getLanguageConfiguration', () => {
