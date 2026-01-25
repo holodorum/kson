@@ -11,14 +11,14 @@ import {KsonTextDocumentService} from './core/services/KsonTextDocumentService.j
 import {KSON_LEGEND} from './core/features/SemanticTokensService.js';
 import {getAllCommandIds} from './core/commands/CommandType.js';
 import { ksonSettingsWithDefaults } from './core/KsonSettings.js';
-import {SchemaProvider} from './core/schema/SchemaProvider.js';
-import {SCHEMA_CONFIG_FILENAME} from "./core/schema/SchemaConfig";
-import {CommandExecutorFactory} from "./core/commands/CommandExecutorFactory";
+import {SCHEMA_CONFIG_FILENAME} from "./core/schema/SchemaConfig.js";
+import {CommandExecutorFactory} from "./core/commands/CommandExecutorFactory.js";
+import {SchemaProviderResult} from "./core/schema/SchemaProviderResult.js";
 
 type SchemaProviderFactory = (
     workspaceRootUri: URI | undefined,
     logger: { info: (msg: string) => void; warn: (msg: string) => void; error: (msg: string) => void }
-) => Promise<SchemaProvider | undefined>;
+) => Promise<SchemaProviderResult | undefined>;
 
 /**
  * Core Kson Language Server implementation.
@@ -55,10 +55,23 @@ export function startKsonServer(
         }
 
         // Create the appropriate schema provider for this environment
-        const schemaProvider = await createSchemaProvider(workspaceRootUri, logger);
+        const schemaProviderResult = await createSchemaProvider(workspaceRootUri, logger);
 
         // Now that we have workspace root and schema provider, create the document manager
-        documentManager = new KsonDocumentsManager(schemaProvider);
+        documentManager = new KsonDocumentsManager(schemaProviderResult?.provider);
+
+        // Set up listener for extension schema changes
+        if (schemaProviderResult?.toolingProvider) {
+            schemaProviderResult.toolingProvider.setOnChangeListener((extensionId) => {
+                logger.info(`Extension schema changed: ${extensionId}`);
+                // Refresh all open documents with the updated schemas
+                documentManager.refreshDocumentSchemas();
+                // Notify client that schema configuration changed so it can update UI
+                connection.sendNotification('kson/schemaConfigurationChanged');
+                // Rerun diagnostics for open files
+                connection.sendRequest('workspace/diagnostic/refresh');
+            });
+        }
 
         // Extract workspace root path from URI if available
         const workspaceRoot = workspaceRootUri ? workspaceRootUri.fsPath : null;
