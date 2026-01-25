@@ -1,6 +1,6 @@
 import {describe, it} from 'mocha';
 import * as assert from 'assert';
-import {Kson} from 'kson';
+import {Kson} from 'kson-tooling';
 import {CompletionService} from '../../../core/features/CompletionService.js';
 import {KsonDocument} from '../../../core/document/KsonDocument.js';
 import {TextDocument} from 'vscode-languageserver-textdocument';

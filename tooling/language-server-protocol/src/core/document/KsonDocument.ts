@@ -1,4 +1,4 @@
-import {Analysis} from 'kson';
+import {Analysis} from 'kson-tooling';
 import {DocumentUri, TextDocuments, Range, Position} from "vscode-languageserver";
 import {TextDocument} from "vscode-languageserver-textdocument";
 import {IndexedDocumentSymbols} from "../features/IndexedDocumentSymbols";

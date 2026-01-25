@@ -1,5 +1,5 @@
 import {LSPAny} from "vscode-languageserver";
-import {FormatOptions, FormattingStyle, IndentType} from "kson";
+import {FormatOptions, FormattingStyle, IndentType} from 'kson-tooling';
 
 /**
  * Configuration settings for the Kson language server

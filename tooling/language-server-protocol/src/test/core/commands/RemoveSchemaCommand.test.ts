@@ -5,7 +5,7 @@ import * as os from 'os';
 import { describe, it, beforeEach, afterEach } from 'mocha';
 import { RemoveSchemaCommand } from '../../../core/commands/RemoveSchemaCommand.js';
 import { SCHEMA_CONFIG_FILENAME } from '../../../core/schema/SchemaConfig.js';
-import { Kson, Result } from 'kson';
+import { Kson, Result } from 'kson-tooling';
 
 describe('RemoveSchemaCommand', () => {
     let testWorkspaceRoot: string;
