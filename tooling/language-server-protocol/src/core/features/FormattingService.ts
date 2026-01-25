@@ -1,6 +1,6 @@
 import {TextEdit} from 'vscode-languageserver';
 import {KsonDocument} from '../document/KsonDocument.js';
-import {FormatOptions, Kson} from 'kson';
+import {FormatOptions, Kson} from 'kson-tooling';
 
 /**
  * Service responsible for formatting Kson documents

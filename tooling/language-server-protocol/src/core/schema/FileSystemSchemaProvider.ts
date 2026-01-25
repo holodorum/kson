@@ -3,7 +3,7 @@ import {DocumentUri} from 'vscode-languageserver';
 import { URI } from 'vscode-uri';
 import {SchemaConfig, isValidSchemaConfig, SCHEMA_CONFIG_FILENAME} from './SchemaConfig.js';
 import {SchemaProvider} from './SchemaProvider.js';
-import { Kson, Result} from 'kson'
+import { Kson, Result} from 'kson-tooling'
 import * as fs from 'fs';
 import * as path from 'path';
 import minimatch from 'minimatch';

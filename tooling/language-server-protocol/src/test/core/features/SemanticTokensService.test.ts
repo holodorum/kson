@@ -2,7 +2,7 @@ import {TextDocument} from 'vscode-languageserver-textdocument';
 import {describe, it} from 'mocha';
 import assert from "assert"
 import {SemanticTokenTypes} from 'vscode-languageserver';
-import {Kson} from 'kson';
+import {Kson} from 'kson-tooling';
 import {KsonDocument} from '../../../core/document/KsonDocument.js';
 import {KSON_LEGEND, SemanticTokensService} from '../../../core/features/SemanticTokensService';
 

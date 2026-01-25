@@ -1,6 +1,6 @@
 import {SemanticTokens, SemanticTokensBuilder, SemanticTokensLegend, SemanticTokenTypes} from 'vscode-languageserver';
 import {KsonDocument} from '../document/KsonDocument';
-import {Token, TokenType} from 'kson';
+import {Token, TokenType} from 'kson-tooling';
 
 export const KSON_LEGEND: SemanticTokensLegend = {
     tokenTypes: [

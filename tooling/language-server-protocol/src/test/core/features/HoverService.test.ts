@@ -1,6 +1,6 @@
 import {describe, it} from 'mocha';
 import * as assert from 'assert';
-import {Kson, KsonValue, KsonValueType} from 'kson';
+import {Kson, KsonValue, KsonValueType} from 'kson-tooling';
 import {HoverService} from '../../../core/features/HoverService.js';
 import {KsonDocument} from '../../../core/document/KsonDocument.js';
 import {TextDocument} from 'vscode-languageserver-textdocument';

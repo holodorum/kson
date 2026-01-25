@@ -7,7 +7,7 @@ import {KsonDocumentsManager} from '../document/KsonDocumentsManager.js';
 import {FormattingService} from '../features/FormattingService.js';
 import {CommandType} from './CommandType.js';
 import {CommandParameters, isValidCommand} from './CommandParameters.js';
-import {FormatOptions} from 'kson';
+import {FormatOptions} from 'kson-tooling';
 import type {KsonSettings} from '../KsonSettings.js';
 import {KsonDocument} from "../document/KsonDocument.js";
 

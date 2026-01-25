@@ -1,6 +1,6 @@
 import { CommandType } from './CommandType.js';
 import { Command } from 'vscode-languageserver';
-import { FormattingStyle } from 'kson';
+import { FormattingStyle } from 'kson-tooling';
 
 /**
  * Type-safe mapping of command types to their expected parameter structures

@@ -20,7 +20,6 @@ import kotlin.js.JsExport
  * for building IDE integrations.
  */
 object KsonTooling {
-
     /**
      * Get schema information for a position in a document.
      *
