@@ -13,8 +13,12 @@ object SchemaParser {
     /**
      * Parse [schemaRootValue] as a JSON Schema root, i.e. a complete JSON Schema, not a sub-schema.
      * See [parseSchemaElement] for sub-schema parsing.
+     *
+     * @param schemaRootValue The parsed KsonValue to interpret as a schema
+     * @param messageSink The message sink for errors
+     * @param rawSource The original raw schema source string (optional, for tooling use)
      */
-    fun parseSchemaRoot(schemaRootValue: KsonValue, messageSink: MessageSink): JsonSchema? {
+    fun parseSchemaRoot(schemaRootValue: KsonValue, messageSink: MessageSink, rawSource: String? = null): JsonSchema? {
         // Determine the initial base URI from the root schema's $id if present
         val initialBaseUri = if (schemaRootValue is KsonObject) {
             extractId(schemaRootValue, messageSink) ?: ""
@@ -23,7 +27,7 @@ object SchemaParser {
         }
 
         val idLookup = SchemaIdLookup(schemaRootValue)
-        return parseSchemaElement(schemaRootValue, messageSink, initialBaseUri, idLookup)
+        return parseSchemaElement(schemaRootValue, messageSink, initialBaseUri, idLookup, rawSource)
     }
 
     /**
@@ -33,16 +37,18 @@ object SchemaParser {
      *  @param messageSink The message sink for errors
      *  @param currentBaseUri The current base URI context for resolving references
      *  @param idLookup The lookup for resolving $id and $ref references
+     *  @param rawSource The original raw schema source (only passed for root schema, null for sub-schemas)
      */
     fun parseSchemaElement(
         schemaValue: KsonValue,
         messageSink: MessageSink,
         currentBaseUri: String,
-        idLookup: SchemaIdLookup
+        idLookup: SchemaIdLookup,
+        rawSource: String? = null
     ): JsonSchema? {
         return when (schemaValue) {
             is KsonBoolean -> JsonBooleanSchema(schemaValue.value)
-            is KsonObject -> parseObjectSchema(schemaValue, messageSink, currentBaseUri, idLookup)
+            is KsonObject -> parseObjectSchema(schemaValue, messageSink, currentBaseUri, idLookup, rawSource)
             else -> {
                 messageSink.error(schemaValue.location, SCHEMA_OBJECT_OR_BOOLEAN.create())
                 null
@@ -54,7 +60,8 @@ object SchemaParser {
         schemaObject: KsonObject,
         messageSink: MessageSink,
         currentBaseUri: String,
-        idLookup: SchemaIdLookup
+        idLookup: SchemaIdLookup,
+        rawSource: String? = null
     ): JsonSchema? {
         val schemaProperties = schemaObject.propertyLookup
 
@@ -460,7 +467,7 @@ object SchemaParser {
             )
         }
 
-        return JsonObjectSchema(title, description, default, definitions, typeValidator, validators)
+        return JsonObjectSchema(title, description, default, definitions, typeValidator, validators, rawSource)
     }
 }
 
