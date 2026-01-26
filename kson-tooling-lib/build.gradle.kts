@@ -42,10 +42,18 @@ kotlin {
 // This ensures all types (including SchemaResult, Message, etc.) are available from a single import
 val createJsIndexFiles by tasks.registering {
     dependsOn("jsBrowserProductionLibraryDistribution")
+    dependsOn(":kson-lib:jsBrowserProductionLibraryDistribution")
 
     val distDir = layout.buildDirectory.dir("dist/js/productionLibrary")
+    val ksonLibDistDir = project(":kson-lib").layout.buildDirectory.dir("dist/js/productionLibrary")
 
     doLast {
+        // Copy kson-lib type declarations to this distribution
+        val ksonLibDmts = ksonLibDistDir.get().file("kson-kson-lib.d.mts").asFile
+        if (ksonLibDmts.exists()) {
+            ksonLibDmts.copyTo(distDir.get().file("kson-kson-lib.d.mts").asFile, overwrite = true)
+        }
+
         // Create index.mjs that re-exports everything
         val indexMjs = distDir.get().file("index.mjs").asFile
         indexMjs.writeText(
@@ -61,6 +69,7 @@ val createJsIndexFiles by tasks.registering {
         indexDmts.writeText(
             """
             // Re-export all type declarations
+            export * from './kson-kson-lib.d.mts';
             export * from './kson-kson-tooling-lib.d.mts';
         """.trimIndent()
         )
@@ -75,6 +84,9 @@ val createJsIndexFiles by tasks.registering {
     }
 }
 
+tasks.named("check") {
+    dependsOn("assemble")
+}
 // Ensure the index files are created when assembling
 tasks.named("assemble") {
     dependsOn(createJsIndexFiles)

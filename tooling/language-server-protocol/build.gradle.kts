@@ -5,12 +5,12 @@ plugins {
 tasks {
     val npmInstall = register<PixiExecTask>("npmInstall") {
         command=listOf("npm", "install")
+        dependsOn(":kson-tooling-lib:assemble")
         doNotTrackState("npm already tracks its own state")
     }
 
     register<PixiExecTask>("npm_run_compile") {
         command=listOf("npm", "run", "compile")
-        dependsOn(":kson-tooling-lib:jsNodeProductionLibraryDistribution")
         dependsOn(npmInstall)
     }
 

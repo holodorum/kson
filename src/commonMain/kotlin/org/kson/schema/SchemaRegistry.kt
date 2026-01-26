@@ -1,10 +1,4 @@
-@file:OptIn(ExperimentalJsExport::class)
-@file:JsExport
-
 package org.kson.schema
-
-import kotlin.js.ExperimentalJsExport
-import kotlin.js.JsExport
 
 /**
  * Global registry for extension-provided schemas.
@@ -18,6 +12,16 @@ import kotlin.js.JsExport
 object SchemaRegistry {
 
     private val extensionSchemas = mutableMapOf<String, List<ExtensionSchema>>()
+    private var changeListener: ((String) -> Unit)? = null
+
+    /**
+     * Set a listener that will be called when schemas are registered or unregistered.
+     *
+     * @param listener Callback that receives the extensionId that changed, or null to remove the listener
+     */
+    fun setOnChangeListener(listener: ((String) -> Unit)?) {
+        changeListener = listener
+    }
 
     /**
      * Register schemas for an extension.
@@ -28,7 +32,8 @@ object SchemaRegistry {
      * @param schemas List of schemas to register for this extension
      */
     fun registerExtension(extensionId: String, schemas: List<ExtensionSchema>) {
-        extensionSchemas[extensionId] = schemas
+        extensionSchemas[extensionId] = schemas.toList()
+        changeListener?.invoke(extensionId)
     }
 
     /**
@@ -38,6 +43,7 @@ object SchemaRegistry {
      */
     fun unregisterExtension(extensionId: String) {
         extensionSchemas.remove(extensionId)
+        changeListener?.invoke(extensionId)
     }
 
     /**
@@ -45,8 +51,8 @@ object SchemaRegistry {
      *
      * @return List of all registered ExtensionSchema objects
      */
-    fun getAllSchemas(): List<ExtensionSchema> {
-        return extensionSchemas.values.flatten()
+    fun getAllSchemas(): Array<ExtensionSchema> {
+        return extensionSchemas.values.flatten().toTypedArray()
     }
 
     /**

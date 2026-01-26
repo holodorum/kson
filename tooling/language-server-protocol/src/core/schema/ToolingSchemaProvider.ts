@@ -1,7 +1,7 @@
 import {TextDocument} from 'vscode-languageserver-textdocument';
 import {DocumentUri} from 'vscode-languageserver';
 import {SchemaProvider} from './SchemaProvider.js';
-import {SchemaRegistry, ExtensionSchema} from 'kson-tooling';
+import {KsonTooling, SchemaLookup, ExtensionSchema} from 'kson-tooling';
 
 /**
  * Schema provider that queries KsonTooling's SchemaRegistry for extension-provided schemas.
@@ -35,22 +35,26 @@ export class ToolingSchemaProvider implements SchemaProvider {
      */
     getSchemaForDocument(documentUri: DocumentUri): TextDocument | undefined {
         try {
-            const registry = SchemaRegistry.getInstance();
-            const schema: ExtensionSchema | null | undefined = registry.getSchemaForFile(documentUri);
+            const lookup = SchemaLookup.getInstance();
+            const schema: ExtensionSchema | null | undefined = lookup.getSchemaForFile(documentUri);
 
             if (schema) {
                 this.logger?.info(`Found extension schema for ${documentUri}: ${schema.schemaUri}`);
-                return TextDocument.create(
-                    schema.schemaUri,
-                    'kson',
-                    1,
-                    schema.schemaContent
-                );
+                // Access the raw schema source from the JsonSchema object
+                const rawSchema = schema.schema?.rawSchema;
+                if (rawSchema) {
+                    return TextDocument.create(
+                        schema.schemaUri,
+                        'kson',
+                        1,
+                        rawSchema
+                    );
+                }
             }
 
             return undefined;
         } catch (error) {
-            this.logger?.error(`Error querying SchemaRegistry: ${error}`);
+            this.logger?.error(`Error querying SchemaLookup: ${error}`);
             return undefined;
         }
     }
@@ -84,6 +88,6 @@ export class ToolingSchemaProvider implements SchemaProvider {
      * @param callback Function to call when schemas change
      */
     setOnChangeListener(callback: (extensionId: string) => void): void {
-        SchemaRegistry.getInstance().setOnChangeListener(callback);
+        KsonTooling.getInstance().setOnSchemaChangeListener(callback);
     }
 }

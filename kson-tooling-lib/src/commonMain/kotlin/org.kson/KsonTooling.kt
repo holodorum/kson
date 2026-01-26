@@ -7,8 +7,11 @@ import org.kson.navigation.KsonValuePathBuilder
 import org.kson.navigation.SchemaInformation
 import org.kson.navigation.extractSchemaInfo
 import org.kson.parser.Coordinates
+import org.kson.schema.JsonSchema
 import org.kson.value.navigation.json_pointer.JsonPointer
+import org.kson.schema.ExtensionSchema as InternalExtensionSchema
 import org.kson.schema.SchemaIdLookup
+import org.kson.schema.SchemaRegistry
 import org.kson.value.navigation.KsonValueNavigation
 import kotlin.js.ExperimentalJsExport
 import kotlin.js.JsExport
@@ -201,6 +204,49 @@ object KsonTooling {
             }
         }
     }
+
+    // ===========================================
+    // Schema Registration API
+    // ===========================================
+
+    /**
+     * Register schemas for an extension.
+     *
+     * If the extension is already registered, its schemas will be replaced.
+     *
+     * @param extensionId Unique identifier for the extension (e.g., "ksonhub.my-extension")
+     * @param schemas Array of schemas to register for this extension
+     */
+    fun registerExtension(extensionId: String, schemas: Array<ExtensionSchema>) {
+        SchemaRegistry.registerExtension(extensionId, schemas.map { schema ->
+            InternalExtensionSchema(schema.schemaUri, schema.schema, schema.fileExtensions.toList())
+        })
+    }
+
+    /**
+     * Unregister all schemas for an extension.
+     *
+     * @param extensionId The extension identifier to unregister
+     */
+    fun unregisterExtension(extensionId: String) {
+        SchemaRegistry.unregisterExtension(extensionId)
+    }
+
+    /**
+     * Set a listener that will be called when schemas are registered or unregistered.
+     *
+     * @param listener Callback that receives the extensionId that changed, or null to remove the listener
+     */
+    fun setOnSchemaChangeListener(listener: ((String) -> Unit)?) {
+        SchemaRegistry.setOnChangeListener(listener)
+    }
+
+    /**
+     * Clear all registered schemas. Primarily for testing.
+     */
+    fun clearSchemaRegistry() {
+        SchemaRegistry.clear()
+    }
 }
 
 /**
@@ -230,3 +276,36 @@ enum class CompletionKind {
  * @param endColumn column where range ends
  */
 class Range(val startLine: Int, val startColumn: Int, val  endLine: Int, val endColumn: Int)
+
+/**
+ * Represents a schema registered by an extension.
+ *
+ * @param schemaUri URI identifier for the schema (e.g., "ksonhub://schemas/my-schema")
+ * @param schema The parsed JsonSchema (raw source accessible via [JsonSchema.rawSchema])
+ * @param fileExtensions File extensions this schema applies to (e.g., ".myext", ".foo")
+ */
+class ExtensionSchema(
+    val schemaUri: String,
+    val schema: JsonSchema,
+    val fileExtensions: Array<String>
+) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other == null || this::class != other::class) return false
+
+        other as ExtensionSchema
+
+        if (schemaUri != other.schemaUri) return false
+        if (schema != other.schema) return false
+        if (!fileExtensions.contentEquals(other.fileExtensions)) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = schemaUri.hashCode()
+        result = 31 * result + schema.hashCode()
+        result = 31 * result + fileExtensions.contentHashCode()
+        return result
+    }
+}

@@ -1,7 +1,9 @@
 import {describe, it, beforeEach, afterEach} from 'mocha';
 import * as assert from 'assert';
 import {ToolingSchemaProvider} from '../../../core/schema/ToolingSchemaProvider.js';
-import {SchemaRegistry, ExtensionSchema} from 'kson-tooling';
+import {KsonTooling, ExtensionSchema} from 'kson-tooling';
+// Helper to create a mock JsonSchema with rawSchema property
+const mockSchema = (content: string) => ({ rawSchema: content });
 
 describe('ToolingSchemaProvider', () => {
     let logs: string[] = [];
@@ -15,14 +17,14 @@ describe('ToolingSchemaProvider', () => {
     beforeEach(() => {
         logs = [];
         // Clear listener and any previously registered schemas
-        SchemaRegistry.getInstance().setOnChangeListener(null);
-        SchemaRegistry.getInstance().clear();
+        KsonTooling.getInstance().setOnSchemaChangeListener(null);
+        KsonTooling.getInstance().clearSchemaRegistry();
     });
 
     afterEach(() => {
         // Clear listener before clearing schemas to avoid triggering notifications
-        SchemaRegistry.getInstance().setOnChangeListener(null);
-        SchemaRegistry.getInstance().clear();
+        KsonTooling.getInstance().setOnSchemaChangeListener(null);
+        KsonTooling.getInstance().clearSchemaRegistry();
     });
 
     describe('getSchemaForDocument', () => {
@@ -36,12 +38,11 @@ describe('ToolingSchemaProvider', () => {
 
         it('should return schema for matching file extension', () => {
             const schemaContent = '{ type: "object" }';
-            SchemaRegistry.getInstance().registerExtension('test-extension', [
+            KsonTooling.getInstance().registerExtension('test-extension', [
                 new ExtensionSchema(
                     'test://schema/myschema',
-                    schemaContent,
-                    ['.myext'],
-                    []
+                    mockSchema(schemaContent),
+                    ['.myext']
                 )
             ]);
 
@@ -55,12 +56,11 @@ describe('ToolingSchemaProvider', () => {
 
         it('should return schema for matching file extension with .kson suffix', () => {
             const schemaContent = '{ type: "object" }';
-            SchemaRegistry.getInstance().registerExtension('test-extension', [
+            KsonTooling.getInstance().registerExtension('test-extension', [
                 new ExtensionSchema(
                     'test://schema/myschema',
-                    schemaContent,
-                    ['.myext'],
-                    []
+                    mockSchema(schemaContent),
+                    ['.myext']
                 )
             ]);
 
@@ -71,31 +71,12 @@ describe('ToolingSchemaProvider', () => {
             assert.strictEqual(schema!.getText(), schemaContent);
         });
 
-        it('should return schema for matching glob pattern', () => {
-            const schemaContent = '{ type: "object" }';
-            SchemaRegistry.getInstance().registerExtension('test-extension', [
-                new ExtensionSchema(
-                    'test://schema/config',
-                    schemaContent,
-                    [],
-                    ['config/app.kson']
-                )
-            ]);
-
-            const provider = new ToolingSchemaProvider(logger);
-            const schema = provider.getSchemaForDocument('file:///project/config/app.kson');
-
-            assert.ok(schema);
-            assert.strictEqual(schema!.getText(), schemaContent);
-        });
-
         it('should return undefined for non-matching file', () => {
-            SchemaRegistry.getInstance().registerExtension('test-extension', [
+            KsonTooling.getInstance().registerExtension('test-extension', [
                 new ExtensionSchema(
                     'test://schema/myschema',
-                    '{}',
-                    ['.myext'],
-                    []
+                    mockSchema('{}'),
+                   ['.myext']
                 )
             ]);
 
@@ -105,23 +86,6 @@ describe('ToolingSchemaProvider', () => {
             assert.strictEqual(schema, undefined);
         });
 
-        it('should prioritize file extension over glob pattern', () => {
-            const extSchema = '{ title: "extension" }';
-            const globSchema = '{ title: "glob" }';
-
-            SchemaRegistry.getInstance().registerExtension('ext1', [
-                new ExtensionSchema('test://ext', extSchema, ['.myext'], [])
-            ]);
-            SchemaRegistry.getInstance().registerExtension('ext2', [
-                new ExtensionSchema('test://glob', globSchema, [], ['*.myext'])
-            ]);
-
-            const provider = new ToolingSchemaProvider(logger);
-            const schema = provider.getSchemaForDocument('file:///test/file.myext');
-
-            assert.ok(schema);
-            assert.strictEqual(schema!.getText(), extSchema);
-        });
     });
 
     describe('reload', () => {
@@ -135,12 +99,11 @@ describe('ToolingSchemaProvider', () => {
 
     describe('isSchemaFile', () => {
         it('should return false for extension schemas (not file-based)', () => {
-            SchemaRegistry.getInstance().registerExtension('test-extension', [
+            KsonTooling.getInstance().registerExtension('test-extension', [
                 new ExtensionSchema(
                     'test://schema/myschema',
-                    '{}',
-                    ['.myext'],
-                    []
+                    mockSchema('{}'),
+                    ['.myext']
                 )
             ]);
 
@@ -161,14 +124,14 @@ describe('ToolingSchemaProvider', () => {
                 done();
             });
 
-            SchemaRegistry.getInstance().registerExtension('new-extension', [
-                new ExtensionSchema('test://schema', '{}', ['.test'], [])
+            KsonTooling.getInstance().registerExtension('new-extension', [
+                new ExtensionSchema('test://schema', mockSchema('{}'), ['.test'])
             ]);
         });
 
         it('should receive notifications when schemas are unregistered', (done) => {
-            SchemaRegistry.getInstance().registerExtension('existing-extension', [
-                new ExtensionSchema('test://schema', '{}', ['.test'], [])
+            KsonTooling.getInstance().registerExtension('existing-extension', [
+                new ExtensionSchema('test://schema', mockSchema('{}'), ['.test'])
             ]);
 
             const provider = new ToolingSchemaProvider(logger);
@@ -178,7 +141,7 @@ describe('ToolingSchemaProvider', () => {
                 done();
             });
 
-            SchemaRegistry.getInstance().unregisterExtension('existing-extension');
+            KsonTooling.getInstance().unregisterExtension('existing-extension');
         });
     });
 });

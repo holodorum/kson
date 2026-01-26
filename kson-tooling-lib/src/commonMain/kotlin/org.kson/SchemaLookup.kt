@@ -6,7 +6,6 @@ package org.kson
 import kotlin.js.ExperimentalJsExport
 import kotlin.js.JsExport
 import org.kson.schema.SchemaRegistry
-import org.kson.schema.ExtensionSchema
 
 /**
  * Schema lookup utilities for finding schemas that match files.
@@ -31,7 +30,9 @@ object SchemaLookup {
         for (schema in allSchemas) {
             for (ext in schema.fileExtensions) {
                 if (fileName.endsWith(ext) || fileName.endsWith("$ext.kson")) {
-                    return schema
+                    return ExtensionSchema(
+                        schema.schemaUri, schema.schema, schema.fileExtensions.toTypedArray()
+                    )
                 }
             }
         }
