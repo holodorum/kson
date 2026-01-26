@@ -1,5 +1,6 @@
 plugins {
     kotlin("multiplatform")
+    id("com.vanniktech.maven.publish") version "0.30.0"
 }
 
 repositories {
@@ -68,18 +69,22 @@ val createJsIndexFiles by tasks.registering {
     doLast {
         // Create index.mjs that re-exports everything
         val indexMjs = distDir.get().file("index.mjs").asFile
-        indexMjs.writeText("""
+        indexMjs.writeText(
+            """
             // Re-export all symbols from both modules for single-import convenience
             export * from './kson-kson-lib.mjs';
             export * from './kson-kson-tooling-lib.mjs';
-        """.trimIndent())
+        """.trimIndent()
+        )
 
         // Create index.d.mts that re-exports type declarations
         val indexDmts = distDir.get().file("index.d.mts").asFile
-        indexDmts.writeText("""
+        indexDmts.writeText(
+            """
             // Re-export all type declarations
             export * from './kson-kson-tooling-lib.d.mts';
-        """.trimIndent())
+        """.trimIndent()
+        )
 
         // Update package.json to use index as main entry point
         val packageJson = distDir.get().file("package.json").asFile
@@ -96,3 +101,37 @@ tasks.named("assemble") {
     dependsOn(createJsIndexFiles)
 }
 
+
+mavenPublishing {
+    publishToMavenCentral(com.vanniktech.maven.publish.SonatypeHost.CENTRAL_PORTAL, automaticRelease = false)
+    signAllPublications()
+
+    coordinates("org.kson", "kson", version.toString())
+
+    pom {
+        name.set("KSON")
+        description.set("A 💌 to the humans maintaining computer configurations")
+        url.set("https://kson.org")
+
+        licenses {
+            license {
+                name.set("Apache-2.0")
+                url.set("https://www.apache.org/licenses/LICENSE-2.0.txt")
+            }
+        }
+
+        developers {
+            developer {
+                id.set("dmarcotte")
+                name.set("Daniel Marcotte")
+                email.set("kson@kson.org")
+            }
+        }
+
+        scm {
+            connection.set("scm:git:https://github.com/kson-org/kson.git")
+            developerConnection.set("scm:git:git@github.com:kson-org/kson.git")
+            url.set("https://github.com/kson-org/kson")
+        }
+    }
+}
