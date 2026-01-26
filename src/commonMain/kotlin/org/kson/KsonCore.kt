@@ -108,7 +108,7 @@ object KsonCore {
         }
 
         val messageSink = MessageSink()
-        val jsonSchema = SchemaParser.parseSchemaRoot(ksonValue, messageSink)
+        val jsonSchema = SchemaParser.parseSchemaRoot(ksonValue, messageSink, source)
         return SchemaParseResult(jsonSchema, messageSink.loggedMessages())
     }
 
