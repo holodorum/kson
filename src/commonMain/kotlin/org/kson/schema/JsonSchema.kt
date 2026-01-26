@@ -14,6 +14,12 @@ import org.kson.validation.Validator
  */
 sealed interface JsonSchema: Validator {
   /**
+   * The raw schema source string. Only set for root schemas parsed via [org.kson.KsonCore.parseSchema],
+   * null for sub-schemas.
+   */
+  val rawSchema: String?
+
+  /**
    * A guaranteed non-null description for this schema that may be used in user-facing messages.  Should be defaulted
    * to something reasonable (if not as helpful) when the schema itself provides no description
    */
@@ -37,7 +43,8 @@ class JsonObjectSchema(
     val definitions: Map<KsonString, JsonSchema?>?,
 
     private val typeValidator: TypeValidator?,
-    private val schemaValidators: List<JsonSchemaValidator>
+    private val schemaValidators: List<JsonSchemaValidator>,
+    override val rawSchema: String? = null
 ) : JsonSchema {
 
   override fun descriptionWithDefault(): String {
@@ -66,6 +73,7 @@ class JsonObjectSchema(
  * The most basic valid JsonSchema: `true` accepts all Json, `false` accepts none.
  */
 class JsonBooleanSchema(val valid: Boolean) : JsonSchema {
+    override val rawSchema = if (valid) "true" else "false"
   override fun descriptionWithDefault() = if (valid) "This schema accepts all JSON as valid" else "This schema rejects all JSON as invalid"
   override fun validate(ksonValue: KsonValue, messageSink: MessageSink, sourceContext: SourceContext) {
     if (valid) {
