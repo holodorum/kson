@@ -22,12 +22,12 @@ object KsonVersion {
     const val BASE_VERSION = "0.3.0"
 
     /**
-     * Returns the short git commit SHA (7 characters).
+     * Returns the short git commit SHA (8 characters).
      * Falls back to "unknown" if git is not available.
      */
     fun getGitSha(projectDir: File): String {
         return try {
-            val process = ProcessBuilder("git", "rev-parse", "--short", "HEAD")
+            val process = ProcessBuilder("git", "rev-parse", "--short=8", "HEAD")
                 .directory(projectDir)
                 .redirectErrorStream(true)
                 .start()
