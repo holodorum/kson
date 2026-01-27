@@ -115,7 +115,13 @@ group = "org.kson"
  *   versioning that this should not be depended on
  * [[kson-version-num]]
  */
-version = "x.4-SNAPSHOT"
+val internalBaseVersion = "x.4"
+val isRelease = project.findProperty("release") == "true"
+version = if (isRelease) {
+    internalBaseVersion
+} else {
+    "$internalBaseVersion-${org.kson.KsonVersion.getGitSha(projectDir)}-SNAPSHOT"
+}
 
 kotlin {
     jvm()
