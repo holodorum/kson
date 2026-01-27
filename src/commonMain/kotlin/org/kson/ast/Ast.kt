@@ -666,7 +666,7 @@ abstract class StringNodeImpl(sourceTokens: List<Token>) : StringNode, KsonValue
      *
      * @return The rendered embed block string, or null if this node is not an embed block
      */
-    protected fun tryRenderAsEmbedBlock(indent: Indent, compileTarget: Kson): String? {
+    internal fun tryRenderAsEmbedBlock(indent: Indent, compileTarget: Kson): String? {
         val matchingRule = compileTarget.getEmbedRule(this)
             ?: return null
         return renderAsEmbedBlock(indent, compileTarget, matchingRule.tag)
@@ -783,7 +783,7 @@ private val yamlReservedKeywords = setOf(
  * Render helper for unquoted KSON strings, i.e. [String]s for which [StringUnquoted.isUnquotable] returns true.
  * NOTE: the caller is responsible for ensuring [StringUnquoted.isUnquotable] returns true on [unquotedKsonString]
  */
-private fun renderUnquotableKsonString(
+private fun StringNodeImpl.renderUnquotableKsonString(
     unquotedKsonString: String,
     indent: Indent,
     compileTarget: CompileTarget
