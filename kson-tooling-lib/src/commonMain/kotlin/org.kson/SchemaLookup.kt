@@ -3,6 +3,8 @@
 
 package org.kson
 
+import org.kson.schema.JsonSchema
+import org.kson.schema.ExtensionSchema as InternalExtensionSchema
 import kotlin.js.ExperimentalJsExport
 import kotlin.js.JsExport
 import org.kson.schema.SchemaRegistry
@@ -26,12 +28,16 @@ object SchemaLookup {
      */
     fun getSchemaForFile(fileUri: String): ExtensionSchema? {
         val fileName = extractFileName(fileUri)
-        val allSchemas = SchemaRegistry.getAllSchemas()
+        val allSchemas: List<InternalExtensionSchema> = SchemaRegistry.getAllSchemas()
 
-        for (schema in allSchemas) {
-            for (ext in schema.fileExtensions) {
+        for (internalSchema: InternalExtensionSchema in allSchemas) {
+            for (ext in internalSchema.fileExtensions) {
                 if (fileName.endsWith(ext) || fileName.endsWith("$ext.kson")) {
-                    return schema
+                    return ExtensionSchema(
+                        schemaUri = internalSchema.schemaUri,
+                        schema = internalSchema.schema,
+                        fileExtensions = internalSchema.fileExtensions.toTypedArray()
+                    )
                 }
             }
         }
@@ -67,5 +73,22 @@ object SchemaLookup {
             fileUri.startsWith("file://") -> fileUri.removePrefix("file://")
             else -> fileUri
         }
+    }
+}
+
+/**
+ * Represents a schema registered by an extension.
+ *
+ * @param schemaUri URI identifier for the schema (e.g., "ksonhub://schemas/my-schema")
+ * @param schema The parsed JsonSchema (raw source accessible via [JsonSchema.rawSchema])
+ * @param fileExtensions File extensions this schema applies to (e.g., ".myext", ".foo")
+ */
+class ExtensionSchema(
+    val schemaUri: String,
+    val schema: JsonSchema,
+    val fileExtensions: Array<String>
+){
+    fun getRawSchema(): String? {
+        return this.schema.rawSchema
     }
 }
