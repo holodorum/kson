@@ -1,6 +1,3 @@
-@file:OptIn(ExperimentalJsExport::class)
-@file:JsExport
-
 package org.kson.schema
 
 import kotlin.js.ExperimentalJsExport
