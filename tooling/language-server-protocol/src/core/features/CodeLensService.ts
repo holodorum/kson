@@ -2,7 +2,7 @@ import { CodeLens } from 'vscode-languageserver';
 import { KsonDocument } from '../document/KsonDocument.js';
 import { CommandType } from '../commands/CommandType.js';
 import { createTypedCommand } from '../commands/CommandParameters.js';
-import { FormattingStyle } from 'kson-tooling';
+import { FormattingStyle } from 'kson';
 
 /**
  * Service responsible for providing code lenses for Kson documents

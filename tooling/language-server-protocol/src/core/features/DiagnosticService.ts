@@ -6,7 +6,7 @@ import {
     RelatedFullDocumentDiagnosticReport
 } from 'vscode-languageserver';
 import {KsonDocument} from '../document/KsonDocument';
-import {Message, Kson, SchemaResult} from 'kson-tooling';
+import {Message, Kson, SchemaResult} from 'kson';
 
 /**
  * Service responsible for providing diagnostic information for Kson documents.

@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import {Kson, Result} from 'kson-tooling';
+import {Kson, Result} from 'kson';
 import {SchemaConfig, isValidSchemaConfig, SCHEMA_CONFIG_FILENAME} from '../schema/SchemaConfig.js';
 import { URI } from 'vscode-uri';
 

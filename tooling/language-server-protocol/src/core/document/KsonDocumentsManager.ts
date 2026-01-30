@@ -1,5 +1,5 @@
 import {TextDocument} from 'vscode-languageserver-textdocument';
-import {Kson} from 'kson-tooling';
+import {Kson} from 'kson';
 import {KsonDocument} from "./KsonDocument.js";
 import {DocumentUri, TextDocuments, TextDocumentContentChangeEvent} from "vscode-languageserver";
 import {SchemaProvider, NoOpSchemaProvider} from "../schema/SchemaProvider.js";

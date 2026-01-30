@@ -1,7 +1,7 @@
 import {FormattingService} from '../../../core/features/FormattingService';
 import {TextDocument} from 'vscode-languageserver-textdocument';
 import {KsonDocument} from '../../../core/document/KsonDocument.js';
-import {Kson} from 'kson-tooling';
+import {Kson} from 'kson';
 import {describe, it} from 'mocha';
 import assert from "assert";
 import {ksonSettingsWithDefaults} from "../../../core/KsonSettings";

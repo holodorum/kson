@@ -4,7 +4,7 @@ import {
     DiagnosticSeverity
 } from 'vscode-languageserver';
 import {KsonDocument} from '../../../core/document/KsonDocument.js';
-import {Kson} from 'kson-tooling';
+import {Kson} from 'kson';
 import {describe, it} from 'mocha';
 import assert from "assert";
 import {DiagnosticService} from "../../../core/features/DiagnosticService";

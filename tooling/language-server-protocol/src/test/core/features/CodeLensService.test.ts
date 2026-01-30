@@ -1,11 +1,11 @@
 import {CodeLensService} from '../../../core/features/CodeLensService.js';
 import {KsonDocument} from '../../../core/document/KsonDocument.js';
 import {CommandType} from '../../../core/commands/CommandType.js';
-import {Kson} from 'kson-tooling';
+import {Kson} from 'kson';
 import {describe, it} from 'mocha';
 import assert from 'assert';
 import {TextDocument} from 'vscode-languageserver-textdocument';
-import {FormattingStyle} from 'kson-tooling'
+import {FormattingStyle} from 'kson'
 
 describe('CodeLensService', () => {
     const service = new CodeLensService();

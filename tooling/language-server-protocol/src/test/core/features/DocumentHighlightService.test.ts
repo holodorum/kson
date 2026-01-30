@@ -2,7 +2,7 @@ import {describe, it} from 'mocha';
 import assert from 'assert';
 import {TextDocument} from 'vscode-languageserver-textdocument';
 import {DocumentHighlightKind, Position} from 'vscode-languageserver';
-import {Kson} from 'kson-tooling';
+import {Kson} from 'kson';
 import {KsonDocument} from '../../../core/document/KsonDocument.js';
 import {DocumentHighlightService} from '../../../core/features/DocumentHighlightService.js';
 import {DocumentSymbolService} from "../../../core/features/DocumentSymbolService";

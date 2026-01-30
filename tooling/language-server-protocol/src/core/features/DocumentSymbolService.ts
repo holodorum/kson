@@ -1,5 +1,5 @@
 import {DocumentSymbol, Range, SymbolKind} from 'vscode-languageserver';
-import {Analysis, KsonValue, KsonValueType} from 'kson-tooling';
+import {Analysis, KsonValue, KsonValueType} from 'kson';
 
 // Extended DocumentSymbol that includes parent reference
 export class DocumentSymbolWithParent implements DocumentSymbol {

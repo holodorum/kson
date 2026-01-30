@@ -12,7 +12,7 @@ import {
     ApplyWorkspaceEditResult, Range
 } from "vscode-languageserver";
 import {CommandType} from "../../../core/commands/CommandType";
-import {FormattingStyle} from 'kson-tooling';
+import {FormattingStyle} from "kson";
 import {RemoteWorkspace} from "vscode-languageserver/lib/common/server";
 import {createCommandExecutor} from "../../../core/commands/createCommandExecutor.node.js";
 

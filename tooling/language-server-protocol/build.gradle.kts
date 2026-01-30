@@ -10,6 +10,7 @@ tasks {
 
     register<PixiExecTask>("npm_run_compile") {
         command=listOf("npm", "run", "compile")
+        dependsOn(":kson-lib:jsNodeProductionLibraryDistribution")
         dependsOn(":kson-tooling-lib:jsNodeProductionLibraryDistribution")
         dependsOn(npmInstall)
     }

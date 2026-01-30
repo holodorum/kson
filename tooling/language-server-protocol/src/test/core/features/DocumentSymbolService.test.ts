@@ -2,7 +2,7 @@ import assert from 'assert';
 import { DocumentSymbolService } from '../../../core/features/DocumentSymbolService.js';
 import { KsonDocument } from '../../../core/document/KsonDocument.js';
 import { TextDocument } from 'vscode-languageserver-textdocument';
-import { Kson } from 'kson-tooling';
+import { Kson } from 'kson';
 import { SymbolKind } from 'vscode-languageserver';
 import {IndexedDocumentSymbols} from "../../../core/features/IndexedDocumentSymbols";
 
