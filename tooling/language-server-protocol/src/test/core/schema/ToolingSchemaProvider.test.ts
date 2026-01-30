@@ -1,7 +1,7 @@
 import {describe, it, beforeEach, afterEach} from 'mocha';
 import * as assert from 'assert';
 import {ToolingSchemaProvider} from '../../../core/schema/ToolingSchemaProvider.js';
-import {SchemaRegistry, ExtensionSchema} from 'kson-tooling';
+import {SchemaLookup} from 'kson-tooling';
 
 describe('ToolingSchemaProvider', () => {
     let logs: string[] = [];
@@ -14,15 +14,12 @@ describe('ToolingSchemaProvider', () => {
 
     beforeEach(() => {
         logs = [];
-        // Clear listener and any previously registered schemas
-        SchemaRegistry.getInstance().setOnChangeListener(null);
-        SchemaRegistry.getInstance().clear();
+        // Clear any previously registered schemas
+        SchemaLookup.getInstance()._clearForTesting();
     });
 
     afterEach(() => {
-        // Clear listener before clearing schemas to avoid triggering notifications
-        SchemaRegistry.getInstance().setOnChangeListener(null);
-        SchemaRegistry.getInstance().clear();
+        SchemaLookup.getInstance()._clearForTesting();
     });
 
     describe('getSchemaForDocument', () => {
@@ -36,14 +33,12 @@ describe('ToolingSchemaProvider', () => {
 
         it('should return schema for matching file extension', () => {
             const schemaContent = '{ type: "object" }';
-            SchemaRegistry.getInstance().registerExtension('test-extension', [
-                new ExtensionSchema(
-                    'test://schema/myschema',
-                    schemaContent,
-                    ['.myext'],
-                    []
-                )
-            ]);
+            SchemaLookup.getInstance()._registerForTesting(
+                'test-extension',
+                'test://schema/myschema',
+                schemaContent,
+                ['.myext']
+            );
 
             const provider = new ToolingSchemaProvider(logger);
             const schema = provider.getSchemaForDocument('file:///test/file.myext');
@@ -55,14 +50,12 @@ describe('ToolingSchemaProvider', () => {
 
         it('should return schema for matching file extension with .kson suffix', () => {
             const schemaContent = '{ type: "object" }';
-            SchemaRegistry.getInstance().registerExtension('test-extension', [
-                new ExtensionSchema(
-                    'test://schema/myschema',
-                    schemaContent,
-                    ['.myext'],
-                    []
-                )
-            ]);
+            SchemaLookup.getInstance()._registerForTesting(
+                'test-extension',
+                'test://schema/myschema',
+                schemaContent,
+                ['.myext']
+            );
 
             const provider = new ToolingSchemaProvider(logger);
             const schema = provider.getSchemaForDocument('file:///test/file.myext.kson');
@@ -71,16 +64,14 @@ describe('ToolingSchemaProvider', () => {
             assert.strictEqual(schema!.getText(), schemaContent);
         });
 
-        it('should return schema for matching glob pattern', () => {
+        it('should return schema for matching .kson file extension', () => {
             const schemaContent = '{ type: "object" }';
-            SchemaRegistry.getInstance().registerExtension('test-extension', [
-                new ExtensionSchema(
-                    'test://schema/config',
-                    schemaContent,
-                    [],
-                    ['config/app.kson']
-                )
-            ]);
+            SchemaLookup.getInstance()._registerForTesting(
+                'test-extension',
+                'test://schema/config',
+                schemaContent,
+                ['.kson']
+            );
 
             const provider = new ToolingSchemaProvider(logger);
             const schema = provider.getSchemaForDocument('file:///project/config/app.kson');
@@ -90,14 +81,12 @@ describe('ToolingSchemaProvider', () => {
         });
 
         it('should return undefined for non-matching file', () => {
-            SchemaRegistry.getInstance().registerExtension('test-extension', [
-                new ExtensionSchema(
-                    'test://schema/myschema',
-                    '{}',
-                    ['.myext'],
-                    []
-                )
-            ]);
+            SchemaLookup.getInstance()._registerForTesting(
+                'test-extension',
+                'test://schema/myschema',
+                '{}',
+                ['.myext']
+            );
 
             const provider = new ToolingSchemaProvider(logger);
             const schema = provider.getSchemaForDocument('file:///test/file.other');
@@ -105,22 +94,29 @@ describe('ToolingSchemaProvider', () => {
             assert.strictEqual(schema, undefined);
         });
 
-        it('should prioritize file extension over glob pattern', () => {
-            const extSchema = '{ title: "extension" }';
-            const globSchema = '{ title: "glob" }';
+        it('should return first matching schema when multiple extensions match', () => {
+            const schema1 = '{ title: "first" }';
+            const schema2 = '{ title: "second" }';
 
-            SchemaRegistry.getInstance().registerExtension('ext1', [
-                new ExtensionSchema('test://ext', extSchema, ['.myext'], [])
-            ]);
-            SchemaRegistry.getInstance().registerExtension('ext2', [
-                new ExtensionSchema('test://glob', globSchema, [], ['*.myext'])
-            ]);
+            SchemaLookup.getInstance()._registerForTesting(
+                'ext1',
+                'test://first',
+                schema1,
+                ['.myext']
+            );
+            SchemaLookup.getInstance()._registerForTesting(
+                'ext2',
+                'test://second',
+                schema2,
+                ['.myext']
+            );
 
             const provider = new ToolingSchemaProvider(logger);
             const schema = provider.getSchemaForDocument('file:///test/file.myext');
 
             assert.ok(schema);
-            assert.strictEqual(schema!.getText(), extSchema);
+            // First registered extension should be matched
+            assert.strictEqual(schema!.getText(), schema1);
         });
     });
 
@@ -135,14 +131,12 @@ describe('ToolingSchemaProvider', () => {
 
     describe('isSchemaFile', () => {
         it('should return false for extension schemas (not file-based)', () => {
-            SchemaRegistry.getInstance().registerExtension('test-extension', [
-                new ExtensionSchema(
-                    'test://schema/myschema',
-                    '{}',
-                    ['.myext'],
-                    []
-                )
-            ]);
+            SchemaLookup.getInstance()._registerForTesting(
+                'test-extension',
+                'test://schema/myschema',
+                '{}',
+                ['.myext']
+            );
 
             const provider = new ToolingSchemaProvider(logger);
 
@@ -152,33 +146,4 @@ describe('ToolingSchemaProvider', () => {
         });
     });
 
-    describe('setOnChangeListener', () => {
-        it('should receive notifications when schemas are registered', (done) => {
-            const provider = new ToolingSchemaProvider(logger);
-
-            provider.setOnChangeListener((extensionId) => {
-                assert.strictEqual(extensionId, 'new-extension');
-                done();
-            });
-
-            SchemaRegistry.getInstance().registerExtension('new-extension', [
-                new ExtensionSchema('test://schema', '{}', ['.test'], [])
-            ]);
-        });
-
-        it('should receive notifications when schemas are unregistered', (done) => {
-            SchemaRegistry.getInstance().registerExtension('existing-extension', [
-                new ExtensionSchema('test://schema', '{}', ['.test'], [])
-            ]);
-
-            const provider = new ToolingSchemaProvider(logger);
-
-            provider.setOnChangeListener((extensionId) => {
-                assert.strictEqual(extensionId, 'existing-extension');
-                done();
-            });
-
-            SchemaRegistry.getInstance().unregisterExtension('existing-extension');
-        });
-    });
 });

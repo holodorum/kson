@@ -112,3 +112,18 @@ fun asSchemaInteger(ksonNumber: KsonNumber): Long? {
 
 // cached regex for testing if all the digits after the decimal are zero in a decimal string
 private val allZerosDecimalRegex = Regex(".*\\.0*")
+
+/**
+ * Minimal JsonSchema implementation for testing purposes.
+ * Only provides the rawSchema content needed by ToolingSchemaProvider.
+ */
+class TestJsonSchema(override val rawSchema: String) : JsonSchema {
+    override fun descriptionWithDefault(): String = "Test schema"
+    override fun validate(
+        ksonValue: KsonValue,
+        messageSink: MessageSink,
+        sourceContext: SourceContext
+    ) {
+        // No-op for testing
+    }
+}

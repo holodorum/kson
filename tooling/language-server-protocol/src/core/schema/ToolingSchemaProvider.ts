@@ -1,7 +1,7 @@
 import {TextDocument} from 'vscode-languageserver-textdocument';
 import {DocumentUri} from 'vscode-languageserver';
 import {SchemaProvider} from './SchemaProvider.js';
-import {SchemaRegistry, ExtensionSchema} from 'kson-tooling';
+import {SchemaLookup, ExtensionSchema} from 'kson-tooling';
 
 /**
  * Schema provider that queries KsonTooling's SchemaRegistry for extension-provided schemas.
@@ -35,8 +35,7 @@ export class ToolingSchemaProvider implements SchemaProvider {
      */
     getSchemaForDocument(documentUri: DocumentUri): TextDocument | undefined {
         try {
-            const registry = SchemaRegistry.getInstance();
-            const schema: ExtensionSchema | null | undefined = registry.getSchemaForFile(documentUri);
+            const schema: ExtensionSchema | null | undefined = SchemaLookup.getInstance().getSchemaForFile(documentUri);
 
             if (schema) {
                 this.logger?.info(`Found extension schema for ${documentUri}: ${schema.schemaUri}`);
@@ -44,13 +43,13 @@ export class ToolingSchemaProvider implements SchemaProvider {
                     schema.schemaUri,
                     'kson',
                     1,
-                    schema.schemaContent
+                    schema.getRawSchema() ?? ''
                 );
             }
 
             return undefined;
         } catch (error) {
-            this.logger?.error(`Error querying SchemaRegistry: ${error}`);
+            this.logger?.error(`Error querying SchemaLookup: ${error}`);
             return undefined;
         }
     }
@@ -78,12 +77,4 @@ export class ToolingSchemaProvider implements SchemaProvider {
         return false;
     }
 
-    /**
-     * Set up a listener for schema registry changes.
-     *
-     * @param callback Function to call when schemas change
-     */
-    setOnChangeListener(callback: (extensionId: string) => void): void {
-        SchemaRegistry.getInstance().setOnChangeListener(callback);
-    }
 }

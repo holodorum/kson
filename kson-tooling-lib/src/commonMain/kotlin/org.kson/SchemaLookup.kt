@@ -6,9 +6,9 @@ package org.kson
 import org.kson.schema.JsonSchema
 import org.kson.schema.ExtensionSchema as InternalExtensionSchema
 import kotlin.js.ExperimentalJsExport
-import kotlin.js.JsExport
 import org.kson.schema.SchemaRegistry
-import org.kson.schema.ExtensionSchema
+import org.kson.schema.TestJsonSchema
+import kotlin.js.JsExport
 
 /**
  * Schema lookup utilities for finding schemas that match files.
@@ -73,6 +73,46 @@ object SchemaLookup {
             fileUri.startsWith("file://") -> fileUri.removePrefix("file://")
             else -> fileUri
         }
+    }
+
+    // ===================================================================================
+    // Test utilities
+    //
+    // These methods exist in production code because TypeScript tests in the
+    // language-server-protocol module need a JS-callable API for test fixtures.
+    // SchemaRegistry.registerExtension() requires ExtensionSchema objects with JsonSchema
+    // instances, which aren't easily constructable from JavaScript. These methods provide
+    // a primitive-based API that bridges the Kotlin/JS boundary for tests.
+    //
+    // Do not use in production code.
+    // ===================================================================================
+
+    /**
+     * @suppress Not for production use. Test utility for registering schema fixtures.
+     */
+    fun _registerForTesting(
+        extensionId: String,
+        schemaUri: String,
+        rawSchemaContent: String,
+        fileExtensions: Array<String>
+    ) {
+        SchemaRegistry.registerExtension(
+            extensionId,
+            listOf(
+                InternalExtensionSchema(
+                    schemaUri = schemaUri,
+                    schema = TestJsonSchema(rawSchemaContent),
+                    fileExtensions = fileExtensions.toList()
+                )
+            )
+        )
+    }
+
+    /**
+     * @suppress Not for production use. Test utility for clearing registered schemas.
+     */
+    fun _clearForTesting() {
+        SchemaRegistry.clear()
     }
 }
 

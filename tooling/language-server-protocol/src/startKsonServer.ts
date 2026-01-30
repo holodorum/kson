@@ -60,19 +60,6 @@ export function startKsonServer(
         // Now that we have workspace root and schema provider, create the document manager
         documentManager = new KsonDocumentsManager(schemaProviderResult?.provider);
 
-        // Set up listener for extension schema changes
-        if (schemaProviderResult?.toolingProvider) {
-            schemaProviderResult.toolingProvider.setOnChangeListener((extensionId) => {
-                logger.info(`Extension schema changed: ${extensionId}`);
-                // Refresh all open documents with the updated schemas
-                documentManager.refreshDocumentSchemas();
-                // Notify client that schema configuration changed so it can update UI
-                connection.sendNotification('kson/schemaConfigurationChanged');
-                // Rerun diagnostics for open files
-                connection.sendRequest('workspace/diagnostic/refresh');
-            });
-        }
-
         // Extract workspace root path from URI if available
         const workspaceRoot = workspaceRootUri ? workspaceRootUri.fsPath : null;
 
