@@ -3,6 +3,7 @@ import { LanguageClient } from 'vscode-languageclient/browser';
 import { createClientOptions } from '../../config/clientOptions';
 import { initializeLanguageConfig } from '../../config/languageConfig';
 import { loadBundledSchemas, areBundledSchemasEnabled } from '../../config/bundledSchemaLoader';
+import { registerBundledSchemaContentProvider } from '../common/BundledSchemaContentProvider';
 import {deactivate} from '../common/deactivate';
 
 /**
@@ -58,6 +59,11 @@ export async function activate(context: vscode.ExtensionContext) {
 
         // Start the client and language server
         await languageClient.start();
+
+        // Register content provider for bundled:// URIs so users can navigate to bundled schemas
+        context.subscriptions.push(
+            registerBundledSchemaContentProvider(context, bundledSchemas)
+        );
 
         logOutputChannel.info('KSON Browser extension activated successfully');
         if (bundledSchemas.length > 0) {

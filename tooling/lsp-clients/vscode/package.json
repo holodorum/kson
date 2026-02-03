@@ -41,11 +41,46 @@
         },
         "configuration": "./dist/extension/config/language-configuration.json",
         "bundledSchema": null
+      },
+      {
+        "id": "ksontest",
+        "aliases": [
+          "KSON Test Dialect"
+        ],
+        "extensions": [
+          ".ksontest"
+        ],
+        "configuration": "./dist/extension/config/language-configuration.json",
+        "bundledSchema": "./dist/extension/schemas/test-dialect.schema.kson"
       }
     ],
     "grammars": [
       {
         "language": "kson",
+        "scopeName": "source.kson",
+        "path": "./dist/extension/config/kson.tmLanguage.json",
+        "embeddedLanguages": {
+          "meta.embedded.typescript": "typescript",
+          "meta.embedded.javascript": "javascript",
+          "meta.embedded.sql": "sql",
+          "meta.embedded.python": "python",
+          "meta.embedded.json": "json",
+          "meta.embedded.html": "html",
+          "meta.embedded.css": "css",
+          "meta.embedded.java": "java",
+          "meta.embedded.cpp": "cpp",
+          "meta.embedded.csharp": "csharp",
+          "meta.embedded.go": "go",
+          "meta.embedded.rust": "rust",
+          "meta.embedded.ruby": "ruby",
+          "meta.embedded.yaml": "yaml",
+          "meta.embedded.xml": "xml",
+          "meta.embedded.markdown": "markdown",
+          "meta.embedded.shell": "shellscript"
+        }
+      },
+      {
+        "language": "ksontest",
         "scopeName": "source.kson",
         "path": "./dist/extension/config/kson.tmLanguage.json",
         "embeddedLanguages": {

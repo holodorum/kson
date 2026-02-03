@@ -13,6 +13,7 @@ import {
 import {StatusBarManager} from '../common/StatusBarManager';
 import { isKsonDialect, initializeLanguageConfig } from '../../config/languageConfig';
 import { loadBundledSchemas, areBundledSchemasEnabled } from '../../config/bundledSchemaLoader';
+import { registerBundledSchemaContentProvider } from '../common/BundledSchemaContentProvider';
 
 /**
  * Node.js-specific activation function for the KSON extension.
@@ -56,6 +57,11 @@ export async function activate(context: vscode.ExtensionContext) {
 
         await languageClient.start();
         console.log('Kson Language Server started');
+
+        // Register content provider for bundled:// URIs so users can navigate to bundled schemas
+        context.subscriptions.push(
+            registerBundledSchemaContentProvider(context, bundledSchemas)
+        );
 
         // Create status bar manager
         const statusBarManager = new StatusBarManager(languageClient);
