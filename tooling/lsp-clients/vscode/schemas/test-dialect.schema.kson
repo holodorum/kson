@@ -1,0 +1,27 @@
+'$schema': 'https://json-schema.org/draft-07/schema'
+'$id': 'https://kson.org/schemas/test-dialect'
+title: 'Test Dialect Schema'
+description: 'A simple schema for testing bundled schema navigation'
+type: object
+properties:
+  name:
+    type: string
+    description: 'The name property'
+    .
+  value:
+    type: number
+    description: 'A numeric value'
+    .
+  enabled:
+    type: boolean
+    description: 'Whether the feature is enabled'
+    default: true
+    .
+  items:
+    type: array
+    description: 'A list of items'
+    items:
+      type: string
+      .
+    .
+  .
