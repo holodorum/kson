@@ -1,6 +1,5 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
-import {deactivate} from '../common/deactivate';
 import {
     ServerOptions,
     TransportKind,
@@ -14,6 +13,8 @@ import {StatusBarManager} from '../common/StatusBarManager';
 import { isKsonDialect, initializeLanguageConfig } from '../../config/languageConfig';
 import { loadBundledSchemas, loadBundledMetaSchemas, areBundledSchemasEnabled } from '../../config/bundledSchemaLoader';
 import { registerBundledSchemaContentProvider } from '../common/BundledSchemaContentProvider';
+
+let languageClient: LanguageClient | undefined;
 
 /**
  * Node.js-specific activation function for the KSON extension.
@@ -56,9 +57,12 @@ export async function activate(context: vscode.ExtensionContext) {
             bundledMetaSchemas,
             enableBundledSchemas: areBundledSchemasEnabled()
         });
-        let languageClient = new LanguageClient("kson", serverOptions, clientOptions, false)
+        languageClient = new LanguageClient("kson", serverOptions, clientOptions, false)
 
         await languageClient.start();
+
+        // Add the client to subscriptions so it gets disposed on deactivation
+        context.subscriptions.push(languageClient);
         console.log('Kson Language Server started');
 
         // Register content provider for bundled:// URIs so users can navigate to bundled schemas
@@ -204,6 +208,13 @@ export async function activate(context: vscode.ExtensionContext) {
     }
 }
 
-deactivate().catch(error => {
-    console.error('Deactivation failed:', error);
-});
+/**
+ * Deactivation function for the KSON extension.
+ * Called by VS Code when the extension is deactivated.
+ */
+export async function deactivate(): Promise<void> {
+    if (languageClient) {
+        await languageClient.stop();
+        languageClient = undefined;
+    }
+}
