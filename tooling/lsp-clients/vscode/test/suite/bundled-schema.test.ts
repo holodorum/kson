@@ -239,8 +239,8 @@ describe('Bundled Schema Support Tests', () => {
             }
 
             // Create a bundled:// URI - even if no schemas exist, the provider should be registered
-            // URI format: bundled://schema/{languageId}.schema.kson
-            const bundledUri = vscode.Uri.parse('bundled://schema/test-language.schema.kson');
+            // URI format: bundled://schema/{fileExtension}.schema.kson
+            const bundledUri = vscode.Uri.parse('bundled://schema/test-extension.schema.kson');
 
             // Try to open the document - this will fail with a specific error if the provider
             // is not registered vs if the content just doesn't exist
@@ -271,10 +271,10 @@ describe('Bundled Schema Support Tests', () => {
                 return;
             }
 
-            // Find a language that has a bundled schema configured
+            // Find a language that has a bundled schema configured with file extension
             const packageJson = extension.packageJSON;
             const languages = packageJson?.contributes?.languages || [];
-            const langWithSchema = languages.find((lang: any) => lang.bundledSchema);
+            const langWithSchema = languages.find((lang: any) => lang.bundledSchema && lang.extensions?.[0]);
 
             if (!langWithSchema) {
                 console.log('No languages with bundled schemas configured, skipping test');
@@ -282,17 +282,19 @@ describe('Bundled Schema Support Tests', () => {
                 return;
             }
 
-            const bundledUri = vscode.Uri.parse(`bundled://schema/${langWithSchema.id}.schema.kson`);
+            // Extract file extension without leading dot
+            const fileExtension = langWithSchema.extensions[0].replace(/^\./, '');
+            const bundledUri = vscode.Uri.parse(`bundled://schema/${fileExtension}.schema.kson`);
 
             try {
                 const doc = await vscode.workspace.openTextDocument(bundledUri);
                 assert.ok(doc, 'Should be able to open bundled schema document');
                 assert.ok(doc.getText().length > 0, 'Bundled schema should have content');
-                console.log(`Successfully opened bundled schema for ${langWithSchema.id}, content length: ${doc.getText().length}`);
+                console.log(`Successfully opened bundled schema for .${fileExtension}, content length: ${doc.getText().length}`);
             } catch (error: any) {
                 const message = error?.message || String(error);
                 if (message.includes('Unable to resolve resource')) {
-                    assert.fail(`bundled:// content provider failed to resolve ${langWithSchema.id} schema`);
+                    assert.fail(`bundled:// content provider failed to resolve .${fileExtension} schema`);
                 }
                 throw error;
             }
@@ -305,10 +307,10 @@ describe('Bundled Schema Support Tests', () => {
                 return;
             }
 
-            // Find a language that has a bundled schema configured
+            // Find a language that has a bundled schema configured with file extension
             const packageJson = extension.packageJSON;
             const languages = packageJson?.contributes?.languages || [];
-            const langWithSchema = languages.find((lang: any) => lang.bundledSchema);
+            const langWithSchema = languages.find((lang: any) => lang.bundledSchema && lang.extensions?.[0]);
 
             if (!langWithSchema) {
                 console.log('No languages with bundled schemas configured, skipping definition test');
@@ -317,7 +319,8 @@ describe('Bundled Schema Support Tests', () => {
             }
 
             // Create a test file with the dialect extension that has a bundled schema
-            const testExtension = langWithSchema.extensions?.[0] || `.${langWithSchema.id}`;
+            const testExtension = langWithSchema.extensions[0];
+            const fileExtension = testExtension.replace(/^\./, '');
             const content = 'name: "test value"';
             const fileName = `definition-test${testExtension}`;
             const [testFileUri, document] = await createTestFile(content, fileName);
@@ -346,7 +349,7 @@ describe('Bundled Schema Support Tests', () => {
                 );
 
                 // Log results for debugging
-                console.log(`Definition results for ${langWithSchema.id}:`, JSON.stringify(definitions, null, 2));
+                console.log(`Definition results for .${fileExtension}:`, JSON.stringify(definitions, null, 2));
 
                 // Verify definitions were returned
                 if (!definitions || definitions.length === 0) {
@@ -371,8 +374,8 @@ describe('Bundled Schema Support Tests', () => {
                 );
 
                 assert.ok(
-                    definitionUri.toString().includes(`bundled://schema/${langWithSchema.id}.schema.kson`),
-                    `Definition should point to bundled schema for ${langWithSchema.id}, got: ${definitionUri.toString()}`
+                    definitionUri.toString().includes(`bundled://schema/${fileExtension}.schema.kson`),
+                    `Definition should point to bundled schema for .${fileExtension}, got: ${definitionUri.toString()}`
                 );
 
                 // Verify we can actually open the bundled schema document

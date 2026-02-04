@@ -16,22 +16,32 @@ class MockSchemaProvider implements SchemaProvider {
         this.schemas.set(documentUri, schema);
     }
 
-    addSchemaByLanguageId(languageId: string, schema: TextDocument): void {
-        this.schemas.set(`lang:${languageId}`, schema);
+    addSchemaByExtension(extension: string, schema: TextDocument): void {
+        this.schemas.set(`ext:${extension}`, schema);
     }
 
     markAsSchemaFile(uri: string): void {
         this.schemaFiles.add(uri);
     }
 
-    getSchemaForDocument(documentUri: DocumentUri, languageId?: string): TextDocument | undefined {
-        // Check by languageId first
-        if (languageId) {
-            const langSchema = this.schemas.get(`lang:${languageId}`);
-            if (langSchema) return langSchema;
+    getSchemaForDocument(documentUri: DocumentUri): TextDocument | undefined {
+        // Check by extension first
+        const ext = this.getFileExtension(documentUri);
+        if (ext) {
+            const extSchema = this.schemas.get(`ext:${ext}`);
+            if (extSchema) return extSchema;
         }
         // Then check by URI
         return this.schemas.get(documentUri);
+    }
+
+    private getFileExtension(uri: string): string | undefined {
+        const lastDot = uri.lastIndexOf('.');
+        const lastSlash = Math.max(uri.lastIndexOf('/'), uri.lastIndexOf('\\'));
+        if (lastDot > lastSlash && lastDot > -1) {
+            return uri.substring(lastDot + 1);
+        }
+        return undefined;
     }
 
     reload(): void {
@@ -124,34 +134,34 @@ describe('CompositeSchemaProvider', () => {
             assert.strictEqual(result!.getText(), '{ "from": "second" }');
         });
 
-        it('should pass languageId to providers', () => {
+        it('should match by file extension', () => {
             const mock1 = new MockSchemaProvider();
             const mock2 = new MockSchemaProvider();
 
-            const schema = createSchema('bundled://schema/test-lang.schema.kson', '{ "type": "object" }');
-            mock2.addSchemaByLanguageId('test-lang', schema);
+            const schema = createSchema('bundled://schema/ksontest.schema.kson', '{ "type": "object" }');
+            mock2.addSchemaByExtension('ksontest', schema);
 
             const provider = new CompositeSchemaProvider([mock1, mock2], logger);
-            const result = provider.getSchemaForDocument('file:///test.kson', 'test-lang');
+            const result = provider.getSchemaForDocument('file:///test.ksontest');
 
             assert.ok(result);
-            assert.strictEqual(result!.uri, 'bundled://schema/test-lang.schema.kson');
+            assert.strictEqual(result!.uri, 'bundled://schema/ksontest.schema.kson');
         });
 
         it('should prioritize file system provider over bundled (typical usage)', () => {
             // Simulate file system provider (has schema by URI)
             const fileSystemProvider = new MockSchemaProvider();
             const fsSchema = createSchema('file:///workspace/schema.kson', '{ "from": "filesystem" }');
-            fileSystemProvider.addSchema('file:///test.kson', fsSchema);
+            fileSystemProvider.addSchema('file:///test.ksontest', fsSchema);
 
-            // Simulate bundled provider (has schema by languageId)
+            // Simulate bundled provider (has schema by extension)
             const bundledProvider = new MockSchemaProvider();
-            const bundledSchema = createSchema('bundled://schema/kson.schema.kson', '{ "from": "bundled" }');
-            bundledProvider.addSchemaByLanguageId('kson', bundledSchema);
+            const bundledSchema = createSchema('bundled://schema/ksontest.schema.kson', '{ "from": "bundled" }');
+            bundledProvider.addSchemaByExtension('ksontest', bundledSchema);
 
             // File system first (higher priority)
             const provider = new CompositeSchemaProvider([fileSystemProvider, bundledProvider], logger);
-            const result = provider.getSchemaForDocument('file:///test.kson', 'kson');
+            const result = provider.getSchemaForDocument('file:///test.ksontest');
 
             assert.ok(result);
             assert.strictEqual(result!.getText(), '{ "from": "filesystem" }');
@@ -163,11 +173,11 @@ describe('CompositeSchemaProvider', () => {
 
             // Bundled provider has schema
             const bundledProvider = new MockSchemaProvider();
-            const bundledSchema = createSchema('bundled://schema/kson.schema.kson', '{ "from": "bundled" }');
-            bundledProvider.addSchemaByLanguageId('kson', bundledSchema);
+            const bundledSchema = createSchema('bundled://schema/ksontest.schema.kson', '{ "from": "bundled" }');
+            bundledProvider.addSchemaByExtension('ksontest', bundledSchema);
 
             const provider = new CompositeSchemaProvider([fileSystemProvider, bundledProvider], logger);
-            const result = provider.getSchemaForDocument('file:///test.kson', 'kson');
+            const result = provider.getSchemaForDocument('file:///test.ksontest');
 
             assert.ok(result);
             assert.strictEqual(result!.getText(), '{ "from": "bundled" }');

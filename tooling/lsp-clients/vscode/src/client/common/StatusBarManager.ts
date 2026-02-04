@@ -93,7 +93,7 @@ export class StatusBarManager {
 
     /**
      * Extract a display name from a bundled schema URI.
-     * Bundled schema URIs have the format: bundled://schema/{languageId}.schema.kson
+     * Bundled schema URIs have the format: bundled://schema/{fileExtension}.schema.kson
      */
     private extractBundledSchemaName(schemaPath: string): string {
         if (schemaPath.startsWith('bundled://schema/')) {

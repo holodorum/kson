@@ -6,8 +6,8 @@ import {SchemaProvider} from './SchemaProvider.js';
  * Configuration for a bundled schema.
  */
 export interface BundledSchemaConfig {
-    /** The language ID this schema applies to (e.g., 'kxt', 'kson-config') */
-    languageId: string;
+    /** The file extension this schema applies to (e.g., 'kxt', 'ksontest') */
+    fileExtension: string;
     /** The pre-loaded schema content as a string */
     schemaContent: string;
 }
@@ -16,8 +16,8 @@ export interface BundledSchemaConfig {
  * Schema provider for bundled schemas that are shipped with the extension.
  * Works in both browser and Node.js environments since it doesn't require file system access.
  *
- * Bundled schemas are identified by language ID and use a special URI scheme:
- * bundled://schema/{languageId}.schema.kson
+ * Bundled schemas are identified by file extension and use a special URI scheme:
+ * bundled://schema/{fileExtension}.schema.kson
  *
  * The .schema.kson suffix allows VS Code to recognize the file as KSON and apply
  * syntax highlighting and other language features when navigating to definitions.
@@ -49,17 +49,17 @@ export class BundledSchemaProvider implements SchemaProvider {
         for (const config of schemas) {
             try {
                 // Include .schema.kson suffix so VS Code recognizes it as KSON for syntax highlighting
-                const schemaUri = `bundled://schema/${config.languageId}.schema.kson`;
+                const schemaUri = `bundled://schema/${config.fileExtension}.schema.kson`;
                 const schemaDocument = TextDocument.create(
                     schemaUri,
                     'kson',
                     1,
                     config.schemaContent
                 );
-                this.schemas.set(config.languageId, schemaDocument);
-                this.logger?.info(`Loaded bundled schema for language: ${config.languageId}`);
+                this.schemas.set(config.fileExtension, schemaDocument);
+                this.logger?.info(`Loaded bundled schema for extension: ${config.fileExtension}`);
             } catch (error) {
-                this.logger?.error(`Failed to load bundled schema for ${config.languageId}: ${error}`);
+                this.logger?.error(`Failed to load bundled schema for ${config.fileExtension}: ${error}`);
             }
         }
 
@@ -67,18 +67,53 @@ export class BundledSchemaProvider implements SchemaProvider {
     }
 
     /**
-     * Get the schema for a document based on its language ID.
+     * Get the schema for a document based on its file extension.
      *
-     * @param _documentUri The URI of the KSON document (unused by bundled provider)
-     * @param languageId The language ID to look up the schema for
-     * @returns TextDocument containing the schema, or undefined if no bundled schema exists for this language
+     * @param documentUri The URI of the KSON document
+     * @returns TextDocument containing the schema, or undefined if no bundled schema exists for this extension
      */
-    getSchemaForDocument(_documentUri: DocumentUri, languageId?: string): TextDocument | undefined {
-        if (!this.enabled || !languageId) {
+    getSchemaForDocument(documentUri: DocumentUri): TextDocument | undefined {
+        if (!this.enabled) {
             return undefined;
         }
 
-        return this.schemas.get(languageId);
+        const matchedExtension = this.findMatchingExtension(documentUri);
+        if (!matchedExtension) {
+            return undefined;
+        }
+
+        return this.schemas.get(matchedExtension);
+    }
+
+    /**
+     * Find a matching file extension from the available bundled schemas.
+     * Checks if the URI ends with any registered extension (preceded by a dot).
+     * If multiple extensions match, returns the longest one (most specific).
+     *
+     * For example, with extensions ['kson', 'orchestra.kson']:
+     * - 'file:///test.kson' matches 'kson'
+     * - 'file:///test.orchestra.kson' matches 'orchestra.kson' (longer/more specific)
+     *
+     * @param uri The URI to match against available extensions
+     * @returns The matched file extension, or undefined if none match
+     */
+    private findMatchingExtension(uri: string): string | undefined {
+        // Extract just the filename part (after last slash)
+        const lastSlash = Math.max(uri.lastIndexOf('/'), uri.lastIndexOf('\\'));
+        const filename = lastSlash >= 0 ? uri.substring(lastSlash + 1) : uri;
+
+        // Find all extensions that match the end of the filename
+        let bestMatch: string | undefined;
+        for (const extension of this.schemas.keys()) {
+            const suffix = '.' + extension;
+            if (filename.endsWith(suffix)) {
+                // Prefer longer matches (more specific extensions)
+                if (!bestMatch || extension.length > bestMatch.length) {
+                    bestMatch = extension;
+                }
+            }
+        }
+        return bestMatch;
     }
 
     /**
@@ -118,16 +153,16 @@ export class BundledSchemaProvider implements SchemaProvider {
     }
 
     /**
-     * Get the list of language IDs that have bundled schemas.
+     * Get the list of file extensions that have bundled schemas.
      */
-    getAvailableLanguageIds(): string[] {
+    getAvailableFileExtensions(): string[] {
         return Array.from(this.schemas.keys());
     }
 
     /**
-     * Check if a bundled schema exists for a given language ID.
+     * Check if a bundled schema exists for a given file extension.
      */
-    hasBundledSchema(languageId: string): boolean {
-        return this.schemas.has(languageId);
+    hasBundledSchema(fileExtension: string): boolean {
+        return this.schemas.has(fileExtension);
     }
 }
