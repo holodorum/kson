@@ -10,12 +10,11 @@ plugins {
     kotlin("multiplatform")
     id("com.vanniktech.maven.publish") version "0.30.0"
     id("org.jetbrains.dokka") version "2.0.0"
-    id("nl.ochagavia.krossover") version "1.0.5-cc96fac9-SNAPSHOT"
+    id("nl.ochagavia.krossover") version "1.0.5"
 }
 
 repositories {
     mavenCentral()
-    mavenLocal()
 }
 
 group = "org.kson"
