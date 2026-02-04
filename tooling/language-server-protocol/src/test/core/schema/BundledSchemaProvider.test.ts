@@ -19,37 +19,37 @@ describe('BundledSchemaProvider', () => {
         it('should create provider with no schemas', () => {
             const provider = new BundledSchemaProvider([], true, logger);
             assert.ok(provider);
-            assert.strictEqual(provider.getAvailableLanguageIds().length, 0);
+            assert.strictEqual(provider.getAvailableFileExtensions().length, 0);
             assert.ok(logs.some(msg => msg.includes('initialized with 0 schemas')));
         });
 
         it('should create provider with schemas', () => {
             const schemas: BundledSchemaConfig[] = [
-                { languageId: 'test-lang', schemaContent: '{ "type": "object" }' }
+                { fileExtension: 'ksontest', schemaContent: '{ "type": "object" }' }
             ];
             const provider = new BundledSchemaProvider(schemas, true, logger);
 
             assert.ok(provider);
-            assert.strictEqual(provider.getAvailableLanguageIds().length, 1);
-            assert.ok(provider.hasBundledSchema('test-lang'));
-            assert.ok(logs.some(msg => msg.includes('Loaded bundled schema for language: test-lang')));
+            assert.strictEqual(provider.getAvailableFileExtensions().length, 1);
+            assert.ok(provider.hasBundledSchema('ksontest'));
+            assert.ok(logs.some(msg => msg.includes('Loaded bundled schema for extension: ksontest')));
         });
 
         it('should create provider with multiple schemas', () => {
             const schemas: BundledSchemaConfig[] = [
-                { languageId: 'lang-a', schemaContent: '{ "type": "object" }' },
-                { languageId: 'lang-b', schemaContent: '{ "type": "array" }' }
+                { fileExtension: 'ext-a', schemaContent: '{ "type": "object" }' },
+                { fileExtension: 'ext-b', schemaContent: '{ "type": "array" }' }
             ];
             const provider = new BundledSchemaProvider(schemas, true, logger);
 
-            assert.strictEqual(provider.getAvailableLanguageIds().length, 2);
-            assert.ok(provider.hasBundledSchema('lang-a'));
-            assert.ok(provider.hasBundledSchema('lang-b'));
+            assert.strictEqual(provider.getAvailableFileExtensions().length, 2);
+            assert.ok(provider.hasBundledSchema('ext-a'));
+            assert.ok(provider.hasBundledSchema('ext-b'));
         });
 
         it('should respect enabled flag', () => {
             const schemas: BundledSchemaConfig[] = [
-                { languageId: 'test-lang', schemaContent: '{ "type": "object" }' }
+                { fileExtension: 'ksontest', schemaContent: '{ "type": "object" }' }
             ];
             const provider = new BundledSchemaProvider(schemas, false, logger);
 
@@ -61,61 +61,94 @@ describe('BundledSchemaProvider', () => {
     describe('getSchemaForDocument', () => {
         it('should return undefined when disabled', () => {
             const schemas: BundledSchemaConfig[] = [
-                { languageId: 'test-lang', schemaContent: '{ "type": "object" }' }
+                { fileExtension: 'ksontest', schemaContent: '{ "type": "object" }' }
             ];
             const provider = new BundledSchemaProvider(schemas, false, logger);
 
-            const schema = provider.getSchemaForDocument('file:///test.kson', 'test-lang');
+            const schema = provider.getSchemaForDocument('file:///test.ksontest');
             assert.strictEqual(schema, undefined);
         });
 
-        it('should return undefined when no languageId provided', () => {
+        it('should return undefined when no file extension in URI', () => {
             const schemas: BundledSchemaConfig[] = [
-                { languageId: 'test-lang', schemaContent: '{ "type": "object" }' }
+                { fileExtension: 'ksontest', schemaContent: '{ "type": "object" }' }
             ];
             const provider = new BundledSchemaProvider(schemas, true, logger);
 
-            const schema = provider.getSchemaForDocument('file:///test.kson');
+            const schema = provider.getSchemaForDocument('file:///test');
             assert.strictEqual(schema, undefined);
         });
 
-        it('should return undefined for unknown languageId', () => {
+        it('should return undefined for unknown file extension', () => {
             const schemas: BundledSchemaConfig[] = [
-                { languageId: 'test-lang', schemaContent: '{ "type": "object" }' }
+                { fileExtension: 'ksontest', schemaContent: '{ "type": "object" }' }
             ];
             const provider = new BundledSchemaProvider(schemas, true, logger);
 
-            const schema = provider.getSchemaForDocument('file:///test.kson', 'unknown-lang');
+            const schema = provider.getSchemaForDocument('file:///test.unknown');
             assert.strictEqual(schema, undefined);
         });
 
-        it('should return schema for matching languageId', () => {
+        it('should return schema for matching file extension', () => {
             const schemaContent = '{ "type": "object" }';
             const schemas: BundledSchemaConfig[] = [
-                { languageId: 'test-lang', schemaContent }
+                { fileExtension: 'ksontest', schemaContent }
             ];
             const provider = new BundledSchemaProvider(schemas, true, logger);
 
-            const schema = provider.getSchemaForDocument('file:///test.kson', 'test-lang');
+            const schema = provider.getSchemaForDocument('file:///test.ksontest');
             assert.ok(schema);
             assert.strictEqual(schema!.getText(), schemaContent);
-            assert.strictEqual(schema!.uri, 'bundled://schema/test-lang.schema.kson');
+            assert.strictEqual(schema!.uri, 'bundled://schema/ksontest.schema.kson');
         });
 
-        it('should ignore documentUri and use languageId', () => {
+        it('should return same schema for different paths with same extension', () => {
             const schemaContent = '{ "type": "object" }';
             const schemas: BundledSchemaConfig[] = [
-                { languageId: 'test-lang', schemaContent }
+                { fileExtension: 'ksontest', schemaContent }
             ];
             const provider = new BundledSchemaProvider(schemas, true, logger);
 
-            // Different document URIs should return same schema for same languageId
-            const schema1 = provider.getSchemaForDocument('file:///a.kson', 'test-lang');
-            const schema2 = provider.getSchemaForDocument('file:///b.kson', 'test-lang');
+            // Different document URIs with same extension should return same schema
+            const schema1 = provider.getSchemaForDocument('file:///a.ksontest');
+            const schema2 = provider.getSchemaForDocument('file:///b.ksontest');
 
             assert.ok(schema1);
             assert.ok(schema2);
             assert.strictEqual(schema1!.uri, schema2!.uri);
+        });
+
+        it('should match multi-dot extensions correctly', () => {
+            const ksonSchema = '{ "type": "kson" }';
+            const orchestraSchema = '{ "type": "orchestra" }';
+            const schemas: BundledSchemaConfig[] = [
+                { fileExtension: 'kson', schemaContent: ksonSchema },
+                { fileExtension: 'orchestra.kson', schemaContent: orchestraSchema }
+            ];
+            const provider = new BundledSchemaProvider(schemas, true, logger);
+
+            // Simple .kson file should match 'kson' extension
+            const simpleSchema = provider.getSchemaForDocument('file:///test.kson');
+            assert.ok(simpleSchema);
+            assert.strictEqual(simpleSchema!.getText(), ksonSchema);
+
+            // Multi-dot .orchestra.kson file should match the longer 'orchestra.kson' extension
+            const orchestraResult = provider.getSchemaForDocument('file:///my-config.orchestra.kson');
+            assert.ok(orchestraResult);
+            assert.strictEqual(orchestraResult!.getText(), orchestraSchema);
+        });
+
+        it('should prefer longer extension when multiple match', () => {
+            const schemas: BundledSchemaConfig[] = [
+                { fileExtension: 'kson', schemaContent: '{ "short": true }' },
+                { fileExtension: 'config.kson', schemaContent: '{ "long": true }' }
+            ];
+            const provider = new BundledSchemaProvider(schemas, true, logger);
+
+            // File ending in .config.kson should match the longer extension
+            const schema = provider.getSchemaForDocument('file:///app.config.kson');
+            assert.ok(schema);
+            assert.strictEqual(schema!.getText(), '{ "long": true }');
         });
     });
 
@@ -138,7 +171,7 @@ describe('BundledSchemaProvider', () => {
     describe('setEnabled', () => {
         it('should toggle enabled state', () => {
             const schemas: BundledSchemaConfig[] = [
-                { languageId: 'test-lang', schemaContent: '{ "type": "object" }' }
+                { fileExtension: 'ksontest', schemaContent: '{ "type": "object" }' }
             ];
             const provider = new BundledSchemaProvider(schemas, true, logger);
 
@@ -148,14 +181,14 @@ describe('BundledSchemaProvider', () => {
             assert.strictEqual(provider.isEnabled(), false);
 
             // Should not return schema when disabled
-            const schema = provider.getSchemaForDocument('file:///test.kson', 'test-lang');
+            const schema = provider.getSchemaForDocument('file:///test.ksontest');
             assert.strictEqual(schema, undefined);
 
             provider.setEnabled(true);
             assert.strictEqual(provider.isEnabled(), true);
 
             // Should return schema when re-enabled
-            const schema2 = provider.getSchemaForDocument('file:///test.kson', 'test-lang');
+            const schema2 = provider.getSchemaForDocument('file:///test.ksontest');
             assert.ok(schema2);
         });
     });
@@ -163,46 +196,46 @@ describe('BundledSchemaProvider', () => {
     describe('reload', () => {
         it('should be a no-op (bundled schemas are immutable)', () => {
             const schemas: BundledSchemaConfig[] = [
-                { languageId: 'test-lang', schemaContent: '{ "type": "object" }' }
+                { fileExtension: 'ksontest', schemaContent: '{ "type": "object" }' }
             ];
             const provider = new BundledSchemaProvider(schemas, true, logger);
 
             // reload should not throw or change anything
             provider.reload();
 
-            assert.strictEqual(provider.getAvailableLanguageIds().length, 1);
-            assert.ok(provider.hasBundledSchema('test-lang'));
+            assert.strictEqual(provider.getAvailableFileExtensions().length, 1);
+            assert.ok(provider.hasBundledSchema('ksontest'));
         });
     });
 
     describe('hasBundledSchema', () => {
-        it('should return true for configured languages', () => {
+        it('should return true for configured extensions', () => {
             const schemas: BundledSchemaConfig[] = [
-                { languageId: 'lang-a', schemaContent: '{}' },
-                { languageId: 'lang-b', schemaContent: '{}' }
+                { fileExtension: 'ext-a', schemaContent: '{}' },
+                { fileExtension: 'ext-b', schemaContent: '{}' }
             ];
             const provider = new BundledSchemaProvider(schemas, true, logger);
 
-            assert.strictEqual(provider.hasBundledSchema('lang-a'), true);
-            assert.strictEqual(provider.hasBundledSchema('lang-b'), true);
-            assert.strictEqual(provider.hasBundledSchema('lang-c'), false);
+            assert.strictEqual(provider.hasBundledSchema('ext-a'), true);
+            assert.strictEqual(provider.hasBundledSchema('ext-b'), true);
+            assert.strictEqual(provider.hasBundledSchema('ext-c'), false);
         });
     });
 
-    describe('getAvailableLanguageIds', () => {
-        it('should return all configured language IDs', () => {
+    describe('getAvailableFileExtensions', () => {
+        it('should return all configured file extensions', () => {
             const schemas: BundledSchemaConfig[] = [
-                { languageId: 'alpha', schemaContent: '{}' },
-                { languageId: 'beta', schemaContent: '{}' },
-                { languageId: 'gamma', schemaContent: '{}' }
+                { fileExtension: 'alpha', schemaContent: '{}' },
+                { fileExtension: 'beta', schemaContent: '{}' },
+                { fileExtension: 'gamma', schemaContent: '{}' }
             ];
             const provider = new BundledSchemaProvider(schemas, true, logger);
 
-            const ids = provider.getAvailableLanguageIds();
-            assert.strictEqual(ids.length, 3);
-            assert.ok(ids.includes('alpha'));
-            assert.ok(ids.includes('beta'));
-            assert.ok(ids.includes('gamma'));
+            const extensions = provider.getAvailableFileExtensions();
+            assert.strictEqual(extensions.length, 3);
+            assert.ok(extensions.includes('alpha'));
+            assert.ok(extensions.includes('beta'));
+            assert.ok(extensions.includes('gamma'));
         });
     });
 });

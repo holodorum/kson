@@ -6,7 +6,7 @@ import { getLanguageConfiguration, BundledSchemaMapping } from './languageConfig
  *
  * ## Architecture Note: Why content is passed instead of file URIs
  *
- * Originally, the LSP server created schema documents with `bundled://schema/{languageId}` URIs.
+ * Originally, the LSP server created schema documents with `bundled://schema/{fileExtension}` URIs.
  * This caused a bug where "Go to Definition" navigation failed with:
  * "Unable to resolve resource bundled://schema/xxx"
  *
@@ -23,8 +23,8 @@ import { getLanguageConfiguration, BundledSchemaMapping } from './languageConfig
  * Integration tests for bundled schema navigation are in `test/suite/bundled-schema.test.ts`.
  */
 export interface BundledSchemaConfig {
-    /** The language ID this schema applies to */
-    languageId: string;
+    /** The file extension this schema applies to */
+    fileExtension: string;
     /** The pre-loaded schema content as a string */
     schemaContent: string;
 }
@@ -49,12 +49,12 @@ export async function loadBundledSchemas(
             const schemaContent = await loadSchemaFile(extensionUri, mapping, logger);
             if (schemaContent) {
                 loadedSchemas.push({
-                    languageId: mapping.languageId,
+                    fileExtension: mapping.fileExtension,
                     schemaContent
                 });
             }
         } catch (error) {
-            logger?.warn(`Failed to load bundled schema for ${mapping.languageId}: ${error}`);
+            logger?.warn(`Failed to load bundled schema for ${mapping.fileExtension}: ${error}`);
         }
     }
 
@@ -74,10 +74,10 @@ async function loadSchemaFile(
         const schemaUri = vscode.Uri.joinPath(extensionUri, mapping.schemaPath);
         const schemaBytes = await vscode.workspace.fs.readFile(schemaUri);
         const schemaContent = new TextDecoder().decode(schemaBytes);
-        logger?.info(`Loaded bundled schema for ${mapping.languageId} from ${mapping.schemaPath}`);
+        logger?.info(`Loaded bundled schema for .${mapping.fileExtension} from ${mapping.schemaPath}`);
         return schemaContent;
     } catch (error) {
-        logger?.warn(`Schema file not found for ${mapping.languageId}: ${mapping.schemaPath}`);
+        logger?.warn(`Schema file not found for .${mapping.fileExtension}: ${mapping.schemaPath}`);
         return undefined;
     }
 }

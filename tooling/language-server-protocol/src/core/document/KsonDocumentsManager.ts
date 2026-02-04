@@ -26,8 +26,8 @@ export class KsonDocumentsManager extends TextDocuments<KsonDocument> {
             ): KsonDocument => {
                 const textDocument = TextDocument.create(uri, languageId, version, content);
 
-                // Try to get schema from provider, passing languageId for bundled schema support
-                let schemaDocument = provider.getSchemaForDocument(uri, languageId);
+                // Try to get schema from provider based on file extension
+                let schemaDocument = provider.getSchemaForDocument(uri);
 
                 const parseResult = Kson.getInstance().analyze(content, uri);
                 return new KsonDocument(textDocument, parseResult, schemaDocument);
@@ -43,12 +43,10 @@ export class KsonDocumentsManager extends TextDocuments<KsonDocument> {
                     version
                 );
                 const parseResult = Kson.getInstance().analyze(textDocument.getText(), ksonDocument.uri);
-                // Pass languageId for bundled schema support
-                const languageId = textDocument.languageId;
                 return new KsonDocument(
                     textDocument,
                     parseResult,
-                    provider.getSchemaForDocument(ksonDocument.uri, languageId)
+                    provider.getSchemaForDocument(ksonDocument.uri)
                 );
             }
         });
@@ -85,9 +83,7 @@ export class KsonDocumentsManager extends TextDocuments<KsonDocument> {
         for (const doc of allDocs) {
             const textDocument = doc.textDocument;
             const parseResult = doc.getAnalysisResult();
-            // Pass languageId for bundled schema support
-            const languageId = textDocument.languageId;
-            const updatedSchema = this.schemaProvider.getSchemaForDocument(doc.uri, languageId);
+            const updatedSchema = this.schemaProvider.getSchemaForDocument(doc.uri);
 
             // Create new document instance with updated schema
             const updatedDoc = new KsonDocument(textDocument, parseResult, updatedSchema);
