@@ -1,33 +1,8 @@
 import * as vscode from 'vscode';
 import { getLanguageConfiguration, BundledSchemaMapping } from './languageConfig';
 
-/**
- * Configuration for a bundled schema to be passed to the LSP server.
- *
- * ## Architecture Note: Why content is passed instead of file URIs
- *
- * Originally, the LSP server created schema documents with `bundled://schema/{fileExtension}` URIs.
- * This caused a bug where "Go to Definition" navigation failed with:
- * "Unable to resolve resource bundled://schema/xxx"
- *
- * VS Code doesn't natively understand the `bundled://` scheme, so we added a
- * `BundledSchemaContentProvider` (see `client/common/BundledSchemaContentProvider.ts`)
- * to handle these URIs and return the schema content.
- *
- * An alternative would be to pass the actual file:// URIs to the server, but this approach
- * was chosen because:
- * 1. Browser environments may not have access to extension files via file://
- * 2. The server doesn't need to know the extension's installation path
- * 3. Schema content is loaded once at startup and kept in memory
- *
- * Integration tests for bundled schema navigation are in `test/suite/bundled-schema.test.ts`.
- */
-export interface BundledSchemaConfig {
-    /** The file extension this schema applies to */
-    fileExtension: string;
-    /** The pre-loaded schema content as a string */
-    schemaContent: string;
-}
+import type { BundledSchemaConfig } from 'kson-language-server';
+export type { BundledSchemaConfig };
 
 /**
  * Load all bundled schemas defined in the language configuration.
