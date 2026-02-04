@@ -99,7 +99,7 @@ describe('BundledSchemaProvider', () => {
             const schema = provider.getSchemaForDocument('file:///test.kson', 'test-lang');
             assert.ok(schema);
             assert.strictEqual(schema!.getText(), schemaContent);
-            assert.strictEqual(schema!.uri, 'bundled://schema/test-lang');
+            assert.strictEqual(schema!.uri, 'bundled://schema/test-lang.schema.kson');
         });
 
         it('should ignore documentUri and use languageId', () => {
@@ -123,8 +123,8 @@ describe('BundledSchemaProvider', () => {
         it('should return true for bundled schema URIs', () => {
             const provider = new BundledSchemaProvider([], true, logger);
 
-            assert.strictEqual(provider.isSchemaFile('bundled://schema/test-lang'), true);
-            assert.strictEqual(provider.isSchemaFile('bundled://schema/other'), true);
+            assert.strictEqual(provider.isSchemaFile('bundled://schema/test-lang.schema.kson'), true);
+            assert.strictEqual(provider.isSchemaFile('bundled://schema/other.schema.kson'), true);
         });
 
         it('should return false for non-bundled URIs', () => {

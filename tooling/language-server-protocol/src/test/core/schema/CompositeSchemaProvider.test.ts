@@ -128,14 +128,14 @@ describe('CompositeSchemaProvider', () => {
             const mock1 = new MockSchemaProvider();
             const mock2 = new MockSchemaProvider();
 
-            const schema = createSchema('bundled://schema/test-lang', '{ "type": "object" }');
+            const schema = createSchema('bundled://schema/test-lang.schema.kson', '{ "type": "object" }');
             mock2.addSchemaByLanguageId('test-lang', schema);
 
             const provider = new CompositeSchemaProvider([mock1, mock2], logger);
             const result = provider.getSchemaForDocument('file:///test.kson', 'test-lang');
 
             assert.ok(result);
-            assert.strictEqual(result!.uri, 'bundled://schema/test-lang');
+            assert.strictEqual(result!.uri, 'bundled://schema/test-lang.schema.kson');
         });
 
         it('should prioritize file system provider over bundled (typical usage)', () => {
@@ -146,7 +146,7 @@ describe('CompositeSchemaProvider', () => {
 
             // Simulate bundled provider (has schema by languageId)
             const bundledProvider = new MockSchemaProvider();
-            const bundledSchema = createSchema('bundled://schema/kson', '{ "from": "bundled" }');
+            const bundledSchema = createSchema('bundled://schema/kson.schema.kson', '{ "from": "bundled" }');
             bundledProvider.addSchemaByLanguageId('kson', bundledSchema);
 
             // File system first (higher priority)
@@ -163,7 +163,7 @@ describe('CompositeSchemaProvider', () => {
 
             // Bundled provider has schema
             const bundledProvider = new MockSchemaProvider();
-            const bundledSchema = createSchema('bundled://schema/kson', '{ "from": "bundled" }');
+            const bundledSchema = createSchema('bundled://schema/kson.schema.kson', '{ "from": "bundled" }');
             bundledProvider.addSchemaByLanguageId('kson', bundledSchema);
 
             const provider = new CompositeSchemaProvider([fileSystemProvider, bundledProvider], logger);
@@ -203,12 +203,12 @@ describe('CompositeSchemaProvider', () => {
             mock1.markAsSchemaFile('file:///schema1.kson');
 
             const mock2 = new MockSchemaProvider();
-            mock2.markAsSchemaFile('bundled://schema/lang');
+            mock2.markAsSchemaFile('bundled://schema/lang.schema.kson');
 
             const provider = new CompositeSchemaProvider([mock1, mock2], logger);
 
             assert.strictEqual(provider.isSchemaFile('file:///schema1.kson'), true);
-            assert.strictEqual(provider.isSchemaFile('bundled://schema/lang'), true);
+            assert.strictEqual(provider.isSchemaFile('bundled://schema/lang.schema.kson'), true);
             assert.strictEqual(provider.isSchemaFile('file:///other.kson'), false);
         });
     });

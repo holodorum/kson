@@ -33,10 +33,12 @@ export class BundledSchemaContentProvider implements vscode.TextDocumentContentP
     }
 
     provideTextDocumentContent(uri: vscode.Uri): string | undefined {
-        // URI format: bundled://schema/{languageId}
+        // URI format: bundled://schema/{languageId}.schema.kson
         // uri.authority = "schema"
-        // uri.path = "/{languageId}"
-        const languageId = uri.path.replace(/^\//, '');
+        // uri.path = "/{languageId}.schema.kson"
+        const languageId = uri.path
+            .replace(/^\//, '')              // Remove leading slash
+            .replace(/\.schema\.kson$/, ''); // Remove .schema.kson suffix
         return this.schemasByLanguageId.get(languageId);
     }
 }

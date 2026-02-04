@@ -239,7 +239,8 @@ describe('Bundled Schema Support Tests', () => {
             }
 
             // Create a bundled:// URI - even if no schemas exist, the provider should be registered
-            const bundledUri = vscode.Uri.parse('bundled://schema/test-language');
+            // URI format: bundled://schema/{languageId}.schema.kson
+            const bundledUri = vscode.Uri.parse('bundled://schema/test-language.schema.kson');
 
             // Try to open the document - this will fail with a specific error if the provider
             // is not registered vs if the content just doesn't exist
@@ -253,7 +254,7 @@ describe('Bundled Schema Support Tests', () => {
                 const message = error?.message || String(error);
 
                 // If the provider is registered but returns undefined, VS Code may throw
-                // "cannot open bundled://schema/test-language" but NOT "Unable to resolve"
+                // "cannot open bundled://schema/test-language.schema.kson" but NOT "Unable to resolve"
                 // The "Unable to resolve resource" error indicates no provider is registered
                 if (message.includes('Unable to resolve resource')) {
                     assert.fail('bundled:// content provider is not registered');
@@ -281,7 +282,7 @@ describe('Bundled Schema Support Tests', () => {
                 return;
             }
 
-            const bundledUri = vscode.Uri.parse(`bundled://schema/${langWithSchema.id}`);
+            const bundledUri = vscode.Uri.parse(`bundled://schema/${langWithSchema.id}.schema.kson`);
 
             try {
                 const doc = await vscode.workspace.openTextDocument(bundledUri);
@@ -370,7 +371,7 @@ describe('Bundled Schema Support Tests', () => {
                 );
 
                 assert.ok(
-                    definitionUri.toString().includes(`bundled://schema/${langWithSchema.id}`),
+                    definitionUri.toString().includes(`bundled://schema/${langWithSchema.id}.schema.kson`),
                     `Definition should point to bundled schema for ${langWithSchema.id}, got: ${definitionUri.toString()}`
                 );
 

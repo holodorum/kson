@@ -17,7 +17,10 @@ export interface BundledSchemaConfig {
  * Works in both browser and Node.js environments since it doesn't require file system access.
  *
  * Bundled schemas are identified by language ID and use a special URI scheme:
- * bundled://schema/{languageId}
+ * bundled://schema/{languageId}.schema.kson
+ *
+ * The .schema.kson suffix allows VS Code to recognize the file as KSON and apply
+ * syntax highlighting and other language features when navigating to definitions.
  */
 export class BundledSchemaProvider implements SchemaProvider {
     private schemas: Map<string, TextDocument>;
@@ -45,7 +48,8 @@ export class BundledSchemaProvider implements SchemaProvider {
         // Create TextDocuments from the provided schema content
         for (const config of schemas) {
             try {
-                const schemaUri = `bundled://schema/${config.languageId}`;
+                // Include .schema.kson suffix so VS Code recognizes it as KSON for syntax highlighting
+                const schemaUri = `bundled://schema/${config.languageId}.schema.kson`;
                 const schemaDocument = TextDocument.create(
                     schemaUri,
                     'kson',
@@ -87,13 +91,13 @@ export class BundledSchemaProvider implements SchemaProvider {
 
     /**
      * Check if a given file URI is a schema file.
-     * Bundled schemas use the bundled:// scheme.
+     * Bundled schemas use the bundled:// scheme with .schema.kson suffix.
      *
      * @param fileUri The URI of the file to check
      * @returns True if the file is a bundled schema file
      */
     isSchemaFile(fileUri: DocumentUri): boolean {
-        return fileUri.startsWith('bundled://schema/');
+        return fileUri.startsWith('bundled://schema/') && fileUri.endsWith('.schema.kson');
     }
 
     /**
