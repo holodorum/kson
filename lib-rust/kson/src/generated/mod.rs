@@ -3259,6 +3259,8 @@ impl std::hash::Hash for Kson {
 /// When formatting KSON, strings at paths matching [pathPattern] will be rendered
 /// as embed blocks instead of regular strings.
 ///
+/// **Warning:** JsonPointerGlob syntax is experimental and may change in future versions.
+///
 /// @param pathPattern A JsonPointerGlob pattern (e.g., "/scripts/ *", "/queries/ **")
 /// @param tag Optional embed tag to include (e.g., "yaml", "sql", "bash")
 ///
