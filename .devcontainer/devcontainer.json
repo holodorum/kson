@@ -1,0 +1,37 @@
+{
+  "name": "KSON Dev",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": ".."
+  },
+
+  // Gradle wrapper auto-downloads JDK 17 — no Java feature needed.
+  // Rust, Node, Python, and uv are baked into the Dockerfile.
+
+  "remoteUser": "vscode",
+  "containerEnv": {
+    "CHROME_BIN": "/usr/bin/chromium-browser",
+    "CHROMIUM_FLAGS": "--no-sandbox"
+  },
+
+  "mounts": [
+    "source=kson-gradle-cache,target=/home/vscode/.gradle,type=volume"
+  ],
+
+  "postCreateCommand": "./gradlew --version",
+
+  "customizations": {
+    "jetbrains": {
+      "backend": {
+        "productCode": "IU",
+        "plugins": [
+          "org.jetbrains.kotlin",
+          "org.rust.lang",
+          "org.toml.lang",
+          "PythonCore",
+          "org.jetbrains.plugins.gradle"
+        ]
+      }
+    }
+  }
+}
