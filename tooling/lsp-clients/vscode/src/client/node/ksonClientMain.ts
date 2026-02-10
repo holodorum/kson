@@ -14,8 +14,6 @@ import { isKsonDialect, initializeLanguageConfig } from '../../config/languageCo
 import { loadBundledSchemas, loadBundledMetaSchemas, areBundledSchemasEnabled } from '../../config/bundledSchemaLoader';
 import { registerBundledSchemaContentProvider } from '../common/BundledSchemaContentProvider';
 
-let languageClient: LanguageClient | undefined;
-
 /**
  * Node.js-specific activation function for the KSON extension.
  * This handles desktop VS Code environments where we can spawn child processes.
@@ -57,7 +55,7 @@ export async function activate(context: vscode.ExtensionContext) {
             bundledMetaSchemas,
             enableBundledSchemas: areBundledSchemasEnabled()
         });
-        languageClient = new LanguageClient("kson", serverOptions, clientOptions, false)
+        const languageClient = new LanguageClient("kson", serverOptions, clientOptions, false)
 
         await languageClient.start();
 
@@ -205,16 +203,5 @@ export async function activate(context: vscode.ExtensionContext) {
         const message = error instanceof Error ? error.message : String(error);
         logOutputChannel.error(`Failed to activate KSON Node.js extension: ${message}`);
         vscode.window.showErrorMessage('Failed to activate KSON language support.');
-    }
-}
-
-/**
- * Deactivation function for the KSON extension.
- * Called by VS Code when the extension is deactivated.
- */
-export async function deactivate(): Promise<void> {
-    if (languageClient) {
-        await languageClient.stop();
-        languageClient = undefined;
     }
 }

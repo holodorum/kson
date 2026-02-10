@@ -5,8 +5,6 @@ import { initializeLanguageConfig } from '../../config/languageConfig';
 import { loadBundledSchemas, loadBundledMetaSchemas, areBundledSchemasEnabled } from '../../config/bundledSchemaLoader';
 import { registerBundledSchemaContentProvider } from '../common/BundledSchemaContentProvider';
 
-let languageClient: LanguageClient | undefined;
-
 /**
  * Browser-specific activation function for the KSON extension.
  * This handles VS Code Web and GitHub.dev environments where we run in a browser.
@@ -54,7 +52,7 @@ export async function activate(context: vscode.ExtensionContext) {
             ];
         }
 
-        languageClient = new LanguageClient(
+        const languageClient = new LanguageClient(
             'kson-browser',
             'KSON Language Server (Browser)',
             clientOptions,
@@ -84,16 +82,5 @@ export async function activate(context: vscode.ExtensionContext) {
         const message = error instanceof Error ? error.message : String(error);
         logOutputChannel.error(`Failed to activate KSON Browser extension: ${message}`);
         vscode.window.showErrorMessage('Failed to activate KSON language support.');
-    }
-}
-
-/**
- * Deactivation function for the KSON extension.
- * Called by VS Code when the extension is deactivated.
- */
-export async function deactivate(): Promise<void> {
-    if (languageClient) {
-        await languageClient.stop();
-        languageClient = undefined;
     }
 }
