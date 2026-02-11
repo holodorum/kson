@@ -1,48 +1,9 @@
 import {TextDocument} from 'vscode-languageserver-textdocument';
-import {Analysis, Kson, KsonValue, KsonValueType} from 'kson';
+import {Kson} from 'kson';
 import {KsonDocument} from "./KsonDocument.js";
 import {DocumentUri, TextDocuments, TextDocumentContentChangeEvent} from "vscode-languageserver";
 import {SchemaProvider, MetaSchemaProvider, NoOpSchemaProvider} from "../schema/SchemaProvider.js";
-
-/**
- * Extract the $schema field value from a parsed KSON analysis result.
- *
- * @param analysis The KSON analysis result
- * @returns The $schema string value, or undefined if not present or not a string
- */
-function extractSchemaId(analysis: Analysis): string | undefined {
-    const ksonValue = analysis.ksonValue;
-    if (!ksonValue || ksonValue.type !== KsonValueType.OBJECT) {
-        return undefined;
-    }
-    const obj = ksonValue as KsonValue.KsonObject;
-    const schemaValue = obj.properties.asJsReadonlyMapView().get('$schema');
-    if (!schemaValue || schemaValue.type !== KsonValueType.STRING) {
-        return undefined;
-    }
-    return (schemaValue as KsonValue.KsonString).value;
-}
-
-/**
- * Resolve a schema for a document by trying URI-based resolution first,
- * then falling back to content-based metaschema resolution via $schema.
- */
-function resolveSchema(
-    provider: SchemaProvider,
-    metaSchemaProvider: MetaSchemaProvider | undefined,
-    uri: DocumentUri,
-    analysis: Analysis
-): TextDocument | undefined {
-    const schema = provider.getSchemaForDocument(uri);
-    if (schema) return schema;
-
-    if (metaSchemaProvider) {
-        const schemaId = extractSchemaId(analysis);
-        if (schemaId) return metaSchemaProvider.getMetaSchemaForId(schemaId);
-    }
-
-    return undefined;
-}
+import {resolveSchema} from "../schema/schemaResolution.js";
 
 /**
  * Document management for the Kson Language Server.
