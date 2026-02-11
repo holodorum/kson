@@ -2,7 +2,7 @@ import {TextDocument} from 'vscode-languageserver-textdocument';
 import {Analysis, Kson, KsonValue, KsonValueType} from 'kson';
 import {KsonDocument} from "./KsonDocument.js";
 import {DocumentUri, TextDocuments, TextDocumentContentChangeEvent} from "vscode-languageserver";
-import {SchemaProvider, NoOpSchemaProvider} from "../schema/SchemaProvider.js";
+import {SchemaProvider, MetaSchemaProvider, NoOpSchemaProvider} from "../schema/SchemaProvider.js";
 
 /**
  * Extract the $schema field value from a parsed KSON analysis result.
@@ -27,12 +27,19 @@ function extractSchemaId(analysis: Analysis): string | undefined {
  * Resolve a schema for a document by trying URI-based resolution first,
  * then falling back to content-based metaschema resolution via $schema.
  */
-function resolveSchema(provider: SchemaProvider, uri: DocumentUri, analysis: Analysis): TextDocument | undefined {
+function resolveSchema(
+    provider: SchemaProvider,
+    metaSchemaProvider: MetaSchemaProvider | undefined,
+    uri: DocumentUri,
+    analysis: Analysis
+): TextDocument | undefined {
     const schema = provider.getSchemaForDocument(uri);
     if (schema) return schema;
 
-    const schemaId = extractSchemaId(analysis);
-    if (schemaId) return provider.getMetaSchemaForId(schemaId);
+    if (metaSchemaProvider) {
+        const schemaId = extractSchemaId(analysis);
+        if (schemaId) return metaSchemaProvider.getMetaSchemaForId(schemaId);
+    }
 
     return undefined;
 }
@@ -45,10 +52,12 @@ function resolveSchema(provider: SchemaProvider, uri: DocumentUri, analysis: Ana
  */
 export class KsonDocumentsManager extends TextDocuments<KsonDocument> {
     private schemaProvider: SchemaProvider;
+    private metaSchemaProvider: MetaSchemaProvider | undefined;
 
-    constructor(schemaProvider?: SchemaProvider) {
+    constructor(schemaProvider?: SchemaProvider, metaSchemaProvider?: MetaSchemaProvider) {
         // Use provided schema provider or default to no-op
         const provider = schemaProvider ?? new NoOpSchemaProvider();
+        const metaProvider = metaSchemaProvider;
 
         super({
             create: (
@@ -59,7 +68,7 @@ export class KsonDocumentsManager extends TextDocuments<KsonDocument> {
             ): KsonDocument => {
                 const textDocument = TextDocument.create(uri, languageId, version, content);
                 const parseResult = Kson.getInstance().analyze(content, uri);
-                const schemaDocument = resolveSchema(provider, uri, parseResult);
+                const schemaDocument = resolveSchema(provider, metaProvider, uri, parseResult);
                 return new KsonDocument(textDocument, parseResult, schemaDocument);
             },
             update: (
@@ -73,13 +82,14 @@ export class KsonDocumentsManager extends TextDocuments<KsonDocument> {
                     version
                 );
                 const parseResult = Kson.getInstance().analyze(textDocument.getText(), ksonDocument.uri);
-                const schemaDocument = resolveSchema(provider, ksonDocument.uri, parseResult);
+                const schemaDocument = resolveSchema(provider, metaProvider, ksonDocument.uri, parseResult);
                 return new KsonDocument(textDocument, parseResult, schemaDocument);
             }
         });
 
         // Assign the schema provider after super() is called
         this.schemaProvider = provider;
+        this.metaSchemaProvider = metaProvider;
     }
 
     /**
@@ -111,7 +121,7 @@ export class KsonDocumentsManager extends TextDocuments<KsonDocument> {
             const textDocument = doc.textDocument;
             const parseResult = doc.getAnalysisResult();
 
-            const updatedSchema = resolveSchema(this.schemaProvider, doc.uri, parseResult);
+            const updatedSchema = resolveSchema(this.schemaProvider, this.metaSchemaProvider, doc.uri, parseResult);
 
             // Create new document instance with updated schema
             const updatedDoc = new KsonDocument(textDocument, parseResult, updatedSchema);

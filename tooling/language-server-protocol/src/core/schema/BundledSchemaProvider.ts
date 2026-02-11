@@ -1,6 +1,6 @@
 import {TextDocument} from 'vscode-languageserver-textdocument';
 import {DocumentUri} from 'vscode-languageserver';
-import {SchemaProvider} from './SchemaProvider.js';
+import {SchemaProvider, MetaSchemaProvider} from './SchemaProvider.js';
 
 /**
  * Configuration for a bundled schema.
@@ -38,7 +38,7 @@ export interface BundledMetaSchemaConfig {
  * The .schema.kson suffix allows VS Code to recognize the file as KSON and apply
  * syntax highlighting and other language features when navigating to definitions.
  */
-export class BundledSchemaProvider implements SchemaProvider {
+export class BundledSchemaProvider implements SchemaProvider, MetaSchemaProvider {
     private schemas: Map<string, TextDocument>;
     private metaSchemas: Map<string, TextDocument>;
     private enabled: boolean;

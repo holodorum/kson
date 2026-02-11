@@ -11,7 +11,7 @@ import {KsonTextDocumentService} from './core/services/KsonTextDocumentService.j
 import {KSON_LEGEND} from './core/features/SemanticTokensService.js';
 import {getAllCommandIds} from './core/commands/CommandType.js';
 import { ksonSettingsWithDefaults } from './core/KsonSettings.js';
-import {SchemaProvider} from './core/schema/SchemaProvider.js';
+import {SchemaProvider, MetaSchemaProvider} from './core/schema/SchemaProvider.js';
 import {BundledSchemaProvider, BundledSchemaConfig, BundledMetaSchemaConfig} from './core/schema/BundledSchemaProvider.js';
 import {CompositeSchemaProvider} from './core/schema/CompositeSchemaProvider.js';
 import {SCHEMA_CONFIG_FILENAME} from "./core/schema/SchemaConfig";
@@ -97,7 +97,12 @@ export function startKsonServer(
         }
 
         // Now that we have workspace root and schema provider, create the document manager
-        documentManager = new KsonDocumentsManager(schemaProvider);
+        // CompositeSchemaProvider implements MetaSchemaProvider, so pass it for both roles
+        const metaSchemaProvider: MetaSchemaProvider | undefined =
+            schemaProvider && 'getMetaSchemaForId' in schemaProvider
+                ? (schemaProvider as MetaSchemaProvider)
+                : undefined;
+        documentManager = new KsonDocumentsManager(schemaProvider, metaSchemaProvider);
 
         // Extract workspace root path from URI if available
         const workspaceRoot = workspaceRootUri ? workspaceRootUri.fsPath : null;

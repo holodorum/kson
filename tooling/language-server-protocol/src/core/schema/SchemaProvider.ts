@@ -27,10 +27,15 @@ export interface SchemaProvider {
      * @returns True if the file is a schema file
      */
     isSchemaFile(fileUri: DocumentUri): boolean;
+}
 
+/**
+ * Interface for providing metaschemas by their $id.
+ * Used for content-based schema resolution when a document declares $schema.
+ */
+export interface MetaSchemaProvider {
     /**
      * Get a bundled metaschema by its schema ID (e.g., the $id field value).
-     * Used for content-based schema resolution when a document declares $schema.
      *
      * @param schemaId The $id of the metaschema to look up
      * @returns TextDocument containing the metaschema, or undefined if no match
@@ -53,9 +58,5 @@ export class NoOpSchemaProvider implements SchemaProvider {
 
     isSchemaFile(_fileUri: DocumentUri): boolean {
         return false;
-    }
-
-    getMetaSchemaForId(_schemaId: string): TextDocument | undefined {
-        return undefined;
     }
 }

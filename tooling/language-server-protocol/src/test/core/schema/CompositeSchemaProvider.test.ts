@@ -30,9 +30,6 @@ class UriSchemaProvider implements SchemaProvider {
         return false;
     }
 
-    getMetaSchemaForId(_schemaId: string): TextDocument | undefined {
-        return undefined;
-    }
 }
 
 describe('CompositeSchemaProvider', () => {
@@ -280,7 +277,6 @@ describe('CompositeSchemaProvider', () => {
                 getSchemaForDocument(): TextDocument | undefined { return undefined; }
                 reload(): void { reloadCount++; }
                 isSchemaFile(): boolean { return false; }
-                getMetaSchemaForId(): TextDocument | undefined { return undefined; }
             }
 
             const provider = new CompositeSchemaProvider([

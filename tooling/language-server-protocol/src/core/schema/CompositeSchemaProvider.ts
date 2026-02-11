@@ -1,6 +1,6 @@
 import {TextDocument} from 'vscode-languageserver-textdocument';
 import {DocumentUri} from 'vscode-languageserver';
-import {SchemaProvider} from './SchemaProvider.js';
+import {SchemaProvider, MetaSchemaProvider} from './SchemaProvider.js';
 
 /**
  * A composite schema provider that chains multiple providers together.
@@ -12,7 +12,7 @@ import {SchemaProvider} from './SchemaProvider.js';
  * Typical usage:
  *   CompositeSchemaProvider([FileSystemSchemaProvider, BundledSchemaProvider])
  */
-export class CompositeSchemaProvider implements SchemaProvider {
+export class CompositeSchemaProvider implements SchemaProvider, MetaSchemaProvider {
     /**
      * Creates a new CompositeSchemaProvider.
      *
@@ -58,16 +58,19 @@ export class CompositeSchemaProvider implements SchemaProvider {
 
     /**
      * Get a bundled metaschema by its schema ID.
-     * Queries all providers in order and returns the first non-undefined result.
+     * Queries all providers that implement MetaSchemaProvider in order
+     * and returns the first non-undefined result.
      *
      * @param schemaId The $id of the metaschema to look up
      * @returns TextDocument containing the metaschema, or undefined if no provider has a match
      */
     getMetaSchemaForId(schemaId: string): TextDocument | undefined {
         for (const provider of this.providers) {
-            const metaSchema = provider.getMetaSchemaForId(schemaId);
-            if (metaSchema) {
-                return metaSchema;
+            if ('getMetaSchemaForId' in provider) {
+                const metaSchema = (provider as MetaSchemaProvider).getMetaSchemaForId(schemaId);
+                if (metaSchema) {
+                    return metaSchema;
+                }
             }
         }
         return undefined;
