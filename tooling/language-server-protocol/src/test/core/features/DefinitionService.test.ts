@@ -155,9 +155,9 @@ describe('DefinitionService', () => {
             const position: Position = {line: 5, character: 24}; // Inside the ref string
             const definition = definitionService.getDefinition(document, position);
 
-            // Should return a definition pointing to the User definition
+            // Should return definitions from both $ref resolution and schema navigation
             assert.ok(Array.isArray(definition), 'Definition should be an array');
-            assert.ok(definition.length > 0, 'Definition array should not be empty');
+            assert.strictEqual(definition.length, 2, 'Should have results from both $ref resolution and schema navigation');
 
             const refDef = definition.find(d => d.targetUri === textDoc.uri);
             assert.ok(refDef, 'Should have a $ref resolution result pointing to same document');
@@ -194,9 +194,9 @@ describe('DefinitionService', () => {
             const position: Position = {line: 5, character: 25}; // Inside the ref string
             const definition = definitionService.getDefinition(document, position);
 
-            // Should return a definition pointing to the name property
+            // Should return definitions from both $ref resolution and schema navigation
             assert.ok(Array.isArray(definition), 'Definition should be an array');
-            assert.ok(definition.length > 0, 'Definition array should not be empty');
+            assert.strictEqual(definition.length, 2, 'Should have results from both $ref resolution and schema navigation');
 
             const refDef = definition.find(d => d.targetUri === textDoc.uri);
             assert.ok(refDef, 'Should have a $ref resolution result pointing to same document');
@@ -224,9 +224,9 @@ describe('DefinitionService', () => {
             const position: Position = {line: 5, character: 21}; // Inside the ref string
             const definition = definitionService.getDefinition(document, position);
 
-            // Should return a definition pointing to the root
+            // Should return definitions from both $ref resolution and schema navigation
             assert.ok(Array.isArray(definition), 'Definition should be an array');
-            assert.ok(definition.length > 0, 'Definition array should not be empty');
+            assert.strictEqual(definition.length, 2, 'Should have results from both $ref resolution and schema navigation');
 
             const refDef = definition.find(d => d.targetUri === textDoc.uri);
             assert.ok(refDef, 'Should have a $ref resolution result pointing to same document');
@@ -335,9 +335,9 @@ describe('DefinitionService', () => {
             const position: Position = {line: 5, character: 25}; // Inside the ref string
             const definition = definitionService.getDefinition(document, position);
 
-            // Should return a definition pointing to the Item definition
+            // Should return definitions from both $ref resolution and schema navigation
             assert.ok(Array.isArray(definition), 'Definition should be an array');
-            assert.ok(definition.length > 0, 'Definition array should not be empty');
+            assert.strictEqual(definition.length, 2, 'Should have results from both $ref resolution and schema navigation');
 
             const refDef = definition.find(d => d.targetUri === textDoc.uri);
             assert.ok(refDef, 'Should have a $ref resolution result pointing to same document');
@@ -373,9 +373,9 @@ describe('DefinitionService', () => {
             const position: Position = {line: 5, character: 23}; // Inside the ref string
             const definition = definitionService.getDefinition(document, position);
 
-            // Should return a definition pointing to the Alias (not following the transitive ref)
+            // Should return definitions from both $ref resolution and schema navigation
             assert.ok(Array.isArray(definition), 'Definition should be an array');
-            assert.ok(definition.length > 0, 'Definition array should not be empty');
+            assert.strictEqual(definition.length, 2, 'Should have results from both $ref resolution and schema navigation');
 
             const refDef = definition.find(d => d.targetUri === textDoc.uri);
             assert.ok(refDef, 'Should have a $ref resolution result pointing to same document');
