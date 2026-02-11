@@ -191,30 +191,25 @@ export function startKsonServer(
             const schemaDocument = documentManager.get(params.uri)?.getSchemaDocument();
             if (schemaDocument) {
                 const schemaUri = schemaDocument.uri;
-                // Check if this is a bundled schema (uses bundled:// scheme)
-                const isBundled = schemaUri.startsWith('bundled://');
                 // Extract readable path from URI
                 const schemaPath = schemaUri.startsWith('file://') ? URI.parse(schemaUri).fsPath : schemaUri;
                 return {
                     schemaUri,
                     schemaPath,
-                    hasSchema: true,
-                    isBundled
+                    hasSchema: true
                 };
             }
             return {
                 schemaUri: undefined,
                 schemaPath: undefined,
-                hasSchema: false,
-                isBundled: false
+                hasSchema: false
             };
         } catch (error) {
             logger.error(`Error getting schema for document: ${error}`);
             return {
                 schemaUri: undefined,
                 schemaPath: undefined,
-                hasSchema: false,
-                isBundled: false
+                hasSchema: false
             };
         }
     });
