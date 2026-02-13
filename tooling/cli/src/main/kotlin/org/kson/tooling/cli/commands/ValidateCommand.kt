@@ -54,7 +54,7 @@ class ValidateCommand : BaseKsonCommand() {
         validateWithSchema(ksonContent)
 
         // Perform analysis
-        val analysis = Kson.analyze(ksonContent)
+        val analysis = Kson.analyze(ksonContent, getFilePath())
         var outputString = ""
         if (analysis.errors.isEmpty()) {
             outputString += "✓ No errors or warnings found"
