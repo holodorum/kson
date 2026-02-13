@@ -13,24 +13,26 @@ import org.kson.FormatOptions
 import org.kson.FormattingStyle
 import org.kson.IndentType
 import org.kson.Kson
+import org.kson.tooling.cli.generated.DIALECT_DISPLAY_NAME
+import org.kson.tooling.cli.generated.DIALECT_EXTENSION
+import org.kson.tooling.cli.generated.DIALECT_NAME
 
-// Default command for formatting KSON
 class KsonFormatCommand : BaseKsonCommand(name = "format") {
     override fun help(context: Context) = """
-        |Format KSON documents with customizable indentation and style.
+        |Format $DIALECT_DISPLAY_NAME documents with customizable indentation and style.
         |
         |Examples:
-        |${"\u0085"}Format a KSON file with default settings:
-        |${"\u0085"}  kson format -i input.kson -o formatted.kson
+        |${"\u0085"}Format a $DIALECT_DISPLAY_NAME file with default settings:
+        |${"\u0085"}  $DIALECT_NAME format -i input.$DIALECT_EXTENSION -o formatted.$DIALECT_EXTENSION
         |${"\u0085"}
         |${"\u0085"}Format with tabs instead of spaces:
-        |${"\u0085"}  kson format -i input.kson --indent-tabs
+        |${"\u0085"}  $DIALECT_NAME format -i input.$DIALECT_EXTENSION --indent-tabs
         |${"\u0085"}
         |${"\u0085"}Use compact formatting style:
-        |${"\u0085"}  kson format -i input.kson --style compact
+        |${"\u0085"}  $DIALECT_NAME format -i input.$DIALECT_EXTENSION --style compact
         |${"\u0085"}
         |${"\u0085"}Validate against schema before formatting:
-        |${"\u0085"}  kson format -i input.kson -s schema.kson -o output.kson
+        |${"\u0085"}  $DIALECT_NAME format -i input.$DIALECT_EXTENSION -s schema.$DIALECT_EXTENSION -o output.$DIALECT_EXTENSION
     """.trimMargin()
 
     private val indentType: IndentType by mutuallyExclusiveOptions(
@@ -57,7 +59,7 @@ class KsonFormatCommand : BaseKsonCommand(name = "format") {
         }
 
         if (ksonContent.isBlank()) {
-            echo("Error: Input is empty. Provide a KSON document to format.", err = true)
+            echo("Error: Input is empty. Provide a $DIALECT_DISPLAY_NAME document to format.", err = true)
             throw ProgramResult(1)
         }
 

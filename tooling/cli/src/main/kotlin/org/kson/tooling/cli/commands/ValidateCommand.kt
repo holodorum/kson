@@ -5,26 +5,29 @@ import com.github.ajalt.clikt.core.ProgramResult
 import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.option
 import org.kson.Kson
+import org.kson.tooling.cli.generated.DIALECT_DISPLAY_NAME
+import org.kson.tooling.cli.generated.DIALECT_EXTENSION
+import org.kson.tooling.cli.generated.DIALECT_NAME
 
 class ValidateCommand : BaseKsonCommand() {
     override fun help(context: Context) = """
-        |Validate KSON documents for syntax errors, warnings and tokens.
+        |Validate $DIALECT_DISPLAY_NAME documents for syntax errors, warnings and tokens.
         |
         |Performs static analysis to detect issues without executing or converting the document.
         |Reports errors and warnings with line and column information.
         |
         |Examples:
-        |${"\u0085"}Validate a KSON file:
-        |${"\u0085"}  kson validate -i document.kson
+        |${"\u0085"}Validate a $DIALECT_DISPLAY_NAME file:
+        |${"\u0085"}  $DIALECT_NAME validate -i document.$DIALECT_EXTENSION
         |${"\u0085"}
         |${"\u0085"}Analyze from stdin:
-        |${"\u0085"}  cat file.kson | kson validate
+        |${"\u0085"}  cat file.$DIALECT_EXTENSION | $DIALECT_NAME validate
         |${"\u0085"}
         |${"\u0085"}Show lexical tokens for debugging:
-        |${"\u0085"}  kson validate -i file.kson --show-tokens
+        |${"\u0085"}  $DIALECT_NAME validate -i file.$DIALECT_EXTENSION --show-tokens
         |${"\u0085"}
         |${"\u0085"}Validate against schema before analyzing:
-        |${"\u0085"}  kson validate -i file.kson -s schema.kson
+        |${"\u0085"}  $DIALECT_NAME validate -i file.$DIALECT_EXTENSION -s schema.$DIALECT_EXTENSION
         |
         |Exit codes:
         |${"\u0085"}  0 - No errors found
@@ -45,8 +48,8 @@ class ValidateCommand : BaseKsonCommand() {
         }
 
         if (ksonContent.isBlank()) {
-            echo("Error: Input is empty. Provide a KSON document to validate.", err = true)
-            echo("\nUse 'kson validate --help' for usage information.", err = true)
+            echo("Error: Input is empty. Provide a $DIALECT_DISPLAY_NAME document to validate.", err = true)
+            echo("\nUse '$DIALECT_NAME validate --help' for usage information.", err = true)
             throw ProgramResult(1)
         }
 

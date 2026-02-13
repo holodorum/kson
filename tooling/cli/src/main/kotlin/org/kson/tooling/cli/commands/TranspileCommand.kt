@@ -7,6 +7,9 @@ import com.github.ajalt.clikt.parameters.options.option
 import org.kson.Kson
 import org.kson.Result
 import org.kson.TranspileOptions
+import org.kson.tooling.cli.generated.DIALECT_DISPLAY_NAME
+import org.kson.tooling.cli.generated.DIALECT_EXTENSION
+import org.kson.tooling.cli.generated.DIALECT_NAME
 
 /**
  * Base class for transpile commands (JSON, YAML, etc.)
@@ -22,17 +25,17 @@ abstract class TranspileCommand(
     private val cmdName = name
 
     override fun help(context: Context) = """
-        |Convert KSON documents to $targetFormat format.
+        |Convert $DIALECT_DISPLAY_NAME documents to $targetFormat format.
         |
         |Examples:
-        |${"\u0085"}Convert KSON to $targetFormat:
-        |${"\u0085"}  kson $cmdName -i input.kson -o output.${targetFormat.lowercase()}
+        |${"\u0085"}Convert $DIALECT_DISPLAY_NAME to $targetFormat:
+        |${"\u0085"}  $DIALECT_NAME $cmdName -i input.$DIALECT_EXTENSION -o output.${targetFormat.lowercase()}
         |${"\u0085"}
         |${"\u0085"}Read from stdin and output to stdout:
-        |${"\u0085"}  cat data.kson | kson $cmdName
+        |${"\u0085"}  cat data.$DIALECT_EXTENSION | $DIALECT_NAME $cmdName
         |${"\u0085"}
         |${"\u0085"}Validate against schema before conversion:
-        |${"\u0085"}  kson $cmdName -i input.kson -s schema.kson -o output.${targetFormat.lowercase()}
+        |${"\u0085"}  $DIALECT_NAME $cmdName -i input.$DIALECT_EXTENSION -s schema.$DIALECT_EXTENSION -o output.${targetFormat.lowercase()}
     """.trimMargin()
 
     val retainEmbedTags by option("--retain-tags", help = "Retain the embed tags of embed blocks")
@@ -49,7 +52,7 @@ abstract class TranspileCommand(
         }
 
         if (ksonContent.isBlank()) {
-            echo("Error: Input is empty. Provide a KSON document to convert.", err = true)
+            echo("Error: Input is empty. Provide a $DIALECT_DISPLAY_NAME document to convert.", err = true)
             throw ProgramResult(1)
         }
 
