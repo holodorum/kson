@@ -196,6 +196,22 @@ object KsonTooling {
     }
 
     /**
+     * Get enclosing ranges for a cursor position in a KSON document.
+     *
+     * Returns a list of ranges from innermost to outermost that contain
+     * the cursor position. Used for smart expand/shrink selection.
+     * Does not include the full-document range (the caller should append it).
+     *
+     * @param content The KSON source text
+     * @param line Zero-based line number
+     * @param column Zero-based column number
+     * @return List of ranges from innermost to outermost, deduplicated
+     */
+    fun getEnclosingRanges(content: String, line: Int, column: Int): List<Range> {
+        return SelectionRangeBuilder.build(content, line, column)
+    }
+
+    /**
      * Internal helper data class to hold the result of schema resolution and filtering.
      */
     private data class ResolvedSchemaContext(

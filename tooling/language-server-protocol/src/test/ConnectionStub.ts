@@ -23,7 +23,9 @@ import {
     CompletionParams,
     CompletionList, DefinitionParams,
     FoldingRange,
-    FoldingRangeParams
+    FoldingRangeParams,
+    SelectionRange,
+    SelectionRangeParams
 } from "vscode-languageserver";
 import {BoilerplateConnectionStub} from "./BoilerplateConnectionStub";
 import {Languages} from "vscode-languageserver/lib/common/server";
@@ -61,6 +63,7 @@ export class ConnectionStub extends BoilerplateConnectionStub {
     public completionHandler: ServerRequestHandler<CompletionParams, CompletionList | null | undefined, never, void>;
     public onDefinitionHandler: ServerRequestHandler<DefinitionParams, Definition | DefinitionLink[] | undefined | null, Location[] | DefinitionLink[], void>;
     public foldingRangeHandler: ServerRequestHandler<FoldingRangeParams, FoldingRange[] | null | undefined, FoldingRange[], void>;
+    public selectionRangeHandler: ServerRequestHandler<SelectionRangeParams, SelectionRange[] | null | undefined, SelectionRange[], void>;
 
     languages: Languages;
 
@@ -169,6 +172,11 @@ export class ConnectionStub extends BoilerplateConnectionStub {
 
     override onFoldingRanges(handler: ServerRequestHandler<FoldingRangeParams, FoldingRange[] | null | undefined, FoldingRange[], void>): Disposable {
         this.foldingRangeHandler = handler;
+        return NOOP_DISPOSABLE;
+    }
+
+    override onSelectionRanges(handler: ServerRequestHandler<SelectionRangeParams, SelectionRange[] | null | undefined, SelectionRange[], void>): Disposable {
+        this.selectionRangeHandler = handler;
         return NOOP_DISPOSABLE;
     }
 
