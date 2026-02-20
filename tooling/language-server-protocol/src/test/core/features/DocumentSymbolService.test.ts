@@ -1,7 +1,6 @@
 import assert from 'assert';
 import { DocumentSymbolService } from '../../../core/features/DocumentSymbolService.js';
 import { SymbolKind } from 'vscode-languageserver';
-import {IndexedDocumentSymbols} from "../../../core/features/IndexedDocumentSymbols";
 
 describe('DocumentSymbolService', () => {
     const documentSymbolService = new DocumentSymbolService();
@@ -188,7 +187,7 @@ describe('DocumentSymbolService', () => {
         assert.strictEqual(nullSymbols[0].detail, 'null');
     });
 
-    it('should work with parent pointers in SymbolPositionIndex', () => {
+    it('should set parent pointers on document symbols', () => {
         const content = `{
             "user": {
                 "name": "John",
@@ -197,12 +196,8 @@ describe('DocumentSymbolService', () => {
                 }
             }
         }`;
-        const documentSymbols = documentSymbolService.getDocumentSymbols(content);
+        const symbols = documentSymbolService.getDocumentSymbols(content);
 
-        // Set the symbols with index on the document
-        const symbolsWithIndex = new IndexedDocumentSymbols(documentSymbols);
-        const symbols = symbolsWithIndex.getDocumentSymbols()
-        // Find the city symbol - let's debug the structure
         const rootSymbol = symbols[0];
         assert.strictEqual(rootSymbol.name, 'root');
         assert.strictEqual(rootSymbol.children!.length, 1);
