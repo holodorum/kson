@@ -25,7 +25,8 @@ class SchemaFilteringServiceTest {
         val schemaIdLookup = SchemaIdLookup(parsedSchema)
         val filteringService = SchemaFilteringService(schemaIdLookup)
         val candidateSchemas = schemaIdLookup.navigateByDocumentPointer(JsonPointer(""))
-        return filteringService.getValidSchemas(candidateSchemas, document, JsonPointer("")).map { it.resolvedValue }
+        val documentValue = KsonCore.parseToAst(document).ksonValue
+        return filteringService.getValidSchemas(candidateSchemas, documentValue, JsonPointer("")).map { it.resolvedValue }
     }
 
     @Test

@@ -63,7 +63,7 @@ class SchemaDefinitionLocationTest {
         val schema = schemaWithCaret.replace(caretMarker, "")
 
         // Get the actual location result
-        val locations = KsonTooling.getSchemaLocationAtLocation(document, schema, docCoordinates.line, docCoordinates.column)
+        val locations = KsonTooling.getSchemaLocationAtLocation(KsonTooling.parse(document), schema, docCoordinates.line, docCoordinates.column)
 
         // Insert <caret> markers into the actual schema to visualize where the returned locations are
         val actualSchemaWithCarets = buildActualSchemaWithCarets(schema, locations)
@@ -258,11 +258,13 @@ class SchemaDefinitionLocationTest {
 
     @Test
     fun testGetSchemaLocationAtLocation_invalidDocument() {
+        // Even for broken documents, the AST walker can navigate the partial
+        // tree, so we get a schema location for the root object
         assertDefinitionLocation(
             schemaWithCaret = """
-                {
+                <caret>{
                   "type": "object"
-                }
+                }<caret>
             """.trimIndent(),
             documentWithCaret = """
                 {inva<caret>lid kson

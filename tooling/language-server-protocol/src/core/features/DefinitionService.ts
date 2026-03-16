@@ -24,7 +24,7 @@ export class DefinitionService {
 
         // Try $ref resolution within the same document
         const refLocations = tooling.resolveRefAtLocation(
-            document.getText(),
+            document.getToolingDocument(),
             position.line,
             position.character
         );
@@ -36,7 +36,7 @@ export class DefinitionService {
             : document.getSchemaDocument();
         if (schemaDocument) {
             const locations = tooling.getSchemaLocationAtLocation(
-                document.getText(),
+                document.getToolingDocument(),
                 schemaDocument.getText(),
                 position.line,
                 position.character

@@ -25,7 +25,7 @@ export class CompletionService {
         // Call the KsonTooling API to get completions at this position
         const tooling = KsonTooling.getInstance();
         const ksonCompletions = tooling.getCompletionsAtLocation(
-            document.getText(),
+            document.getToolingDocument(),
             schemaDocument.getText(),
             position.line,
             position.character

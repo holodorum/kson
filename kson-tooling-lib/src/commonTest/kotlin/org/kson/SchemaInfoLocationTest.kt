@@ -23,7 +23,7 @@ class SchemaInfoLocationTest {
         // Remove caret marker from document
         val document = documentWithCaret.replace(caretMarker, "")
 
-        return KsonTooling.getSchemaInfoAtLocation(document, schema, line, column)
+        return KsonTooling.getSchemaInfoAtLocation(KsonTooling.parse(document), schema, line, column)
     }
 
     @Test
@@ -403,12 +403,13 @@ class SchemaInfoLocationTest {
             }
         """.trimIndent()
 
-        // Should return null for invalid document
+        // Even for broken documents, the AST walker can navigate the partial
+        // tree and return schema info for the root object
         val hoverInfo = getInfoAtCaret(schema, """
             {inva<caret>lid kson
         """.trimIndent())
 
-        assertNull(hoverInfo)
+        assertNotNull(hoverInfo)
     }
 
     @Test

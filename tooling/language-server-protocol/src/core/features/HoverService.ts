@@ -29,7 +29,7 @@ export class HoverService {
         // The API now accepts line and column directly, avoiding the Location mangling issue
         const tooling = KsonTooling.getInstance();
         const hoverMarkdown = tooling.getSchemaInfoAtLocation(
-            document.getText(),
+            document.getToolingDocument(),
             schemaDocument.getText(),
             position.line,
             position.character
