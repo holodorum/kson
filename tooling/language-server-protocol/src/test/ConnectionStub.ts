@@ -242,6 +242,20 @@ export class ConnectionStub extends BoilerplateConnectionStub {
             {} as any, {} as any, undefined
         );
     }
+
+    async requestFoldingRanges(uri: string) {
+        return this.foldingRangeHandler(
+            {textDocument: {uri}},
+            {} as any, {} as any, undefined
+        );
+    }
+
+    async requestSelectionRanges(uri: string, positions: Position[]) {
+        return this.selectionRangeHandler(
+            {textDocument: {uri}, positions},
+            {} as any, {} as any, undefined
+        );
+    }
 }
 
 const NOOP_DISPOSABLE: Disposable = {

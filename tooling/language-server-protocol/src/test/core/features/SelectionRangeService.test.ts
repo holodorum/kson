@@ -28,7 +28,7 @@ describe('SelectionRangeService', () => {
 
     it('should return document range for empty document', () => {
         const doc = createKsonDocument('');
-        const results = service.getSelectionRanges(doc, [{line: 0, character: 0}]);
+        const results = service.getSelectionRanges(doc.getToolingDocument(), [{line: 0, character: 0}]);
         assert.strictEqual(results.length, 1);
         // Should at least have the document range
         assert.ok(results[0].range);
@@ -36,7 +36,7 @@ describe('SelectionRangeService', () => {
 
     it('should return a chain for simple string value', () => {
         const doc = createKsonDocument('"hello"');
-        const results = service.getSelectionRanges(doc, [{line: 0, character: 2}]);
+        const results = service.getSelectionRanges(doc.getToolingDocument(), [{line: 0, character: 2}]);
         assert.strictEqual(results.length, 1);
         const chain = flattenChain(results[0]);
         // innermost: the string value, outermost: document
@@ -53,7 +53,7 @@ describe('SelectionRangeService', () => {
         const doc = createKsonDocument(content);
 
         // Cursor on "Alice" string value (line 1, inside the string)
-        const results = service.getSelectionRanges(doc, [{line: 1, character: 10}]);
+        const results = service.getSelectionRanges(doc.getToolingDocument(), [{line: 1, character: 10}]);
         assert.strictEqual(results.length, 1);
 
         const chain = flattenChain(results[0]);
@@ -76,7 +76,7 @@ describe('SelectionRangeService', () => {
         const doc = createKsonDocument(content);
 
         // Cursor on "name" key (line 1, character 3)
-        const results = service.getSelectionRanges(doc, [{line: 1, character: 3}]);
+        const results = service.getSelectionRanges(doc.getToolingDocument(), [{line: 1, character: 3}]);
         assert.strictEqual(results.length, 1);
 
         const chain = flattenChain(results[0]);
@@ -97,7 +97,7 @@ describe('SelectionRangeService', () => {
             {line: 1, character: 10},  // on "Alice"
             {line: 2, character: 8}    // on 30
         ];
-        const results = service.getSelectionRanges(doc, positions);
+        const results = service.getSelectionRanges(doc.getToolingDocument(), positions);
         assert.strictEqual(results.length, 2);
 
         // Both should have valid chains
@@ -116,7 +116,7 @@ describe('SelectionRangeService', () => {
         const doc = createKsonDocument(content);
 
         // Cursor on "Alice" (line 2, character 12)
-        const results = service.getSelectionRanges(doc, [{line: 2, character: 12}]);
+        const results = service.getSelectionRanges(doc.getToolingDocument(), [{line: 2, character: 12}]);
         const chain = flattenChain(results[0]);
 
         // Should have: string -> property (name:Alice) -> inner object -> property (person:{...}) -> outer object -> document
@@ -134,7 +134,7 @@ describe('SelectionRangeService', () => {
         const doc = createKsonDocument(content);
 
         // Cursor on "two" (line 2, character 3)
-        const results = service.getSelectionRanges(doc, [{line: 2, character: 3}]);
+        const results = service.getSelectionRanges(doc.getToolingDocument(), [{line: 2, character: 3}]);
         const chain = flattenChain(results[0]);
 
         // Should have: string -> array -> document
@@ -150,7 +150,7 @@ describe('SelectionRangeService', () => {
         const doc = createKsonDocument(content);
 
         // Cursor on opening brace (line 0, character 0)
-        const results = service.getSelectionRanges(doc, [{line: 0, character: 0}]);
+        const results = service.getSelectionRanges(doc.getToolingDocument(), [{line: 0, character: 0}]);
         const chain = flattenChain(results[0]);
 
         // Should have: object range -> document range
@@ -168,7 +168,7 @@ describe('SelectionRangeService', () => {
         const doc = createKsonDocument(content);
 
         // Cursor on "hello" (line 2, character 6)
-        const results = service.getSelectionRanges(doc, [{line: 2, character: 6}]);
+        const results = service.getSelectionRanges(doc.getToolingDocument(), [{line: 2, character: 6}]);
         const chain = flattenChain(results[0]);
 
         // Verify each range is contained within (or equal to) the next

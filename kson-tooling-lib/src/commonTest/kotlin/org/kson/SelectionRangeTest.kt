@@ -5,9 +5,14 @@ import kotlin.test.*
 class SelectionRangeTest {
 
     @Test
-    fun testEmptyDocumentReturnsEmpty() {
+    fun testEmptyDocumentReturnsDocumentRange() {
         val ranges = KsonTooling.getEnclosingRanges(KsonTooling.parse(""), 0, 0)
-        assertEquals(0, ranges.size)
+        // Even an empty document returns the full-document range
+        assertEquals(1, ranges.size)
+        assertEquals(0, ranges[0].startLine)
+        assertEquals(0, ranges[0].startColumn)
+        assertEquals(0, ranges[0].endLine)
+        assertEquals(0, ranges[0].endColumn)
     }
 
     @Test
