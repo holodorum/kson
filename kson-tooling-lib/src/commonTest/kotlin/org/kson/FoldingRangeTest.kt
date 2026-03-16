@@ -6,7 +6,7 @@ class FoldingRangeTest {
 
     @Test
     fun testSingleLineDocumentHasNoRanges() {
-        val ranges = KsonTooling.getStructuralRanges("key: value")
+        val ranges = KsonTooling.getStructuralRanges(KsonTooling.parse("key: value"))
         assertEquals(0, ranges.size)
     }
 
@@ -18,7 +18,7 @@ class FoldingRangeTest {
             "  age: 30",
             "}"
         ).joinToString("\n")
-        val ranges = KsonTooling.getStructuralRanges(content)
+        val ranges = KsonTooling.getStructuralRanges(KsonTooling.parse(content))
 
         assertEquals(1, ranges.size)
         assertEquals(0, ranges[0].startLine)
@@ -35,7 +35,7 @@ class FoldingRangeTest {
             "  }",
             "}"
         ).joinToString("\n")
-        val ranges = KsonTooling.getStructuralRanges(content)
+        val ranges = KsonTooling.getStructuralRanges(KsonTooling.parse(content))
 
         assertEquals(2, ranges.size)
         // Inner object folds from line 1 to line 3
@@ -59,7 +59,7 @@ class FoldingRangeTest {
             "  3",
             "]"
         ).joinToString("\n")
-        val ranges = KsonTooling.getStructuralRanges(content)
+        val ranges = KsonTooling.getStructuralRanges(KsonTooling.parse(content))
 
         assertEquals(1, ranges.size)
         assertEquals(0, ranges[0].startLine)
@@ -75,7 +75,7 @@ class FoldingRangeTest {
             "  FROM users",
             "  \$\$"
         ).joinToString("\n")
-        val ranges = KsonTooling.getStructuralRanges(content)
+        val ranges = KsonTooling.getStructuralRanges(KsonTooling.parse(content))
 
         assertEquals(1, ranges.size)
         assertEquals(0, ranges[0].startLine)
@@ -85,13 +85,13 @@ class FoldingRangeTest {
 
     @Test
     fun testSingleLineObjectHasNoRanges() {
-        val ranges = KsonTooling.getStructuralRanges("{ name: \"Alice\", age: 30 }")
+        val ranges = KsonTooling.getStructuralRanges(KsonTooling.parse("{ name: \"Alice\", age: 30 }"))
         assertEquals(0, ranges.size)
     }
 
     @Test
     fun testEmptyDocument() {
-        val ranges = KsonTooling.getStructuralRanges("")
+        val ranges = KsonTooling.getStructuralRanges(KsonTooling.parse(""))
         assertEquals(0, ranges.size)
     }
 
@@ -108,7 +108,7 @@ class FoldingRangeTest {
             "    \$\$",
             "}"
         ).joinToString("\n")
-        val ranges = KsonTooling.getStructuralRanges(content)
+        val ranges = KsonTooling.getStructuralRanges(KsonTooling.parse(content))
 
         // Should have 3 foldable regions: outer {}, inner [], embed
         assertEquals(3, ranges.size)

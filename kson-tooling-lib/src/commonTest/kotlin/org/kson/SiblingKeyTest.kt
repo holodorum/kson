@@ -13,7 +13,7 @@ class SiblingKeyTest {
         ).joinToString("\n")
 
         // Cursor on "name" key
-        val ranges = KsonTooling.getSiblingKeys(content, 0, 3)
+        val ranges = KsonTooling.getSiblingKeys(KsonTooling.parse(content), 0, 3)
 
         assertEquals(3, ranges.size)
         // Check that all three keys are returned
@@ -32,7 +32,7 @@ class SiblingKeyTest {
         ).joinToString("\n")
 
         // Cursor after opening brace
-        val ranges = KsonTooling.getSiblingKeys(content, 0, 1)
+        val ranges = KsonTooling.getSiblingKeys(KsonTooling.parse(content), 0, 1)
         assertEquals(0, ranges.size)
     }
 
@@ -44,7 +44,7 @@ class SiblingKeyTest {
         ).joinToString("\n")
 
         // Cursor on "30" value
-        val ranges = KsonTooling.getSiblingKeys(content, 1, 7)
+        val ranges = KsonTooling.getSiblingKeys(KsonTooling.parse(content), 1, 7)
         assertEquals(0, ranges.size)
     }
 
@@ -59,7 +59,7 @@ class SiblingKeyTest {
         ).joinToString("\n")
 
         // Cursor on "inner2" key
-        val ranges = KsonTooling.getSiblingKeys(content, 3, 4)
+        val ranges = KsonTooling.getSiblingKeys(KsonTooling.parse(content), 3, 4)
 
         assertEquals(2, ranges.size)
         // Should highlight inner1 and inner2, not outer and nested
@@ -76,7 +76,7 @@ class SiblingKeyTest {
         ).joinToString("\n")
 
         // Cursor on "nested" key
-        val ranges = KsonTooling.getSiblingKeys(content, 1, 1)
+        val ranges = KsonTooling.getSiblingKeys(KsonTooling.parse(content), 1, 1)
 
         assertEquals(2, ranges.size)
         // Should highlight outer and nested, not inner
@@ -99,7 +99,7 @@ class SiblingKeyTest {
         ).joinToString("\n")
 
         // Cursor on "prop2" key
-        val ranges = KsonTooling.getSiblingKeys(content, 4, 14)
+        val ranges = KsonTooling.getSiblingKeys(KsonTooling.parse(content), 4, 14)
 
         assertEquals(3, ranges.size)
         // Should highlight all three properties at the same level
@@ -124,7 +124,7 @@ class SiblingKeyTest {
         ).joinToString("\n")
 
         // Cursor on "id" in first object
-        val ranges = KsonTooling.getSiblingKeys(content, 2, 9)
+        val ranges = KsonTooling.getSiblingKeys(KsonTooling.parse(content), 2, 9)
 
         assertEquals(2, ranges.size)
         // Should highlight keys from first object only
@@ -148,7 +148,7 @@ class SiblingKeyTest {
         ).joinToString("\n")
 
         // Cursor on "id" in second object
-        val ranges = KsonTooling.getSiblingKeys(content, 6, 9)
+        val ranges = KsonTooling.getSiblingKeys(KsonTooling.parse(content), 6, 9)
 
         assertEquals(2, ranges.size)
         // Should highlight keys from second object only
@@ -169,7 +169,7 @@ class SiblingKeyTest {
         ).joinToString("\n")
 
         // Cursor on "complex" key (which has an object value)
-        val ranges = KsonTooling.getSiblingKeys(content, 2, 6)
+        val ranges = KsonTooling.getSiblingKeys(KsonTooling.parse(content), 2, 6)
 
         assertEquals(3, ranges.size)
         // Should highlight all three top-level keys
@@ -180,7 +180,7 @@ class SiblingKeyTest {
 
     @Test
     fun testEmptyObject() {
-        val ranges = KsonTooling.getSiblingKeys("{}", 0, 1)
+        val ranges = KsonTooling.getSiblingKeys(KsonTooling.parse("{}"), 0, 1)
         assertEquals(0, ranges.size)
     }
 
@@ -194,13 +194,13 @@ class SiblingKeyTest {
         ).joinToString("\n")
 
         // Cursor on empty line after closing brace
-        val ranges = KsonTooling.getSiblingKeys(content, 3, 0)
+        val ranges = KsonTooling.getSiblingKeys(KsonTooling.parse(content), 3, 0)
         assertEquals(0, ranges.size)
     }
 
     @Test
     fun testInvalidDocumentGraceful() {
-        val ranges = KsonTooling.getSiblingKeys("{ invalid }", 0, 5)
+        val ranges = KsonTooling.getSiblingKeys(KsonTooling.parse("{ invalid }"), 0, 5)
         assertEquals(0, ranges.size)
     }
 
@@ -214,7 +214,7 @@ class SiblingKeyTest {
         ).joinToString("\n")
 
         // Cursor on unquoted key
-        val ranges = KsonTooling.getSiblingKeys(content, 1, 5)
+        val ranges = KsonTooling.getSiblingKeys(KsonTooling.parse(content), 1, 5)
 
         assertEquals(2, ranges.size)
         assertContainsRange(ranges, 1, 4, 1, 8)  // key1
@@ -230,7 +230,7 @@ class SiblingKeyTest {
         ).joinToString("\n")
 
         // Cursor in array element "b"
-        val ranges = KsonTooling.getSiblingKeys(content, 1, 20)
+        val ranges = KsonTooling.getSiblingKeys(KsonTooling.parse(content), 1, 20)
         assertEquals(0, ranges.size)
     }
 
@@ -243,7 +243,7 @@ class SiblingKeyTest {
         ).joinToString("\n")
 
         // Cursor on the only key
-        val ranges = KsonTooling.getSiblingKeys(content, 1, 6)
+        val ranges = KsonTooling.getSiblingKeys(KsonTooling.parse(content), 1, 6)
 
         assertEquals(1, ranges.size)
         assertContainsRange(ranges, 1, 5, 1, 12)  // "onlyKey"
@@ -261,7 +261,7 @@ class SiblingKeyTest {
         ).joinToString("\n")
 
         // Cursor on the last "value" key
-        val ranges = KsonTooling.getSiblingKeys(content, 3, 6)
+        val ranges = KsonTooling.getSiblingKeys(KsonTooling.parse(content), 3, 6)
 
         // KSON deduplicates keys, so we check for at least 2 highlights
         assertTrue(ranges.size >= 2, "Expected at least 2 highlights, got ${ranges.size}")
@@ -269,7 +269,7 @@ class SiblingKeyTest {
 
     @Test
     fun testEmptyDocument() {
-        val ranges = KsonTooling.getSiblingKeys("", 0, 0)
+        val ranges = KsonTooling.getSiblingKeys(KsonTooling.parse(""), 0, 0)
         assertEquals(0, ranges.size)
     }
 

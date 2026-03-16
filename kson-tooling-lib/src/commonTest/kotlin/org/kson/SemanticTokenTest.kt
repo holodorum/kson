@@ -6,7 +6,7 @@ class SemanticTokenTest {
 
     @Test
     fun testKeyVsStringDistinction() {
-        val tokens = KsonTooling.getSemanticTokens("key: string")
+        val tokens = KsonTooling.getSemanticTokens(KsonTooling.parse("key: string"))
 
         val keyTokens = tokens.filter { it.tokenType == SemanticTokenKind.KEY }
         val stringTokens = tokens.filter { it.tokenType == SemanticTokenKind.STRING }
@@ -19,7 +19,7 @@ class SemanticTokenTest {
 
     @Test
     fun testQuotedKeyVsQuotedString() {
-        val tokens = KsonTooling.getSemanticTokens("""{ "key": "value" }""")
+        val tokens = KsonTooling.getSemanticTokens(KsonTooling.parse("""{ "key": "value" }"""))
 
         val keyTokens = tokens.filter { it.tokenType == SemanticTokenKind.KEY }
         val stringTokens = tokens.filter { it.tokenType == SemanticTokenKind.STRING }
@@ -34,7 +34,7 @@ class SemanticTokenTest {
 
     @Test
     fun testNumberToken() {
-        val tokens = KsonTooling.getSemanticTokens("number: 42")
+        val tokens = KsonTooling.getSemanticTokens(KsonTooling.parse("number: 42"))
 
         val numberTokens = tokens.filter { it.tokenType == SemanticTokenKind.NUMBER }
         assertEquals(1, numberTokens.size, "Should have 1 number token")
@@ -43,7 +43,7 @@ class SemanticTokenTest {
 
     @Test
     fun testBooleanAndNullKeywords() {
-        val tokens = KsonTooling.getSemanticTokens("flag: true\nempty: null\ndisabled: false")
+        val tokens = KsonTooling.getSemanticTokens(KsonTooling.parse("flag: true\nempty: null\ndisabled: false"))
 
         val keywords = tokens.filter { it.tokenType == SemanticTokenKind.KEYWORD }
         assertEquals(3, keywords.size, "Should have 3 keyword tokens (true, null, false)")
@@ -51,7 +51,7 @@ class SemanticTokenTest {
 
     @Test
     fun testOperators() {
-        val tokens = KsonTooling.getSemanticTokens("key: value")
+        val tokens = KsonTooling.getSemanticTokens(KsonTooling.parse("key: value"))
 
         val operators = tokens.filter { it.tokenType == SemanticTokenKind.OPERATOR }
         assertEquals(1, operators.size, "Should have 1 operator (colon)")
@@ -59,7 +59,7 @@ class SemanticTokenTest {
 
     @Test
     fun testAllPunctuation() {
-        val tokens = KsonTooling.getSemanticTokens("""{ "key": [ "v1", "v2" ] }""")
+        val tokens = KsonTooling.getSemanticTokens(KsonTooling.parse("""{ "key": [ "v1", "v2" ] }"""))
 
         val operators = tokens.filter { it.tokenType == SemanticTokenKind.OPERATOR }
         // { [ , ] } = 5 operators + : = 6 total
@@ -68,7 +68,7 @@ class SemanticTokenTest {
 
     @Test
     fun testNestedObjectKeys() {
-        val tokens = KsonTooling.getSemanticTokens("outer:\n  inner:\n    deep: value")
+        val tokens = KsonTooling.getSemanticTokens(KsonTooling.parse("outer:\n  inner:\n    deep: value"))
 
         val keyTokens = tokens.filter { it.tokenType == SemanticTokenKind.KEY }
         assertEquals(3, keyTokens.size, "Should have 3 key tokens for outer, inner, deep")
@@ -76,7 +76,7 @@ class SemanticTokenTest {
 
     @Test
     fun testSkipsWhitespaceAndEof() {
-        val tokens = KsonTooling.getSemanticTokens("key: value")
+        val tokens = KsonTooling.getSemanticTokens(KsonTooling.parse("key: value"))
 
         for (token in tokens) {
             assertNotEquals(SemanticTokenKind.STRING, token.tokenType.takeIf { token.length == 0 },
@@ -88,14 +88,14 @@ class SemanticTokenTest {
 
     @Test
     fun testEmptyDocument() {
-        val tokens = KsonTooling.getSemanticTokens("")
+        val tokens = KsonTooling.getSemanticTokens(KsonTooling.parse(""))
         // Should not crash, may have no tokens
         assertNotNull(tokens)
     }
 
     @Test
     fun testEmbedBlock() {
-        val tokens = KsonTooling.getSemanticTokens("embedBlock: \$tag\n    content\n   \$\$")
+        val tokens = KsonTooling.getSemanticTokens(KsonTooling.parse("embedBlock: \$tag\n    content\n   \$\$"))
 
         val embedTags = tokens.filter { it.tokenType == SemanticTokenKind.EMBED_TAG }
         val embedDelims = tokens.filter { it.tokenType == SemanticTokenKind.EMBED_DELIM }
@@ -106,7 +106,7 @@ class SemanticTokenTest {
 
     @Test
     fun testAbsolutePositions() {
-        val tokens = KsonTooling.getSemanticTokens("key: value")
+        val tokens = KsonTooling.getSemanticTokens(KsonTooling.parse("key: value"))
 
         // "key" should start at line 0, column 0
         val keyToken = tokens.first { it.tokenType == SemanticTokenKind.KEY }
@@ -121,7 +121,7 @@ class SemanticTokenTest {
 
     @Test
     fun testArrayWithDashes() {
-        val tokens = KsonTooling.getSemanticTokens("items:\n  - first\n  - second")
+        val tokens = KsonTooling.getSemanticTokens(KsonTooling.parse("items:\n  - first\n  - second"))
 
         val operators = tokens.filter { it.tokenType == SemanticTokenKind.OPERATOR }
         // colons (1) + dashes (2) = 3
@@ -133,7 +133,7 @@ class SemanticTokenTest {
 
     @Test
     fun testMixedContent() {
-        val tokens = KsonTooling.getSemanticTokens("{\n  name: \"Alice\"\n  age: 30\n  active: true\n  role: null\n}")
+        val tokens = KsonTooling.getSemanticTokens(KsonTooling.parse("{\n  name: \"Alice\"\n  age: 30\n  active: true\n  role: null\n}"))
 
         val kinds = tokens.map { it.tokenType }.toSet()
         assertTrue(SemanticTokenKind.KEY in kinds, "Should have key tokens")
