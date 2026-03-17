@@ -1,0 +1,8 @@
+<idea-plugin>
+    <extensions defaultExtensionNs="com.intellij">
+        <json.jsonSchemaEnabler
+                implementation="org.kson.jetbrains.schema.KsonJsonSchemaEnabler"/>
+        <postStartupActivity
+                implementation="org.kson.jetbrains.schema.KsonJsonSchemaRegistrar"/>
+    </extensions>
+</idea-plugin>
