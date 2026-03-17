@@ -12,6 +12,13 @@ val isRelease = project.findProperty("release") == "true"
 version = org.kson.KsonVersion.getVersion(isRelease = isRelease)
 kotlin {
     jvm {
+        compilations.all {
+            compileTaskProvider.configure {
+                compilerOptions {
+                    jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+                }
+            }
+        }
         testRuns["test"].executionTask.configure {
             useJUnit()
         }

@@ -22,7 +22,7 @@ class KsonValidationAnnotator : ExternalAnnotator<ValidationInfo?, List<Diagnost
 
         val virtualFile = file.virtualFile
         val schemaText = if (virtualFile != null) {
-            file.project.getServiceIfCreated(KsonSchemaService::class.java)
+            file.project.getService(KsonSchemaService::class.java)
                 ?.getSchemaForFile(virtualFile)?.schemaText
         } else {
             null

@@ -21,6 +21,7 @@ repositories {
 
 dependencies {
     implementation(project(":"))
+    implementation(project(":kson-tooling-lib"))
 }
 
 // Configure Gradle IntelliJ Plugin - read more: https://plugins.jetbrains.com/docs/intellij/tools-gradle-intellij-plugin.html

@@ -51,5 +51,10 @@
                    implementationClass="org.kson.jetbrains.highlighter.KsonSemanticHighlightAnnotator"/>
         <externalAnnotator language="kson"
                            implementationClass="org.kson.jetbrains.parser.KsonValidationAnnotator"/>
+        <completion.contributor language="kson"
+                                implementationClass="org.kson.jetbrains.schema.KsonSchemaCompletionContributor"/>
+        <gotoDeclarationHandler
+                implementation="org.kson.jetbrains.schema.KsonSchemaGotoDeclarationHandler"
+                order="last"/>
     </extensions>
 </idea-plugin>
