@@ -11,6 +11,19 @@ import org.kson.parser.messages.MessageType
  */
 class KsonValidationAnnotatorTest : BasePlatformTestCase() {
 
+    companion object {
+        private val REQUIRED_NAME_SCHEMA = """
+            type: object
+            properties:
+              name:
+                type: string
+                .
+              .
+            required:
+              - name
+        """.trimIndent()
+    }
+
     fun testValidKsonHasNoErrors() {
         val source = "key: \"value\""
         val file = myFixture.configureByText(KsonFileType, source) as KsonPsiFile
@@ -103,6 +116,44 @@ class KsonValidationAnnotatorTest : BasePlatformTestCase() {
         assertTrue("Should not have any errors for valid syntax with warnings", errorHighlights.isEmpty())
     }
     
+    fun testSchemaValidationErrorsAppear() {
+        // Create a schema that requires "name" to be a string
+        myFixture.addFileToProject("test.schema.kson", REQUIRED_NAME_SCHEMA)
+
+        // Create a document that references the schema but violates it (missing "name")
+        myFixture.configureByText(KsonFileType, """
+            '${'$'}schema': './test.schema.kson'
+            age: 30
+        """.trimIndent()) as KsonPsiFile
+
+        val highlights = myFixture.doHighlighting()
+
+        val requiredMessage = MessageType.SCHEMA_REQUIRED_PROPERTY_MISSING.create("name").toString()
+        val schemaErrors = highlights.filter { it.description == requiredMessage }
+        assertTrue(
+            "Should have schema validation error about missing required property",
+            schemaErrors.isNotEmpty()
+        )
+    }
+
+    fun testSchemaValidationDirectly() {
+        val annotator = KsonValidationAnnotator()
+
+        // Valid document against schema — no schema errors
+        val validResult = annotator.doAnnotate(ValidationInfo("name: \"Alice\"", REQUIRED_NAME_SCHEMA))
+        val validSchemaErrors = validResult.filter {
+            it.message.type == MessageType.SCHEMA_REQUIRED_PROPERTY_MISSING
+        }
+        assertTrue("Valid document should have no schema errors", validSchemaErrors.isEmpty())
+
+        // Invalid document against schema — missing required "name"
+        val invalidResult = annotator.doAnnotate(ValidationInfo("age: 30", REQUIRED_NAME_SCHEMA))
+        val invalidSchemaErrors = invalidResult.filter {
+            it.message.type == MessageType.SCHEMA_REQUIRED_PROPERTY_MISSING
+        }
+        assertTrue("Invalid document should have schema errors", invalidSchemaErrors.isNotEmpty())
+    }
+
     fun testMultipleWarningsAndErrors() {
         // Test a case with both warnings and errors
         val source = """

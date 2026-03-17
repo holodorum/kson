@@ -6,8 +6,10 @@ import com.intellij.lang.annotation.HighlightSeverity
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiFile
+import org.kson.CoreCompileConfig
 import org.kson.KsonCore
 import org.kson.jetbrains.psi.KsonPsiFile
+import org.kson.jetbrains.schema.KsonSchemaService
 import org.kson.parser.LoggedMessage
 import org.kson.parser.messages.Message
 import org.kson.parser.messages.MessageSeverity
@@ -20,12 +22,24 @@ class KsonValidationAnnotator : ExternalAnnotator<ValidationInfo?, List<LoggedMe
         val text = file.text
         if (text.isBlank()) return null
 
-        return ValidationInfo(text)
+        val virtualFile = file.virtualFile
+        val schemaText = if (virtualFile != null) {
+            file.project.getServiceIfCreated(KsonSchemaService::class.java)
+                ?.getSchemaForFile(virtualFile)?.schemaText
+        } else {
+            null
+        }
+
+        return ValidationInfo(text, schemaText)
     }
 
     override fun doAnnotate(info: ValidationInfo?): List<LoggedMessage> {
         if (info == null) return emptyList()
-        return KsonCore.parseToAst(info.sourceText).messages
+
+        val schema = info.schemaText?.let { KsonCore.parseSchema(it).jsonSchema }
+        val config = if (schema != null) CoreCompileConfig(schemaJson = schema) else CoreCompileConfig()
+
+        return KsonCore.parseToAst(info.sourceText, config).messages
     }
 
     override fun apply(file: PsiFile, annotationResult: List<LoggedMessage>?, holder: AnnotationHolder) {
@@ -55,7 +69,13 @@ class KsonValidationAnnotator : ExternalAnnotator<ValidationInfo?, List<LoggedMe
     }
 }
 
-// Helper class to store information between phases
+/**
+ * Carries information between the [ExternalAnnotator] phases.
+ *
+ * @param sourceText The document source text to validate
+ * @param schemaText The resolved schema source text, or null if no schema applies
+ */
 data class ValidationInfo(
-    val sourceText: String
+    val sourceText: String,
+    val schemaText: String? = null
 )
