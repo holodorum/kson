@@ -42,7 +42,7 @@ function toDiagnostic(msg: DiagnosticMessage): Diagnostic {
             start: {line: msg.range.startLine, character: msg.range.startColumn},
             end: {line: msg.range.endLine, character: msg.range.endColumn}
         },
-        severity: msg.severity === KtSeverity.ERROR
+        severity: msg.severity === KtSeverity.ERROR || msg.severity === KtSeverity.COREPARSE_ERROR
             ? DiagnosticSeverity.Error
             : DiagnosticSeverity.Warning,
         source: 'kson',

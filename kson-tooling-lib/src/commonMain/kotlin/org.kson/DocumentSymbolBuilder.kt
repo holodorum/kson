@@ -94,7 +94,9 @@ internal object DocumentSymbolBuilder {
             value.location.start.line,
             value.location.start.column,
             value.location.end.line,
-            value.location.end.column
+            value.location.end.column,
+            value.location.startOffset,
+            value.location.endOffset,
         )
     }
 }

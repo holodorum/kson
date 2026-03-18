@@ -80,7 +80,9 @@ object KsonTooling {
                 it.resolvedValue.location.start.line,
                 it.resolvedValue.location.start.column,
                 it.resolvedValue.location.end.line,
-                it.resolvedValue.location.end.column
+                it.resolvedValue.location.end.column,
+                it.resolvedValue.location.startOffset,
+                it.resolvedValue.location.endOffset,
             )
         }
     }
@@ -129,7 +131,9 @@ object KsonTooling {
                 resolvedRef.resolvedValue.location.start.line,
                 resolvedRef.resolvedValue.location.start.column,
                 resolvedRef.resolvedValue.location.end.line,
-                resolvedRef.resolvedValue.location.end.column
+                resolvedRef.resolvedValue.location.end.column,
+                resolvedRef.resolvedValue.location.startOffset,
+                resolvedRef.resolvedValue.location.endOffset,
             )
         )
     }
@@ -227,7 +231,7 @@ object KsonTooling {
         }
         // The lexer always produces at least an EOF token
         val eof = document.tokens.last()
-        val documentRange = Range(0, 0, eof.lexeme.location.end.line, eof.lexeme.location.end.column)
+        val documentRange = Range(0, 0, eof.lexeme.location.end.line, eof.lexeme.location.end.column, 0, eof.lexeme.location.endOffset)
         // Avoid duplicating the outermost AST range when it matches the document range
         val last = ancestors.lastOrNull()
         if (last == null || last.startLine != documentRange.startLine || last.startColumn != documentRange.startColumn
@@ -334,8 +338,10 @@ enum class CompletionKind {
  * @param startColumn column where range starts
  * @param endLine line where range ends
  * @param endColumn column where range ends
+ * @param startOffset byte offset where range starts
+ * @param endOffset byte offset where range ends
  */
-class Range(val startLine: Int, val startColumn: Int, val  endLine: Int, val endColumn: Int)
+class Range(val startLine: Int, val startColumn: Int, val endLine: Int, val endColumn: Int, val startOffset: Int, val endOffset: Int)
 
 /**
  * Represents a document symbol for the IDE outline view.
@@ -411,6 +417,7 @@ class DiagnosticMessage(val message: String, val severity: DiagnosticSeverity, v
  * Severity of a diagnostic message.
  */
 enum class DiagnosticSeverity {
+    COREPARSE_ERROR,
     ERROR,
     WARNING
 }

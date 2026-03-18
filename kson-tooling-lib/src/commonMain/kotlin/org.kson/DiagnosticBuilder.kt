@@ -1,6 +1,7 @@
 package org.kson
 
 import org.kson.parser.LoggedMessage
+import org.kson.parser.messages.CoreParseMessage
 import org.kson.parser.messages.MessageSeverity
 
 /**
@@ -36,7 +37,13 @@ internal object DiagnosticBuilder {
 
     private fun toDiagnosticMessage(logged: LoggedMessage): DiagnosticMessage {
         val severity = when (logged.message.type.severity) {
-            MessageSeverity.ERROR -> DiagnosticSeverity.ERROR
+            MessageSeverity.ERROR -> {
+                if (logged.message is CoreParseMessage) {
+                    DiagnosticSeverity.COREPARSE_ERROR
+                } else {
+                    DiagnosticSeverity.ERROR
+                }
+            }
             MessageSeverity.WARNING -> DiagnosticSeverity.WARNING
         }
         return DiagnosticMessage(
@@ -46,7 +53,9 @@ internal object DiagnosticBuilder {
                 logged.location.start.line,
                 logged.location.start.column,
                 logged.location.end.line,
-                logged.location.end.column
+                logged.location.end.column,
+                startOffset = logged.location.startOffset,
+                endOffset = logged.location.endOffset
             )
         )
     }

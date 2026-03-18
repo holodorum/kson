@@ -38,7 +38,8 @@ internal object SelectionRangeBuilder {
                     // Property range: from key start to value end
                     val propertyRange = Range(
                         keyLoc.start.line, keyLoc.start.column,
-                        valueLoc.end.line, valueLoc.end.column
+                        valueLoc.end.line, valueLoc.end.column,
+                        keyLoc.startOffset, valueLoc.endOffset
                     )
 
                     if (containsPosition(propertyRange, cursor)) {
@@ -113,7 +114,8 @@ internal object SelectionRangeBuilder {
             value.location.start.line,
             value.location.start.column,
             value.location.end.line,
-            value.location.end.column
+            value.location.end.column,
+            value.location.startOffset, value.location.endOffset,
         )
     }
 }

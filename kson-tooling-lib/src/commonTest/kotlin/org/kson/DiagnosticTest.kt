@@ -35,14 +35,14 @@ class DiagnosticTest {
     fun testExtraTokensAfterValue() {
         val diagnostics = KsonTooling.validateDocument("key: \"value\" extraValue")
         assertEquals(1, diagnostics.size)
-        assertEquals(DiagnosticSeverity.ERROR, diagnostics[0].severity)
+        assertEquals(DiagnosticSeverity.COREPARSE_ERROR, diagnostics[0].severity)
     }
 
     @Test
     fun testUnclosedBrace() {
         val diagnostics = KsonTooling.validateDocument("{ \"name\": \"test\"")
         assertTrue(diagnostics.isNotEmpty(), "Should have at least one diagnostic for unclosed brace")
-        assertTrue(diagnostics.any { it.severity == DiagnosticSeverity.ERROR })
+        assertTrue(diagnostics.any { it.severity == DiagnosticSeverity.COREPARSE_ERROR })
     }
 
     @Test
@@ -53,7 +53,7 @@ class DiagnosticTest {
         ).joinToString("\n")
         val diagnostics = KsonTooling.validateDocument(content)
         assertEquals(2, diagnostics.size)
-        assertEquals(DiagnosticSeverity.ERROR, diagnostics[0].severity)
+        assertEquals(DiagnosticSeverity.COREPARSE_ERROR, diagnostics[0].severity)
         assertEquals(DiagnosticSeverity.WARNING, diagnostics[1].severity)
     }
 
