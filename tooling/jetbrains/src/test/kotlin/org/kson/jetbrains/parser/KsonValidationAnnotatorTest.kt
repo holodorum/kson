@@ -3,6 +3,7 @@ package org.kson.jetbrains.parser
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import org.kson.jetbrains.file.KsonFileType
 import org.kson.jetbrains.psi.KsonPsiFile
+import org.kson.DiagnosticSeverity
 import org.kson.parser.messages.MessageType
 
 /**
@@ -139,17 +140,19 @@ class KsonValidationAnnotatorTest : BasePlatformTestCase() {
     fun testSchemaValidationDirectly() {
         val annotator = KsonValidationAnnotator()
 
+        val requiredMessage = MessageType.SCHEMA_REQUIRED_PROPERTY_MISSING.create("name").toString()
+
         // Valid document against schema — no schema errors
         val validResult = annotator.doAnnotate(ValidationInfo("name: \"Alice\"", REQUIRED_NAME_SCHEMA))
         val validSchemaErrors = validResult.filter {
-            it.message.type == MessageType.SCHEMA_REQUIRED_PROPERTY_MISSING
+            it.severity != DiagnosticSeverity.COREPARSE_ERROR && it.message == requiredMessage
         }
         assertTrue("Valid document should have no schema errors", validSchemaErrors.isEmpty())
 
         // Invalid document against schema — missing required "name"
         val invalidResult = annotator.doAnnotate(ValidationInfo("age: 30", REQUIRED_NAME_SCHEMA))
         val invalidSchemaErrors = invalidResult.filter {
-            it.message.type == MessageType.SCHEMA_REQUIRED_PROPERTY_MISSING
+            it.severity != DiagnosticSeverity.COREPARSE_ERROR && it.message == requiredMessage
         }
         assertTrue("Invalid document should have schema errors", invalidSchemaErrors.isNotEmpty())
     }

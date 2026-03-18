@@ -6,15 +6,13 @@ import com.intellij.lang.annotation.HighlightSeverity
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiFile
-import org.kson.CoreCompileConfig
-import org.kson.KsonCore
+import org.kson.DiagnosticMessage
+import org.kson.DiagnosticSeverity
+import org.kson.KsonTooling
 import org.kson.jetbrains.psi.KsonPsiFile
 import org.kson.jetbrains.schema.KsonSchemaService
-import org.kson.parser.LoggedMessage
-import org.kson.parser.messages.Message
-import org.kson.parser.messages.MessageSeverity
 
-class KsonValidationAnnotator : ExternalAnnotator<ValidationInfo?, List<LoggedMessage>>() {
+class KsonValidationAnnotator : ExternalAnnotator<ValidationInfo?, List<DiagnosticMessage>>() {
 
     override fun collectInformation(file: PsiFile, editor: Editor, hasErrors: Boolean): ValidationInfo? {
         if (file !is KsonPsiFile) return null
@@ -33,16 +31,12 @@ class KsonValidationAnnotator : ExternalAnnotator<ValidationInfo?, List<LoggedMe
         return ValidationInfo(text, schemaText)
     }
 
-    override fun doAnnotate(info: ValidationInfo?): List<LoggedMessage> {
+    override fun doAnnotate(info: ValidationInfo?): List<DiagnosticMessage> {
         if (info == null) return emptyList()
-
-        val schema = info.schemaText?.let { KsonCore.parseSchema(it).jsonSchema }
-        val config = if (schema != null) CoreCompileConfig(schemaJson = schema) else CoreCompileConfig()
-
-        return KsonCore.parseToAst(info.sourceText, config).messages
+        return KsonTooling.validateDocument(info.sourceText, info.schemaText)
     }
 
-    override fun apply(file: PsiFile, annotationResult: List<LoggedMessage>?, holder: AnnotationHolder) {
+    override fun apply(file: PsiFile, annotationResult: List<DiagnosticMessage>?, holder: AnnotationHolder) {
         if (file !is KsonPsiFile || annotationResult == null) return
 
         val documentLength = file.textLength
@@ -51,21 +45,21 @@ class KsonValidationAnnotator : ExternalAnnotator<ValidationInfo?, List<LoggedMe
          * Core parse errors are annotated by the parser itself, so we skip them here to avoid duplication.
          * All other messages (warnings, validation errors) are annotated here.
          */
-        annotationResult.filter { !Message.isFatalParseError(it.message) }
-            .forEach {
-                val startOffset = it.location.startOffset.coerceAtLeast(0)
-                val endOffset = it.location.endOffset.coerceAtMost(documentLength)
+        annotationResult.forEach {
+            val startOffset = it.range.startOffset.coerceAtLeast(0)
+            val endOffset = it.range.endOffset.coerceAtMost(documentLength)
 
-                if (startOffset >= endOffset || startOffset >= documentLength) return@forEach
+            if (startOffset >= endOffset || startOffset >= documentLength) return@forEach
 
-                val severity = when (it.message.type.severity) {
-                    MessageSeverity.ERROR -> HighlightSeverity.ERROR
-                    MessageSeverity.WARNING -> HighlightSeverity.WARNING
-                }
-                holder.newAnnotation(severity, it.message.toString())
-                    .range(TextRange(startOffset, endOffset))
-                    .create()
+            val severity = when (it.severity) {
+                DiagnosticSeverity.ERROR -> HighlightSeverity.ERROR
+                DiagnosticSeverity.WARNING -> HighlightSeverity.WARNING
+                DiagnosticSeverity.COREPARSE_ERROR -> return@forEach
             }
+            holder.newAnnotation(severity, it.message)
+                .range(TextRange(startOffset, endOffset))
+                .create()
+        }
     }
 }
 
