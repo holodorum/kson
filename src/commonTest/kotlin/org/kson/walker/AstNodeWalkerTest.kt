@@ -44,28 +44,28 @@ class AstNodeWalkerTest {
     fun testIsString() {
         val obj = parseValidAst("key: hello")
         val props = walker.getObjectProperties(obj)
-        assertIs<StringNodeImpl>(props[0].second)
+        assertIs<StringNodeImpl>(props[0].value)
     }
 
     @Test
     fun testIsNumber() {
         val obj = parseValidAst("key: 42")
         val props = walker.getObjectProperties(obj)
-        assertIs<NumberNode>(props[0].second)
+        assertIs<NumberNode>(props[0].value)
     }
 
     @Test
     fun testIsBoolean() {
         val obj = parseValidAst("key: true")
         val props = walker.getObjectProperties(obj)
-        assertIs<BooleanNode>(props[0].second)
+        assertIs<BooleanNode>(props[0].value)
     }
 
     @Test
     fun testIsNull() {
         val obj = parseValidAst("key: null")
         val props = walker.getObjectProperties(obj)
-        assertIs<NullNode>(props[0].second)
+        assertIs<NullNode>(props[0].value)
     }
 
     // --- Property and element enumeration ---
@@ -75,10 +75,10 @@ class AstNodeWalkerTest {
         val node = parseValidAst("name: Alice\nage: 30")
         val props = walker.getObjectProperties(node)
         assertEquals(2, props.size)
-        assertEquals("name", props[0].first)
-        assertEquals("age", props[1].first)
-        assertIs<StringNodeImpl>(props[0].second)
-        assertIs<NumberNode>(props[1].second)
+        assertEquals("name", props[0].name)
+        assertEquals("age", props[1].name)
+        assertIs<StringNodeImpl>(props[0].value)
+        assertIs<NumberNode>(props[1].value)
     }
 
     @Test
@@ -106,28 +106,28 @@ class AstNodeWalkerTest {
     @Test
     fun testGetStringValueUnquoted() {
         val obj = parseValidAst("key: hello")
-        val value = walker.getObjectProperties(obj)[0].second
+        val value = walker.getObjectProperties(obj)[0].value
         assertEquals("hello", walker.getStringValue(value))
     }
 
     @Test
     fun testGetStringValueQuoted() {
         val obj = parseValidAst("""key: "hello world"""")
-        val value = walker.getObjectProperties(obj)[0].second
+        val value = walker.getObjectProperties(obj)[0].value
         assertEquals("hello world", walker.getStringValue(value))
     }
 
     @Test
     fun testGetStringValueOnNonString() {
         val obj = parseValidAst("key: 42")
-        val value = walker.getObjectProperties(obj)[0].second
+        val value = walker.getObjectProperties(obj)[0].value
         assertNull(walker.getStringValue(value))
     }
 
     @Test
     fun testGetStringValueWithEscapes() {
         val obj = parseValidAst("""key: "hello\nworld"""")
-        val value = walker.getObjectProperties(obj)[0].second
+        val value = walker.getObjectProperties(obj)[0].value
         assertEquals("hello\nworld", walker.getStringValue(value))
     }
 
@@ -138,7 +138,7 @@ class AstNodeWalkerTest {
         val obj = parseValidAst(""""my key": value""")
         val props = walker.getObjectProperties(obj)
         assertEquals(1, props.size)
-        assertEquals("my key", props[0].first)
+        assertEquals("my key", props[0].name)
     }
 
     @Test
@@ -146,7 +146,7 @@ class AstNodeWalkerTest {
         val obj = parseValidAst(""""key\twith\ttabs": value""")
         val props = walker.getObjectProperties(obj)
         assertEquals(1, props.size)
-        assertEquals("key\twith\ttabs", props[0].first)
+        assertEquals("key\twith\ttabs", props[0].name)
     }
 
     // --- Location ---
@@ -174,8 +174,8 @@ class AstNodeWalkerTest {
         assertTrue(walker.isObject(node))
         val props = walker.getObjectProperties(node)
         assertEquals(1, props.size)
-        assertEquals("other", props[0].first)
-        assertIs<NumberNode>(props[0].second)
+        assertEquals("other", props[0].name)
+        assertIs<NumberNode>(props[0].value)
     }
 
     @Test
@@ -185,10 +185,10 @@ class AstNodeWalkerTest {
         assertNotNull(node)
         val outerProps = walker.getObjectProperties(node)
         assertEquals(1, outerProps.size)
-        assertEquals("outer", outerProps[0].first)
+        assertEquals("outer", outerProps[0].name)
         // The inner object has an error property, so getObjectProperties returns empty
-        assertTrue(walker.isObject(outerProps[0].second))
-        val innerProps = walker.getObjectProperties(outerProps[0].second)
+        assertTrue(walker.isObject(outerProps[0].value))
+        val innerProps = walker.getObjectProperties(outerProps[0].value)
         assertEquals(0, innerProps.size)
     }
 
