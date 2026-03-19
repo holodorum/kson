@@ -11,7 +11,7 @@ import org.kson.schema.SchemaIdLookup
 import org.kson.schema.SchemaParser
 import org.kson.schema.SchemaResolutionType
 import org.kson.walker.KsonValueWalker
-import org.kson.walker.TreeNavigation
+import org.kson.walker.navigateWithJsonPointer
 import kotlin.js.ExperimentalJsExport
 import kotlin.js.JsExport
 
@@ -105,7 +105,7 @@ class SchemaFilteringService(private val schemaIdLookup: SchemaIdLookup) {
     ): List<ResolvedRef> {
         // Get the object to validate against
         // For completions, we validate the object where we're adding properties
-        val targetValue = TreeNavigation.navigateWithJsonPointer(KsonValueWalker, documentValue, documentPointer) ?: documentValue
+        val targetValue = KsonValueWalker.navigateWithJsonPointer(documentValue, documentPointer) ?: documentValue
 
         return candidateSchemas.filter { ref ->
             when (ref.resolutionType) {
