@@ -54,7 +54,7 @@ class KsonSchemaService(private val project: Project) {
      * Quick-parses the file and looks for a `$schema` key whose value is a relative
      * path to a schema file. The path is resolved relative to the file's parent directory.
      */
-    private fun resolveFromDollarSchema(file: VirtualFile): SchemaResolution? {
+    internal fun resolveFromDollarSchema(file: VirtualFile): SchemaResolution? {
         val sourceText = try {
             String(file.contentsToByteArray(), Charsets.UTF_8)
         } catch (_: IOException) {

@@ -5,4 +5,10 @@
         <postStartupActivity
                 implementation="org.kson.jetbrains.schema.KsonJsonSchemaRegistrar"/>
     </extensions>
+    <extensions defaultExtensionNs="JavaScript.JsonSchema">
+        <ProviderFactory
+                implementation="org.kson.jetbrains.schema.KsonJsonSchemaProviderFactory"/>
+        <ContentAwareSchemaFileProvider
+                implementation="org.kson.jetbrains.schema.KsonContentAwareSchemaProvider"/>
+    </extensions>
 </idea-plugin>
