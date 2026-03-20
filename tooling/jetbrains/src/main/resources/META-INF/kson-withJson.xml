@@ -2,6 +2,8 @@
     <extensions defaultExtensionNs="com.intellij">
         <json.jsonSchemaEnabler
                 implementation="org.kson.jetbrains.schema.KsonJsonSchemaEnabler"/>
+        <json.jsonLikePsiWalkerFactory
+                implementation="org.kson.jetbrains.schema.walker.KsonJsonLikePsiWalkerFactory"/>
         <postStartupActivity
                 implementation="org.kson.jetbrains.schema.KsonJsonSchemaRegistrar"/>
     </extensions>
