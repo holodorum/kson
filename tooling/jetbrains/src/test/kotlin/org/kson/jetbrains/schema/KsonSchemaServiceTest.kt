@@ -149,4 +149,12 @@ class KsonSchemaServiceTest : BasePlatformTestCase() {
     fun testExtractDollarSchemaPathNonString() {
         assertNull(extractDollarSchemaPath("'\$schema': 42"))
     }
+
+    fun testExtractDollarSchemaPathWithSyntaxErrorsElsewhere() {
+        // $schema should still resolve even when the document has errors elsewhere
+        assertEquals(
+            "./my-schema.kson",
+            extractDollarSchemaPath("'\$schema': './my-schema.kson'\n{invalid kson")
+        )
+    }
 }

@@ -94,10 +94,15 @@ class KsonGenericValueAdapter(private val element: PsiElement) : JsonValueAdapte
 }
 
 /**
- * Creates the appropriate [JsonValueAdapter] for a KSON PSI element.
+ * Creates the appropriate [JsonValueAdapter] for a KSON value PSI element.
+ *
+ * Only handles actual value types (object, array, string, number, boolean, null).
+ * Structural elements like [KsonPsiProperty] or [KsonPsiObjectKey] are not values
+ * and will produce a generic adapter — callers should ensure they pass value elements.
  */
 fun createValueAdapter(element: PsiElement): JsonValueAdapter = when (element) {
     is KsonPsiObject -> KsonObjectAdapter(element)
     is KsonPsiArray -> KsonArrayAdapter(element)
+    // Scalars (string, number, boolean, null) and embed blocks
     else -> KsonGenericValueAdapter(element)
 }

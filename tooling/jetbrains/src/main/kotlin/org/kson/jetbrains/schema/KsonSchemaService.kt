@@ -4,6 +4,7 @@ import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
+import org.kson.CoreCompileConfig
 import org.kson.KsonCore
 import org.kson.schema.KsonDraft7MetaSchema
 import org.kson.value.KsonObject
@@ -95,13 +96,14 @@ class KsonSchemaService(private val project: Project) {
 /**
  * Extract the `$schema` path from a KSON document's root.
  *
- * Parses the document and looks for a root-level `$schema` property with a string value.
- * Returns the string value (expected to be a relative path), or null if the document has
- * parse errors or no `$schema` property is found.
+ * Parses with [CoreCompileConfig.ignoreErrors] so that `$schema` resolution works
+ * even when the document has syntax errors elsewhere.
  */
 internal fun extractDollarSchemaPath(sourceText: String): String? {
-    val result = KsonCore.parseToAst(sourceText)
-    val ksonValue = result.ksonValue ?: return null
+    val result = KsonCore.parseToAst(sourceText, CoreCompileConfig(ignoreErrors = true))
+    // With ignoreErrors, the AST may contain error nodes that cause toKsonValue() to throw
+    // even though hasErrors() returns false. This is expected for documents with syntax errors.
+    val ksonValue = try { result.ksonValue } catch (_: RuntimeException) { null } ?: return null
 
     if (ksonValue !is KsonObject) return null
     val schemaProp = ksonValue.propertyMap["\$schema"] ?: return null
