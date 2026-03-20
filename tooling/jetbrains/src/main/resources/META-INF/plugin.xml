@@ -6,6 +6,7 @@
 
     <depends>com.intellij.modules.platform</depends>
     <depends>org.intellij.intelliLang</depends>
+    <depends optional="true" config-file="kson-withJson.xml">com.intellij.modules.json</depends>
 
     <description><![CDATA[
         <p>
