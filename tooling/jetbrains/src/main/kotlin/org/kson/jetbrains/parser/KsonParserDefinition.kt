@@ -11,8 +11,7 @@ import com.intellij.psi.PsiFile
 import com.intellij.psi.tree.IFileElementType
 import com.intellij.psi.tree.TokenSet
 import org.kson.jetbrains.KsonLanguage
-import org.kson.jetbrains.psi.KsonPsiElement
-import org.kson.jetbrains.psi.KsonPsiFile
+import org.kson.jetbrains.psi.*
 import org.kson.parser.ParsedElementType
 import org.kson.parser.TokenType
 
@@ -43,8 +42,27 @@ class KsonParserDefinition : ParserDefinition {
 
     override fun createElement(node: ASTNode): PsiElement {
         return when (node.elementType) {
-            elem(ParsedElementType.EMBED_BLOCK) -> org.kson.jetbrains.psi.KsonEmbedBlock(node)
-            elem(TokenType.EMBED_CONTENT) -> org.kson.jetbrains.psi.KsonEmbedContent(node)
+            // Structural types
+            elem(ParsedElementType.OBJECT) -> KsonPsiObject(node)
+            elem(ParsedElementType.OBJECT_PROPERTY) -> KsonPsiProperty(node)
+            elem(ParsedElementType.OBJECT_KEY) -> KsonPsiObjectKey(node)
+            elem(ParsedElementType.DASH_LIST) -> KsonPsiArray(node)
+            elem(ParsedElementType.DASH_DELIMITED_LIST) -> KsonPsiArray(node)
+            elem(ParsedElementType.BRACKET_LIST) -> KsonPsiArray(node)
+            elem(ParsedElementType.LIST_ELEMENT) -> KsonPsiListElement(node)
+
+            // Value types
+            elem(ParsedElementType.QUOTED_STRING) -> KsonPsiString(node)
+            elem(TokenType.UNQUOTED_STRING) -> KsonPsiString(node)
+            elem(TokenType.NUMBER) -> KsonPsiNumber(node)
+            elem(TokenType.TRUE) -> KsonPsiBoolean(node)
+            elem(TokenType.FALSE) -> KsonPsiBoolean(node)
+            elem(TokenType.NULL) -> KsonPsiNull(node)
+
+            // Embed types
+            elem(ParsedElementType.EMBED_BLOCK) -> KsonEmbedBlock(node)
+            elem(TokenType.EMBED_CONTENT) -> KsonEmbedContent(node)
+
             else -> KsonPsiElement(node)
         }
     }
