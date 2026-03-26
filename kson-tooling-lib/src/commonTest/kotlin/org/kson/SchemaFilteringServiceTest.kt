@@ -18,15 +18,20 @@ class SchemaFilteringServiceTest {
      *
      * @param schema The schema definition as a string
      * @param document The document to validate against the schema
+     * @param documentPointer The JSON Pointer to the location in the document being completed
      * @return List of valid schemas after filtering
      */
-    private fun getValidSchemasForDocument(schema: String, document: String): List<KsonValue> {
+    private fun getValidSchemasForDocument(
+        schema: String,
+        document: String,
+        documentPointer: JsonPointer = JsonPointer("")
+    ): List<KsonValue> {
         val parsedSchema = KsonCore.parseToAst(schema).ksonValue ?: fail("Schema should parse")
         val parsedDocument = KsonCore.parseToAst(document).ksonValue
         val schemaIdLookup = SchemaIdLookup(parsedSchema)
         val filteringService = SchemaFilteringService(schemaIdLookup)
-        val candidateSchemas = schemaIdLookup.navigateByDocumentPointer(JsonPointer(""))
-        return filteringService.getValidSchemas(candidateSchemas, parsedDocument, JsonPointer("")).map { it.resolvedValue }
+        val candidateSchemas = schemaIdLookup.navigateByDocumentPointer(documentPointer)
+        return filteringService.getValidSchemas(candidateSchemas, parsedDocument, documentPointer).map { it.resolvedValue }
     }
 
     @Test
@@ -197,6 +202,35 @@ class SchemaFilteringServiceTest {
     }
 
     @Test
+    fun testGetValidSchemas_withNonRootPointerToMissingValue_returnsAllBranches() {
+        // Schema where a nested property has oneOf branches expecting string or number types.
+        // This triggers the bug: when navigating to /query in the document returns null
+        // (nothing there yet), the fallback to root causes the root object to be validated
+        // against branches that expect string/number — type mismatch filters them all out.
+        val schema = """
+            type: object
+            properties:
+              query:
+                oneOf:
+                  - type: string
+                  - type: number
+        """.trimIndent()
+
+        // Document is an object with a property but no "query" — the user is about to type there.
+        // The root is an object, so validating it against "type: string" or "type: number"
+        // fails — incorrectly filtering out all branches.
+        val document = """
+            name: test
+        """.trimIndent()
+
+        val validSchemas = getValidSchemasForDocument(schema, document, JsonPointer("/query"))
+
+        // Both oneOf branches + the parent should be returned because there's nothing
+        // at /query yet — no basis for filtering.
+        assertEquals(3, validSchemas.size, "Parent + both oneOf branches should be returned when target value doesn't exist yet")
+    }
+
+    @Test
     fun testGetValidSchemas_filtersBasedOnTypeViolations() {
         // Schema with different type requirements
         val schema = """
@@ -220,5 +254,33 @@ class SchemaFilteringServiceTest {
 
         // Should filter to only the string branch plus parent
         assertEquals(2, validSchemas.size, "Should match parent + the string branch")
+    }
+
+    @Test
+    fun testGetValidSchemas_withTypeMismatchAtTarget_fallsBackToAllBranches() {
+        // Schema with oneOf branches that all expect objects, but the document value
+        // at the target is a list.  Filtering would reject every branch (type mismatch),
+        // leaving zero completions.  The fallback should return all branches.
+        val schema = """
+            oneOf:
+              - type: object
+                properties:
+                  field:
+                    type: string
+              - type: object
+                properties:
+                  and:
+                    type: array
+        """.trimIndent()
+
+        // Document is a list, not an object — every oneOf branch fails type validation.
+        val document = """
+            - item
+        """.trimIndent()
+
+        val validSchemas = getValidSchemasForDocument(schema, document)
+
+        // All oneOf branches + parent should be returned because filtering eliminated everything.
+        assertEquals(3, validSchemas.size, "Parent + both oneOf branches should be returned when target type doesn't match any branch")
     }
 }

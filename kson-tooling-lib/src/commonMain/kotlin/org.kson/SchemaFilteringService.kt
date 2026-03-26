@@ -103,11 +103,14 @@ class SchemaFilteringService(private val schemaIdLookup: SchemaIdLookup) {
         documentValue: org.kson.value.KsonValue,
         documentPointer: JsonPointer
     ): List<ResolvedRef> {
-        // Get the object to validate against
-        // For completions, we validate the object where we're adding properties
-        val targetValue = KsonValueWalker.navigateWithJsonPointer(documentValue, documentPointer) ?: documentValue
+        // Get the value at the pointer location to validate against.
+        // If navigation returns null, the value doesn't exist yet (e.g. the user is about
+        // to type at an empty position). In that case there's nothing to filter against,
+        // so return all expanded schemas.
+        val targetValue = KsonValueWalker.navigateWithJsonPointer(documentValue, documentPointer)
+            ?: return candidateSchemas
 
-        return candidateSchemas.filter { ref ->
+        val filtered = candidateSchemas.filter { ref ->
             when (ref.resolutionType) {
                 // For anyOf/oneOf, check if the current document state is compatible
                 SchemaResolutionType.ANY_OF,
@@ -116,6 +119,13 @@ class SchemaFilteringService(private val schemaIdLookup: SchemaIdLookup) {
                 else -> true
             }
         }
+
+        // If filtering eliminated every combinator branch, the document value likely
+        // doesn't match the expected shape yet (e.g. a list where objects are expected).
+        // Fall back to unfiltered schemas so completions remain available.
+        val combinatorBranchesBefore = candidateSchemas.count { isCombinatorBranch(it) }
+        val combinatorBranchesAfter = filtered.count { isCombinatorBranch(it) }
+        return if (combinatorBranchesBefore > 0 && combinatorBranchesAfter == 0) candidateSchemas else filtered
     }
 
     /**
@@ -176,6 +186,9 @@ class SchemaFilteringService(private val schemaIdLookup: SchemaIdLookup) {
             loggedMessage.message.type !in IGNORABLE_ERROR_TYPES
         }
     }
+
+    private fun isCombinatorBranch(ref: ResolvedRef): Boolean =
+        ref.resolutionType == SchemaResolutionType.ANY_OF || ref.resolutionType == SchemaResolutionType.ONE_OF
 
     companion object {
         /**
