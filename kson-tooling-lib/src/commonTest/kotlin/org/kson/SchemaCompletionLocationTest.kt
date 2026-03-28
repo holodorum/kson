@@ -1488,11 +1488,10 @@ class SchemaCompletionLocationTest {
     }
 
     @Test
-    fun testNoCompletionsInsideDelimitedListWhenSchemaExpectsObject() {
+    fun testCompletionsInsideDelimitedListWithRefToAnyOf() {
         val schema = searchExpressionSchema()
 
-        // Cursor inside a [] delimited list, but schema expects objects (SearchTerm
-        // or AndExpression). The structural mismatch means no branch is compatible.
+        // Cursor inside a [] delimited list as query's direct value
         val completions = getCompletionsAtCaret(schema, $$"""
             '$schema': test
             query:
@@ -1501,8 +1500,13 @@ class SchemaCompletionLocationTest {
               ]
         """.trimIndent())
 
-        assertNotNull(completions)
-        assertTrue(completions.isEmpty(), "Should have no completions when document structure doesn't match schema, got: ${completions.map { it.label }}")
+        assertNotNull(completions, "Should return completions inside delimited-list")
+        val labels = completions.map { it.label }
+        assertTrue("field" in labels, "Should include 'field' from SearchTerm, got: $labels")
+        assertTrue("term" in labels, "Should include 'term' from SearchTerm, got: $labels")
+        assertTrue("and" in labels, "Should include 'and' from AndExpression, got: $labels")
+        assertTrue("\$schema" !in labels, "Should NOT include root-level '\$schema'")
+        assertTrue("query" !in labels, "Should NOT include root-level 'query'")
     }
 
     @Test
@@ -1531,6 +1535,89 @@ class SchemaCompletionLocationTest {
         val labels = completions.map { it.label }
         assertTrue("name" in labels, "Should include 'name' from config schema, got: $labels")
         assertTrue("config" !in labels, "Should NOT include 'config' (parent property)")
+    }
+
+    @Test
+    fun testIfThenCompletionsIncludeConditionalProperties() {
+        // Test that properties from if/then branches appear in completions
+        val schema = """
+            {
+                "type": "object",
+                "properties": {
+                    "kind": { "type": "string" }
+                },
+                "if": {
+                    "properties": {
+                        "kind": { "const": "dog" }
+                    }
+                },
+                "then": {
+                    "properties": {
+                        "bark": { "type": "boolean" }
+                    }
+                }
+            }
+        """
+
+        val completions = getCompletionsAtCaret(schema, """
+            {
+                "kind": "dog",
+                <caret>
+            }
+        """.trimIndent())
+
+        assertNotNull(completions, "Should return completions")
+        val labels = completions.map { it.label }
+        assertTrue("bark" in labels, "Should include 'bark' from then branch, got: $labels")
+    }
+
+    @Test
+    fun testAllOfWithIfThenCompletionsIncludeConditionalProperties() {
+        // Test the orchestra.schema.kson pattern: allOf containing if/then blocks
+        val schema = """
+            {
+                "${'$'}defs": {
+                    "DogParams": {
+                        "type": "object",
+                        "properties": {
+                            "treats": { "type": "integer" }
+                        }
+                    }
+                },
+                "type": "object",
+                "properties": {
+                    "kind": { "type": "string" }
+                },
+                "allOf": [
+                    {
+                        "if": {
+                            "properties": {
+                                "kind": { "const": "dog" }
+                            }
+                        },
+                        "then": {
+                            "properties": {
+                                "params": {
+                                    "${'$'}ref": "#/${'$'}defs/DogParams"
+                                }
+                            }
+                        }
+                    }
+                ]
+            }
+        """
+
+        // Completions at the root level should include "params" from the allOf if/then branch
+        val completions = getCompletionsAtCaret(schema, """
+            {
+                "kind": "dog",
+                <caret>
+            }
+        """.trimIndent())
+
+        assertNotNull(completions, "Should return completions")
+        val labels = completions.map { it.label }
+        assertTrue("params" in labels, "Should include 'params' from allOf if/then branch, got: $labels")
     }
 
     private fun searchExpressionSchema() = $$"""
