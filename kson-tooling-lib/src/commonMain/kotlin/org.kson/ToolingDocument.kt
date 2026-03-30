@@ -4,6 +4,7 @@ package org.kson
 
 import org.kson.ast.KsonRoot
 import org.kson.parser.Token
+import org.kson.validation.SourceContext
 import org.kson.value.KsonValue
 import kotlin.js.ExperimentalJsExport
 import kotlin.js.JsExport
@@ -18,8 +19,8 @@ import kotlin.js.JsExport
  *
  */
 @JsExport
-class ToolingDocument internal constructor(val content: String) {
-    private val parseResult = KsonCore.parseToAst(content, CoreCompileConfig(ignoreErrors = true))
+class ToolingDocument internal constructor(val content: String, internal val sourceContext: SourceContext = SourceContext()) {
+    private val parseResult = KsonCore.parseToAst(content, CoreCompileConfig(ignoreErrors = true, sourceContext = sourceContext))
 
     /**
      * The parsed [KsonValue] from error-tolerant parsing, or null if the
