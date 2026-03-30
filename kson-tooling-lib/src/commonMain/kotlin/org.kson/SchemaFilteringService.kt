@@ -5,6 +5,9 @@ package org.kson
 
 import org.kson.parser.MessageSink
 import org.kson.parser.messages.MessageType
+import org.kson.value.KsonList
+import org.kson.value.KsonObject
+import org.kson.value.KsonValue
 import org.kson.value.navigation.json_pointer.JsonPointer
 import org.kson.schema.ResolvedRef
 import org.kson.schema.SchemaIdLookup
@@ -28,37 +31,70 @@ import kotlin.js.JsExport
 class SchemaFilteringService(private val schemaIdLookup: SchemaIdLookup) {
 
     /**
-     * Get valid schemas for a document path, applying expansion and filtering.
+     * Get valid schemas for a document path, applying expansion and two-pass filtering.
      *
      * This function:
      * 1. Expands combinator schemas (oneOf/anyOf/allOf) and conditionals (if/then/else) into individual branches
-     * 2. Filters branches based on validation against the current document (for oneOf/anyOf/if-then-else)
-     * 3. Returns all branches for allOf and direct properties (no filtering needed)
+     * 2. Filters oneOf/anyOf branches by sibling property constraints (using [ToolingDocument.partialKsonValue])
+     * 3. Filters remaining branches by leaf-level validation (using [ToolingDocument.ksonValue])
+     *
+     * The two passes use different document values because sibling filtering must work
+     * even when the document has parse errors at the cursor position (where only the
+     * partial value is available), while leaf validation needs the fully parsed tree.
      *
      * @param candidateSchemas The schemas found at the document path
-     * @param documentValue The pre-parsed document value, or null if the document
-     *   couldn't be parsed. When null, filtering is skipped and all
-     *   expanded schemas are returned.
+     * @param document The parsed document providing both full and partial value trees
      * @param documentPointer The [JsonPointer] to the location in the document
      * @return List of valid schemas after expansion and filtering
      */
     fun getValidSchemas(
         candidateSchemas: List<ResolvedRef>,
-        documentValue: org.kson.value.KsonValue?,
+        document: ToolingDocument,
         documentPointer: JsonPointer
     ): List<ResolvedRef> {
-        val hasBranchesThatRequireValidation = candidateSchemas.any { ref ->
-            requiresValidationFiltering(ref)
-        }
-
-        // Always expand to get individual branches
         val expandedSchemas = schemaIdLookup.expandCombinators(candidateSchemas)
 
-        return if (hasBranchesThatRequireValidation && documentValue != null) {
-            filterByValidation(expandedSchemas, documentValue, documentPointer)
+        val partialDocumentValue = document.partialKsonValue
+        val afterSiblingFilter = if (partialDocumentValue != null) {
+            filterBySiblingCompatibility(expandedSchemas, partialDocumentValue, documentPointer)
         } else {
             expandedSchemas
         }
+
+        val hasBranchesThatRequireValidation = afterSiblingFilter.any { ref ->
+            requiresValidationFiltering(ref)
+        }
+        val documentValue = document.ksonValue
+        return if (hasBranchesThatRequireValidation && documentValue != null) {
+            filterByValidation(afterSiblingFilter, documentValue, documentPointer)
+        } else {
+            afterSiblingFilter
+        }
+    }
+
+    /**
+     * Filters oneOf/anyOf branches by sibling property compatibility.
+     *
+     * For schemas with [ResolvedRef.parentBranch] set, checks whether the parent
+     * branch's property constraints (const/enum) are compatible with the document's
+     * sibling values. Falls back to unfiltered schemas if all branches are eliminated.
+     */
+    private fun filterBySiblingCompatibility(
+        schemas: List<ResolvedRef>,
+        documentValue: KsonValue,
+        documentPointer: JsonPointer
+    ): List<ResolvedRef> {
+        val hasParentBranches = schemas.any { it.parentBranch != null }
+        if (!hasParentBranches) return schemas
+
+        val filtered = schemas.filter { ref ->
+            val parentBranch = ref.parentBranch
+            parentBranch == null || isBranchCompatibleWithSiblings(parentBranch, documentValue, documentPointer)
+        }
+
+        val branchesBefore = schemas.count { it.parentBranch != null }
+        val branchesAfter = filtered.count { it.parentBranch != null }
+        return if (branchesBefore > 0 && branchesAfter == 0) schemas else filtered
     }
 
     /**
@@ -72,7 +108,7 @@ class SchemaFilteringService(private val schemaIdLookup: SchemaIdLookup) {
      */
     private fun requiresValidationFiltering(ref: ResolvedRef): Boolean {
         return ref.resolutionType in FILTERABLE_RESOLUTION_TYPES ||
-            (ref.resolvedValue as? org.kson.value.KsonObject)?.let { obj ->
+            (ref.resolvedValue as? KsonObject)?.let { obj ->
                 obj.propertyLookup.containsKey("oneOf") ||
                 obj.propertyLookup.containsKey("anyOf") ||
                 obj.propertyLookup.containsKey("if")
@@ -96,7 +132,7 @@ class SchemaFilteringService(private val schemaIdLookup: SchemaIdLookup) {
      */
     private fun filterByValidation(
         candidateSchemas: List<ResolvedRef>,
-        documentValue: org.kson.value.KsonValue,
+        documentValue: KsonValue,
         documentPointer: JsonPointer
     ): List<ResolvedRef> {
         // Get the value at the pointer location to validate against.
@@ -139,7 +175,7 @@ class SchemaFilteringService(private val schemaIdLookup: SchemaIdLookup) {
      */
     private fun isSchemaValidForDocument(
         ref: ResolvedRef,
-        targetValue: org.kson.value.KsonValue
+        targetValue: KsonValue
     ): Boolean {
         val messageSink = MessageSink()
         val schema = SchemaParser.parseSchemaElement(
@@ -183,6 +219,49 @@ class SchemaFilteringService(private val schemaIdLookup: SchemaIdLookup) {
         return errors.filter { loggedMessage ->
             loggedMessage.message.type !in IGNORABLE_ERROR_TYPES
         }
+    }
+
+    /**
+     * Checks if a oneOf/anyOf branch is compatible with the document's sibling properties.
+     *
+     * Uses the [ResolvedRef.parentBranch] to access the full branch schema, then checks
+     * its property constraints (const/enum) against the document's existing values.
+     * The property being completed (last token of [documentPointer]) is excluded since
+     * its value is incomplete during completion.
+     *
+     * @param parentBranch The oneOf/anyOf branch that contained this result
+     * @param documentValue The root document value
+     * @param documentPointer Path to the property being completed
+     */
+    private fun isBranchCompatibleWithSiblings(
+        parentBranch: ResolvedRef,
+        documentValue: KsonValue,
+        documentPointer: JsonPointer
+    ): Boolean {
+        val propertyBeingCompleted = documentPointer.tokens.lastOrNull() ?: return true
+        val parentPointer = JsonPointer.fromTokens(documentPointer.tokens.dropLast(1))
+        val parentDocValue = KsonValueWalker.navigateWithJsonPointer(documentValue, parentPointer)
+            as? KsonObject ?: return true
+
+        val branchSchema = parentBranch.resolvedValue as? KsonObject ?: return true
+        val branchProperties = (branchSchema.propertyLookup["properties"] as? KsonObject)
+            ?: return true
+
+        for ((propName, propSchemaValue) in branchProperties.propertyLookup) {
+            if (propName == propertyBeingCompleted) continue
+
+            val docValue = parentDocValue.propertyLookup[propName] ?: continue
+            val propSchema = schemaIdLookup.resolveRefIfPresent(propSchemaValue, parentBranch.resolvedValueBaseUri)
+                .resolvedValue as? KsonObject ?: continue
+
+            val constValue = propSchema.propertyLookup["const"]
+            if (constValue != null && constValue != docValue) return false
+
+            val enumList = propSchema.propertyLookup["enum"] as? KsonList
+            if (enumList != null && docValue !in enumList.elements) return false
+        }
+
+        return true
     }
 
     private fun isFilterableBranch(ref: ResolvedRef): Boolean =

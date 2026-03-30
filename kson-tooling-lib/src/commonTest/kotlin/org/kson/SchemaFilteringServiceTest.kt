@@ -13,10 +13,10 @@ class SchemaFilteringServiceTest {
         documentPointer: JsonPointer = JsonPointer("")
     ): List<KsonValue> {
         val parsedSchema = KsonCore.parseToAst(schema).ksonValue ?: fail("Schema should parse")
-        val parsedDocument = KsonCore.parseToAst(document).ksonValue
+        val parsedDocument = KsonTooling.parse(document)
         val schemaIdLookup = SchemaIdLookup(parsedSchema)
         val filteringService = SchemaFilteringService(schemaIdLookup)
-        val candidateSchemas = schemaIdLookup.navigateByDocumentPointer(documentPointer, parsedDocument)
+        val candidateSchemas = schemaIdLookup.navigateByDocumentPointer(documentPointer, parsedDocument.ksonValue)
         return filteringService.getValidSchemas(candidateSchemas, parsedDocument, documentPointer).map { it.resolvedValue }
     }
 
