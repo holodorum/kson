@@ -5,6 +5,9 @@ package org.kson.validation
  * This allows access to metadata about the document being validated,
  * such as its filepath, which can be used to determine which validation rules to apply.
  *
+ * Open for extension by dialect frameworks (e.g. KsonHub) that need to pass additional
+ * context — such as schema information — to custom validators.
+ *
  * Note: sourceContext is passed to root-level validators from [KsonCore.parseToAst],
  * but nested schema validators (allOf, anyOf, oneOf, $ref, if/then/else) do not
  * yet propagate it. When a nested validator needs this context, propagation should
@@ -12,6 +15,6 @@ package org.kson.validation
  *
  * @param filepath The filepath of the document being validated, if available
  */
-data class SourceContext(
+open class SourceContext(
     val filepath: String? = null
 )
