@@ -144,8 +144,9 @@ class SchemaIdLookup(val schemaRootValue: KsonValue) {
      * Every level applies `flatten` before stepping, including the root and the target,
      * so no post-navigation expansion pass is needed.
      *
-     * Mirrors the shape of [org.kson.walker.TreeNavigator][TreeNavigator] from the walker
-     * package — one entry point, small internal helpers — so the pattern is recognizable.
+     * Mirrors the shape of `TreeNavigator` in the walker package (see
+     * [org.kson.walker.navigateWithJsonPointer]) — one entry point, small internal
+     * helpers — so the pattern is recognizable.
      */
     private class SchemaNavigator(private val idLookup: SchemaIdLookup) {
 
