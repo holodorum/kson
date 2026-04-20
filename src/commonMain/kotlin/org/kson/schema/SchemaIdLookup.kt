@@ -744,18 +744,32 @@ enum class SchemaResolutionType {
      * simultaneously (e.g., a base property's enum intersected with an if/then's
      * narrower enum).  Additive branches (oneOf/anyOf) merge their completions
      * as alternatives instead.
+     *
+     * Exhaustive by design: adding a new enum entry forces a compile error here so
+     * the reductive-vs-additive classification is an explicit decision, not a default.
      */
     val isReductive: Boolean
-        get() = this != ANY_OF && this != ONE_OF
+        get() = when (this) {
+            DIRECT_PROPERTY, PATTERN_PROPERTY, ADDITIONAL_PROPERTY,
+            ARRAY_ITEMS, ALL_OF, IF_THEN, IF_ELSE, ROOT -> true
+            ANY_OF, ONE_OF -> false
+        }
 
     /**
      * True if this branch needs validation-based filtering — alternatives that
      * only apply when compatible with the document.  allOf and direct properties
      * always apply (no filtering needed); oneOf/anyOf and if/then/else branches
      * are conditional on their constraints matching the document.
+     *
+     * Exhaustive by design: adding a new enum entry forces a compile error here so
+     * the filterable-vs-unconditional classification is an explicit decision, not a default.
      */
     val requiresValidationFiltering: Boolean
-        get() = this == ANY_OF || this == ONE_OF || this == IF_THEN || this == IF_ELSE
+        get() = when (this) {
+            ANY_OF, ONE_OF, IF_THEN, IF_ELSE -> true
+            DIRECT_PROPERTY, PATTERN_PROPERTY, ADDITIONAL_PROPERTY,
+            ARRAY_ITEMS, ALL_OF, ROOT -> false
+        }
 }
 
 /**
