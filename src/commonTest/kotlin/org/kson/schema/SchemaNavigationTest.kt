@@ -10,6 +10,8 @@ import org.kson.value.KsonString as InternalKsonString
 import org.kson.value.KsonBoolean as InternalKsonBoolean
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 
 
 class SchemaNavigationTest {
@@ -537,9 +539,13 @@ class SchemaNavigationTest {
                     - '${'$'}ref': '#/${'$'}defs/NumberType'
         """
 
-        // This test verifies that navigation works when anyOf contains $ref
+        // This test verifies that navigation works when anyOf contains $ref.
+        // Navigation flattens at every level, so the inner anyOf at `items` is also
+        // expanded: the first result is the items parent, followed by each flattened branch.
         val results = navigateSchema(schema, listOf("0"))
-        assertEquals(1, results.size, "Root schema should return single result")
+        assertTrue(results.isNotEmpty(), "Expected results from anyOf array branch")
+        val itemsSchema = results.first() as InternalKsonObject
+        assertNotNull(itemsSchema.propertyLookup["anyOf"], "First result should be the items schema with its inner anyOf")
     }
 
     @Test
@@ -571,10 +577,13 @@ class SchemaNavigationTest {
               - '${'$'}ref': '#/${'$'}defs/ComplexRecipe'
         """
 
+        // Navigation reaches the context property via the outer anyOf → $ref → properties.
+        // Because flatten runs at every level, the result set includes the context schema
+        // itself (first) plus its own flattened inner anyOf branches.
         val results = navigateSchema(schema, listOf("context"))
-        assertEquals(1, results.size, "Should find context property through anyOf → \$ref")
+        assertTrue(results.isNotEmpty(), "Should find context property through anyOf → \$ref")
 
-        val contextSchema = results.single() as InternalKsonObject
+        val contextSchema = results.first() as InternalKsonObject
         assertEquals("Context", (contextSchema.propertyLookup["title"] as? InternalKsonString)?.value)
         assertEquals("Defines arbitrary key-value pairs for Jinja interpolation",
                      (contextSchema.propertyLookup["description"] as? InternalKsonString)?.value)
