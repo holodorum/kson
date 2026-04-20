@@ -252,9 +252,11 @@ private fun AstNode.toKsonValueInternal(skipErrors: Boolean): KsonValue? {
                     ?: if (skipErrors) return@mapNotNull null
                     else throw ShouldNotHappenException("this AST is fully valid")
                 val keyName = propKey.key.toKsonValueInternal(skipErrors) as? KsonString
-                    ?: return@mapNotNull null
+                    ?: if (skipErrors) return@mapNotNull null
+                    else throw ShouldNotHappenException("object key must convert to KsonString")
                 val propValue = propImpl.value.toKsonValueInternal(skipErrors)
-                    ?: return@mapNotNull null
+                    ?: if (skipErrors) return@mapNotNull null
+                    else throw ShouldNotHappenException("property value must convert to a KsonValue")
                 keyName.value to KsonObjectProperty(keyName, propValue)
             }
             KsonObject(props.toMap(), this)
@@ -265,6 +267,8 @@ private fun AstNode.toKsonValueInternal(skipErrors: Boolean): KsonValue? {
                     ?: if (skipErrors) return@mapNotNull null
                     else throw ShouldNotHappenException("this AST is fully valid")
                 listElementNode.value.toKsonValueInternal(skipErrors)
+                    ?: if (skipErrors) return@mapNotNull null
+                    else throw ShouldNotHappenException("list element must convert to a KsonValue")
             }
             KsonList(elems, this)
         }
