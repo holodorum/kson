@@ -27,6 +27,21 @@ import kotlin.js.JsExport
  *
  * The filtering uses a "soft" validation approach: a schema is included if the existing
  * properties don't contradict it, even if required properties are missing.
+ *
+ * **Filtering pipeline.** [getValidSchemas] runs two filtering passes, each of which
+ * may be skipped or fall back to its input in any of four cases:
+ *
+ *  1. *No partial document value.* If the document failed to parse even partially,
+ *     the sibling-compat pass is skipped — there's nothing to compare branches against.
+ *  2. *No branches require validation.* If every remaining ref is an allOf, direct
+ *     property, etc., the validation pass is skipped — nothing conditional to filter.
+ *  3. *Target value absent at pointer.* If the cursor points at a value that doesn't
+ *     exist yet (typical mid-typing case), [filterByValidation] returns its input
+ *     unchanged — nothing to validate against.
+ *  4. *Scalar target eliminates all filterable branches.* An empty/placeholder scalar
+ *     can spuriously reject every enum/const branch; [filterByValidation] falls back
+ *     to its input so value completions remain available.  Structural targets
+ *     (objects, lists) don't get this safety net — they reflect committed user intent.
  */
 class SchemaFilteringService(private val schemaIdLookup: SchemaIdLookup) {
 
@@ -100,11 +115,13 @@ class SchemaFilteringService(private val schemaIdLookup: SchemaIdLookup) {
     /**
      * Checks if a schema reference requires validation-based filtering.
      *
-     * oneOf/anyOf combinators and if/then/else conditionals require validation filtering.
-     * allOf combinators always include all branches (no filtering needed).
-     *
-     * @param ref The schema reference to check
-     * @return true if the schema requires validation filtering
+     * Two cases return true:
+     *  - The resolution type itself is filterable (oneOf/anyOf/if-then/if-else branch).
+     *  - The ref is a **parent** schema whose children have already been extracted by
+     *    [SchemaIdLookup.expandBranches], but whose own KsonObject still contains
+     *    `oneOf`/`anyOf`/`if` keys.  Without this check, a type-mismatched document
+     *    value against that parent would slip through unfiltered — exercised by
+     *    `testGetValidSchemas_withTypeMismatchAtTarget_filtersOutAllBranches`.
      */
     private fun requiresValidationFiltering(ref: ResolvedRef): Boolean {
         return ref.resolutionType.requiresValidationFiltering ||
