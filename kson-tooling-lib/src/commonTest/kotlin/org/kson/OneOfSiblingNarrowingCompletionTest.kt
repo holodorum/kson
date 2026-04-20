@@ -163,4 +163,40 @@ class OneOfSiblingNarrowingCompletionTest : SchemaCompletionTest {
             "Property completions should include oneOf branch properties (name filtered out as already filled)"
         )
     }
+
+    /**
+     * Sibling narrowing uses full schema validation, so non-const/non-enum discriminants
+     * (here, `type`) should filter branches the same way const/enum does.
+     */
+    @Test
+    fun testNarrowingByTypeConstraint() {
+        val typeDiscriminatedSchema = """
+            {
+                "oneOf": [
+                    {
+                        "properties": {
+                            "kind": { "type": "integer" },
+                            "color": { "enum": ["red", "green"] }
+                        }
+                    },
+                    {
+                        "properties": {
+                            "kind": { "type": "string" },
+                            "color": { "enum": ["blue", "yellow"] }
+                        }
+                    }
+                ]
+            }
+        """
+
+        assertCompletionLabels(typeDiscriminatedSchema,
+            """{"kind": 42, "color": "<caret>"}""",
+            listOf("green", "red"),
+            "integer kind should narrow to the type: integer branch's colors")
+
+        assertCompletionLabels(typeDiscriminatedSchema,
+            """{"kind": "hello", "color": "<caret>"}""",
+            listOf("blue", "yellow"),
+            "string kind should narrow to the type: string branch's colors")
+    }
 }

@@ -233,10 +233,14 @@ class SchemaFilteringService(private val schemaIdLookup: SchemaIdLookup) {
     /**
      * Checks if a oneOf/anyOf branch is compatible with the document's sibling properties.
      *
-     * Uses the [ResolvedRef.parentBranch] to access the full branch schema, then checks
-     * its property constraints (const/enum) against the document's existing values.
-     * The property being completed (last token of [documentPointer]) is excluded since
-     * its value is incomplete during completion.
+     * For each property the branch declares, if that property has a value in the document,
+     * validates the value against its schema using [isSchemaValidForDocument] — the same
+     * soft-validation path used for leaf filtering.  This catches const, enum, type, pattern,
+     * and any other constraint the branch puts on its sibling properties.
+     *
+     * The property being completed (last token of [documentPointer]) is excluded since its
+     * value is incomplete during completion — validating mid-typing input would spuriously
+     * reject the branch.
      *
      * @param parentBranch The oneOf/anyOf branch that contained this result
      * @param documentValue The root document value
@@ -260,14 +264,8 @@ class SchemaFilteringService(private val schemaIdLookup: SchemaIdLookup) {
             if (propName == propertyBeingCompleted) continue
 
             val docValue = parentDocValue.propertyLookup[propName] ?: continue
-            val propSchema = schemaIdLookup.resolveRefIfPresent(propSchemaValue, parentBranch.resolvedValueBaseUri)
-                .resolvedValue as? KsonObject ?: continue
-
-            val constValue = propSchema.propertyLookup["const"]
-            if (constValue != null && constValue != docValue) return false
-
-            val enumList = propSchema.propertyLookup["enum"] as? KsonList
-            if (enumList != null && docValue !in enumList.elements) return false
+            val propRef = schemaIdLookup.resolveRefIfPresent(propSchemaValue, parentBranch.resolvedValueBaseUri)
+            if (!isSchemaValidForDocument(propRef, docValue)) return false
         }
 
         return true
