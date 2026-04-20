@@ -75,17 +75,24 @@ class SchemaIdLookup(val schemaRootValue: KsonValue) {
 
 
     /**
-     * Expands combinator schemas (oneOf/anyOf/allOf) in a list of resolved schemas.
+     * Expands branching schemas — combinators (oneOf/anyOf/allOf) and
+     * conditionals (if/then/else) — in a list of resolved schemas.
      *
      * For each schema in the list:
      * - If it contains oneOf/anyOf/allOf, expands them into individual branches
-     * - Resolves any $ref in the branches
+     * - If it contains if/then/else, expands then/else as tagged conditional branches
+     * - Resolves any $ref along the way
+     * - Preserves the parent schema alongside its branches so parent-level
+     *   properties (title, description, constraints) remain available
      * - Otherwise keeps the schema as-is
      *
+     * Branches are themselves expanded recursively so nested structures (e.g. allOf
+     * containing if/then) are fully flattened.
+     *
      * @param schemas The list of schemas to expand
-     * @return Expanded list with combinator branches as separate items, with $ref resolved
+     * @return Flattened list of schemas with branches as separate items, with $ref resolved
      */
-    fun expandCombinators(schemas: List<ResolvedRef>): List<ResolvedRef> {
+    fun expandBranches(schemas: List<ResolvedRef>): List<ResolvedRef> {
         val expanded = mutableListOf<ResolvedRef>()
 
         for (ref in schemas) {

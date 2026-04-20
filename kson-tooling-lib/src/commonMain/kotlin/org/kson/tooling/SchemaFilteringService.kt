@@ -52,7 +52,7 @@ class SchemaFilteringService(private val schemaIdLookup: SchemaIdLookup) {
         document: ToolingDocument,
         documentPointer: JsonPointer
     ): List<ResolvedRef> {
-        val expandedSchemas = schemaIdLookup.expandCombinators(candidateSchemas)
+        val expandedSchemas = schemaIdLookup.expandBranches(candidateSchemas)
 
         val partialDocumentValue = document.partialKsonValue
         val afterSiblingFilter = if (partialDocumentValue != null) {
