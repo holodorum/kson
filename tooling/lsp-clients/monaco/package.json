@@ -4,16 +4,30 @@
   "version": "0.3.0-dev.0",
   "description": "Monaco editor with KSON language support and LSP integration",
   "type": "module",
+  "main": "./dist/kson-monaco.js",
+  "module": "./dist/kson-monaco.js",
+  "types": "./dist/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/kson-monaco.js",
+      "default": "./dist/kson-monaco.js"
+    }
+  },
+  "files": [
+    "dist",
+    "dist-iframe",
+    "readme.md"
+  ],
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "compile:types": "tsc -p tsconfig.json",
+    "build": "vite build && npm run compile:types",
     "preview": "vite preview",
     "test": "vitest run && playwright test",
     "test:unit": "vitest run",
     "test:headed": "playwright test --headed",
-    "build:iframe": "vite build --config vite.iframe.config.ts && vite build --config vite.iframe-client.config.ts",
-    "demo:library": "vite --config vite.demo-library.config.ts",
-    "demo:iframe": "vite --config vite.demo-iframe.config.ts"
+    "build:iframe": "vite build --config vite.iframe.config.ts && vite build --config vite.iframe-client.config.ts"
   },
   "author": "",
   "license": "ISC",

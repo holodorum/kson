@@ -13,16 +13,21 @@ Two distribution modes:
 
 ## Demos
 
-The fastest way to see each mode in action. Both include interactive "Try it"
-buttons for every API method.
+The fastest way to see each mode in action. Each demo lives at
+`tooling/lsp-clients/demos/<name>/` as a standalone package — they consume
+`@kson/monaco-editor` as a third-party dependency, exercising the export
+map and shipped types just as a downstream user would. All include
+interactive "Try it" buttons for every API method.
 
 ```bash
-# Library demo — imports createKsonEditor from source
+# Library demo — ES module import, http://localhost:5174
 ./gradlew tooling:lsp-clients:npm_run_demoLibrary
 
-# Iframe demo — uses the pre-built iframe assets via a script tag
-./gradlew tooling:lsp-clients:npm_run_buildMonacoIframe
+# Iframe demo — drop-in script tag, http://localhost:5175
 ./gradlew tooling:lsp-clients:npm_run_demoIframe
+
+# React demo — forwardRef + useImperativeHandle, http://localhost:5176
+./gradlew tooling:lsp-clients:npm_run_demoReact
 ```
 
 ## Library API
@@ -80,6 +85,41 @@ to connect additional editors to the same server.
 | `KSON_LANGUAGE_ID`      | The language identifier string (`'kson'`).           |
 | `KsonLspBridge`         | The LSP bridge class, for advanced use.              |
 | `TabBar`                | The tab bar component used for multi-document navigation. |
+
+### React usage
+
+Wrap `createKsonEditor` in an uncontrolled component and expose the handle via
+a ref — the parent reads/writes through `ref.current`, never via a `value`
+prop. See [`demos/react/main.tsx`](../demos/react/main.tsx) for a complete example.
+
+```tsx
+const KsonEditorView = forwardRef<KsonEditor | null, { defaultValue?: string }>(
+    function KsonEditorView({ defaultValue }, ref) {
+        const containerRef = useRef<HTMLDivElement>(null);
+        const handleRef = useRef<KsonEditor | null>(null);
+        const [handle, setHandle] = useState<KsonEditor | null>(null);
+
+        useImperativeHandle(ref, () => handle, [handle]);
+
+        useEffect(() => {
+            let disposed = false;
+            createKsonEditor(containerRef.current!, { value: defaultValue })
+                .then((created) => {
+                    if (disposed) { created.dispose(); return; }
+                    handleRef.current = created;
+                    setHandle(created);
+                });
+            return () => {
+                disposed = true;
+                handleRef.current?.dispose();
+                handleRef.current = null;
+            };
+        }, []);
+
+        return <div ref={containerRef} style={{ height: '100%' }} />;
+    },
+);
+```
 
 ## Iframe API
 
