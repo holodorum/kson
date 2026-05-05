@@ -156,6 +156,7 @@ function App() {
           </pre>
           <button
             className="try-btn"
+            data-testid="btn-get"
             disabled={!ready}
             onClick={() => {
               const v = editorRef.current?.editor.getValue() ?? "";
@@ -179,6 +180,7 @@ function App() {
           </pre>
           <button
             className="try-btn"
+            data-testid="btn-set"
             disabled={!ready}
             onClick={() => {
               append({
@@ -210,6 +212,7 @@ function App() {
           </pre>
           <button
             className="try-btn"
+            data-testid="btn-dispose"
             disabled={!ready}
             onClick={() => {
               append({
@@ -227,7 +230,7 @@ function App() {
           </button>
         </div>
 
-        <div className="log">
+        <div className="log" data-testid="log">
           {log.map((entry, i) => (
             <div key={i}>
               <span className="log-label">{entry.label} </span>
