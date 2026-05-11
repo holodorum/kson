@@ -23,9 +23,14 @@ class JsonTestSuiteGeneratorTest {
 
         val testPackageName = "org.json.parser.json.generated.TEST"
 
+        val jsonSuiteGitCheckout = JsonSuiteGitCheckout(jsonTestSuiteSHA, tempDirectory)
+        val schemaSuiteGitCheckout = SchemaSuiteGitCheckout(schemaTestSuiteSHA, tempDirectory)
+        jsonSuiteGitCheckout.ensureCheckout()
+        schemaSuiteGitCheckout.ensureCheckout()
+
         val jsonTestSuiteGenerator = JsonTestSuiteGenerator(
-            JsonSuiteGitCheckout(jsonTestSuiteSHA, tempDirectory),
-            SchemaSuiteGitCheckout(schemaTestSuiteSHA, tempDirectory),
+            jsonSuiteGitCheckout,
+            schemaSuiteGitCheckout,
             tempDirectory,
             tempDirectory,
             testPackageName)

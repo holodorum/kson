@@ -19,8 +19,14 @@ const val schemaTestSuiteSHA = "9fc880bfb6d8ccd093bc82431f17d13681ffae8e"
  * [inputs and outputs](https://docs.gradle.org/current/userguide/more_about_tasks.html#sec:task_inputs_outputs)
  * are properly defined so that we support incremental builds (and so that, for instance, the task re-runs
  * if/when the test at [getGeneratedTestPath] is deleted)
+ *
+ * The two `*GitCheckout` instances are constructed eagerly in `init {}` -- this is cheap and
+ * side-effect-free.  The actual clone/fetch is deferred to [generate] via [org.kson.CleanGitCheckout.ensureCheckout],
+ * so Gradle's eager task construction (e.g. `ProjectBuilder.getTasksByName`) does not hit the network.
  */
 open class GenerateJsonTestSuiteTask : DefaultTask() {
+    private val jsonSuiteGitCheckout: JsonSuiteGitCheckout
+    private val schemaSuiteGitCheckout: SchemaSuiteGitCheckout
     private val jsonTestSuiteGenerator: JsonTestSuiteGenerator
 
     init {
@@ -29,8 +35,8 @@ open class GenerateJsonTestSuiteTask : DefaultTask() {
 
         val sourceRoot = projectRoot.resolve("src/commonTest/kotlin/")
 
-        val jsonSuiteGitCheckout = JsonSuiteGitCheckout(jsonTestSuiteSHA, destinationDir)
-        val schemaSuiteGitCheckout = SchemaSuiteGitCheckout(schemaTestSuiteSHA, destinationDir)
+        jsonSuiteGitCheckout = JsonSuiteGitCheckout(jsonTestSuiteSHA, destinationDir)
+        schemaSuiteGitCheckout = SchemaSuiteGitCheckout(schemaTestSuiteSHA, destinationDir)
 
         jsonTestSuiteGenerator = JsonTestSuiteGenerator(
             jsonSuiteGitCheckout,
@@ -54,6 +60,8 @@ open class GenerateJsonTestSuiteTask : DefaultTask() {
 
     @TaskAction
     fun generate() {
+        jsonSuiteGitCheckout.ensureCheckout()
+        schemaSuiteGitCheckout.ensureCheckout()
         jsonTestSuiteGenerator.generate()
     }
 
