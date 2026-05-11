@@ -4,6 +4,7 @@ import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
+import org.kson.PreparedCheckout
 import java.io.File
 import java.nio.file.Path
 
@@ -31,6 +32,7 @@ class JsonTestSuiteGenerator(
     private val sourceRootDir: Path,
     private val classPackage: String
 ) {
+    /** Subdirectory within the JSONTestSuite repo containing the parsing tests we generate from. */
     val jsonTestSourceFilesDir: Path = jsonSuiteGitCheckout.checkoutDir.toPath().resolve("test_parsing")
     val testClassPackageDir = sourceRootDir.resolve(classPackage.replace('.', '/'))
     val generatedJsonSuiteTestPath: Path =
@@ -39,13 +41,22 @@ class JsonTestSuiteGenerator(
     val draft2020_12ClassName = "SchemaDraft2020_12SuiteTest"
 
     fun generate() {
+        val jsonCheckout = jsonSuiteGitCheckout.prepare()
+        val schemaCheckout = schemaSuiteGitCheckout.prepare()
+        writeGeneratedTests(jsonCheckout, schemaCheckout)
+    }
+
+    private fun writeGeneratedTests(jsonCheckout: PreparedCheckout, schemaCheckout: PreparedCheckout) {
         testClassPackageDir.toFile().mkdirs()
 
-        val jsonTestDataList = JsonTestDataLoader(jsonTestSourceFilesDir, projectRoot).loadTestData()
+        val jsonTestDataList = JsonTestDataLoader(
+            jsonTestSourceFilesDir,
+            projectRoot
+        ).loadTestData()
         generatedJsonSuiteTestPath.toFile()
             .writeText(generateJsonSuiteTestClass(this.javaClass.name, classPackage, jsonTestDataList))
 
-        val schemaTestSourceFilesDir: Path = schemaSuiteGitCheckout.checkoutDir.toPath().resolve("tests")
+        val schemaTestSourceFilesDir: Path = schemaCheckout.checkoutDir.toPath().resolve("tests")
 
         val schemaDraft7TestDataList = SchemaTestDataLoader(schemaTestSourceFilesDir, "draft7", projectRoot).loadTestData()
         schemaDraft7TestDataList.forEach { schemaTestFileData ->

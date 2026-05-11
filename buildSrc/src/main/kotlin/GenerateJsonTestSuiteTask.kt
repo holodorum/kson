@@ -21,8 +21,9 @@ const val schemaTestSuiteSHA = "9fc880bfb6d8ccd093bc82431f17d13681ffae8e"
  * if/when the test at [getGeneratedTestPath] is deleted)
  *
  * The two `*GitCheckout` instances are constructed eagerly in `init {}` -- this is cheap and
- * side-effect-free.  The actual clone/fetch is deferred to [generate] via [org.kson.CleanGitCheckout.ensureCheckout],
- * so Gradle's eager task construction (e.g. `ProjectBuilder.getTasksByName`) does not hit the network.
+ * side-effect-free.  The actual clone/fetch is deferred to [generate] via [JsonTestSuiteGenerator.generate],
+ * which calls [org.kson.CleanGitCheckout.prepare] internally, so Gradle's eager task construction
+ * (e.g. `ProjectBuilder.getTasksByName`) does not hit the network.
  */
 open class GenerateJsonTestSuiteTask : DefaultTask() {
     private val jsonSuiteGitCheckout: JsonSuiteGitCheckout
@@ -60,8 +61,6 @@ open class GenerateJsonTestSuiteTask : DefaultTask() {
 
     @TaskAction
     fun generate() {
-        jsonSuiteGitCheckout.ensureCheckout()
-        schemaSuiteGitCheckout.ensureCheckout()
         jsonTestSuiteGenerator.generate()
     }
 

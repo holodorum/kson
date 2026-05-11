@@ -25,8 +25,6 @@ class JsonTestSuiteGeneratorTest {
 
         val jsonSuiteGitCheckout = JsonSuiteGitCheckout(jsonTestSuiteSHA, tempDirectory)
         val schemaSuiteGitCheckout = SchemaSuiteGitCheckout(schemaTestSuiteSHA, tempDirectory)
-        jsonSuiteGitCheckout.ensureCheckout()
-        schemaSuiteGitCheckout.ensureCheckout()
 
         val jsonTestSuiteGenerator = JsonTestSuiteGenerator(
             jsonSuiteGitCheckout,

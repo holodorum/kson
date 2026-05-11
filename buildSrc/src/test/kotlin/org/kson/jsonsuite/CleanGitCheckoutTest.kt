@@ -58,7 +58,7 @@ class CleanGitCheckoutTest {
 
         assertFalse(
             checkout.checkoutDir.exists(),
-            "Construction should not create the checkout directory; that's `ensureCheckout()`'s job"
+            "Construction should not create the checkout directory; that's `prepare()`'s job"
         )
         assertEquals(
             testDestinationDir.resolve(cloneName).toFile(),
@@ -78,7 +78,7 @@ class CleanGitCheckoutTest {
             testDestinationDir,
             "GitFixture"
         )
-        cleanGitCheckout.ensureCheckout()
+        cleanGitCheckout.prepare()
 
         val repository = Git.open(cleanGitCheckout.checkoutDir).repository
         val actualCheckoutSHA = repository.refDatabase.firstExactRef("HEAD").objectId.name
@@ -97,9 +97,9 @@ class CleanGitCheckoutTest {
             testDestinationDir,
             "GitFixture"
         )
-        cleanGitCheckout.ensureCheckout()
+        cleanGitCheckout.prepare()
         // second call should be a no-op against an already-correct checkout
-        cleanGitCheckout.ensureCheckout()
+        cleanGitCheckout.prepare()
 
         val repository = Git.open(cleanGitCheckout.checkoutDir).repository
         val actualCheckoutSHA = repository.refDatabase.firstExactRef("HEAD").objectId.name
@@ -122,7 +122,7 @@ class CleanGitCheckoutTest {
                 desiredCheckoutSHA,
                 testDestinationDir,
                 "GitFixture"
-            ).ensureCheckout()
+            ).prepare()
         }
     }
 
@@ -137,7 +137,7 @@ class CleanGitCheckoutTest {
             testDestinationDir,
             "GitFixture"
         )
-        cleanGitCheckout.ensureCheckout()
+        cleanGitCheckout.prepare()
 
         // reach into the checkout we just created and point it another SHA
         val repository = Git.open(cleanGitCheckout.checkoutDir).repository
@@ -161,7 +161,7 @@ class CleanGitCheckoutTest {
             desiredCheckoutSHA,
             testDestinationDir,
             "GitFixture"
-        ).ensureCheckout()
+        ).prepare()
 
         // this incantation gets us the currently checked out SHA
         val actualCheckoutSHA = repository.refDatabase.firstExactRef("HEAD").objectId.name
@@ -183,7 +183,7 @@ class CleanGitCheckoutTest {
             testCheckoutDir,
             "GitFixture"
         )
-        cleanGitCheckout.ensureCheckout()
+        cleanGitCheckout.prepare()
 
         val dirtyFileName = "dirty.txt"
         // reach into the checkout we just ensured and dirty it up
@@ -197,7 +197,7 @@ class CleanGitCheckoutTest {
                 testCheckoutDir,
                 "GitFixture",
                 dirtyMessage
-            ).ensureCheckout()
+            ).prepare()
         }
 
         assertTrue(
@@ -227,7 +227,7 @@ class CleanGitCheckoutTest {
             testCheckoutDir,
             "GitFixture"
         )
-        cleanGitCheckout.ensureCheckout()
+        cleanGitCheckout.prepare()
 
         // Create a .DS_Store file in the checkout directory
         Paths.get(cleanGitCheckout.checkoutDir.toString(), ".DS_Store").toFile().createNewFile()
@@ -238,7 +238,7 @@ class CleanGitCheckoutTest {
             desiredCheckoutSHA,
             testCheckoutDir,
             "GitFixture"
-        ).ensureCheckout()
+        ).prepare()
 
         // Verify we're still at the correct SHA
         val repository = Git.open(cleanGitCheckout.checkoutDir).repository
@@ -263,19 +263,19 @@ class CleanGitCheckoutTest {
             initialSHA,
             testDestinationDir,
             "GitFixture"
-        ).ensureCheckout()
+        ).prepare()
 
         // now advance the source repo with a new commit; the existing checkout has no idea this exists
         val newSHA = addCommit(sourceRepo, "added.txt", "added content")
         assertNotEquals(initialSHA, newSHA)
 
-        // request the new SHA -- ensureCheckout must fetch and resolve it
+        // request the new SHA -- prepare must fetch and resolve it
         CleanGitCheckout(
             sourceRepo.toURI().toString(),
             newSHA,
             testDestinationDir,
             "GitFixture"
-        ).ensureCheckout()
+        ).prepare()
 
         val actualSHA = headSHA(testDestinationDir.resolve("GitFixture").toFile())
         assertEquals(newSHA, actualSHA, "should have fetched and checked out the newly-added SHA")
@@ -292,7 +292,7 @@ class CleanGitCheckoutTest {
             initialSHA,
             testDestinationDir,
             "GitFixture"
-        ).ensureCheckout()
+        ).prepare()
 
         // a plausibly-shaped but non-existent SHA -- fetch will run but resolve nothing new
         val bogusSHA = "deadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
@@ -303,7 +303,7 @@ class CleanGitCheckoutTest {
                 bogusSHA,
                 testDestinationDir,
                 "GitFixture"
-            ).ensureCheckout()
+            ).prepare()
         }
 
         assertTrue(exception.message!!.contains(bogusSHA), "Message should include the unresolvable SHA")
@@ -328,7 +328,7 @@ class CleanGitCheckoutTest {
             cloneParentDir = testDestinationDir,
             cloneName = "GitFixture"
         )
-        checkout.ensureCheckout()
+        checkout.prepare()
 
         assertEquals(2, checkout.cloneAttempts, "should have retried clone once after the first failure")
         val actualSHA = headSHA(checkout.checkoutDir)
@@ -349,7 +349,7 @@ class CleanGitCheckoutTest {
             cloneName = "GitFixture"
         )
 
-        val exception = assertFailsWith<NetworkOperationFailedException> { checkout.ensureCheckout() }
+        val exception = assertFailsWith<NetworkOperationFailedException> { checkout.prepare() }
         assertEquals(3, checkout.cloneAttempts, "should have tried exactly 3 times before giving up")
         assertTrue(
             exception.message!!.contains(gitTestFixturePath),
@@ -370,7 +370,7 @@ class CleanGitCheckoutTest {
             initialSHA,
             testDestinationDir,
             "GitFixture"
-        ).ensureCheckout()
+        ).prepare()
 
         // advance the source repo so the new SHA must be fetched
         val newSHA = addCommit(sourceRepo, "added.txt", "added content")
@@ -384,7 +384,7 @@ class CleanGitCheckoutTest {
             cloneParentDir = testDestinationDir,
             cloneName = "GitFixture"
         )
-        checkout.ensureCheckout()
+        checkout.prepare()
 
         assertEquals(2, checkout.fetchAttempts, "should have retried fetch once after the first failure")
         val actualSHA = headSHA(checkout.checkoutDir)
@@ -402,7 +402,7 @@ class CleanGitCheckoutTest {
             initialSHA,
             testDestinationDir,
             "GitFixture"
-        ).ensureCheckout()
+        ).prepare()
 
         val newSHA = addCommit(sourceRepo, "added.txt", "added content")
         assertNotEquals(initialSHA, newSHA)
@@ -416,7 +416,7 @@ class CleanGitCheckoutTest {
             cloneName = "GitFixture"
         )
 
-        val exception = assertFailsWith<NetworkOperationFailedException> { checkout.ensureCheckout() }
+        val exception = assertFailsWith<NetworkOperationFailedException> { checkout.prepare() }
         assertEquals(3, checkout.fetchAttempts, "should have tried exactly 3 times before giving up")
         assertTrue(
             exception.message!!.contains(sourceRepo.toURI().toString()),

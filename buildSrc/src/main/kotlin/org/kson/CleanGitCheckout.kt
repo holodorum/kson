@@ -36,8 +36,8 @@ internal fun formatGitStatusReport(status: Status, untracked: Set<String> = empt
 
 /**
  * Ensures there is a clean git checkout of [repoUri] in [cloneParentDir] at SHA [checkoutSHA] when
- * [ensureCheckout] is called.  Construction is side-effect free beyond computing [checkoutDir];
- * callers must invoke [ensureCheckout] explicitly to perform any network or filesystem work.
+ * [prepare] is called.  Construction is side-effect free beyond computing [checkoutDir];
+ * callers must invoke [prepare] explicitly to perform any network or filesystem work.
  *
  * @param repoUri the URI of the repo to clone.  May be any git URI that [org.eclipse.jgit.transport.URIish.URIish(java.lang.String)]
  *                 can parse, including `https://` URIs and local file paths
@@ -56,17 +56,18 @@ open class CleanGitCheckout(private val repoUri: String,
     val checkoutDir: File = File(cloneParentDir.toFile(), cloneName)
 
     /**
-     * Ensures the checkout exists, is clean, and points at [checkoutSHA].  Clones the repo if
-     * [checkoutDir] is empty; if the SHA cannot be resolved locally (e.g. the SHA constant was
-     * bumped after a previous checkout), fetches updates from the remote and retries.  Safe to
-     * call repeatedly: idempotent against an already-correct checkout.
+     * Ensures the checkout exists, is clean, and points at [checkoutSHA], returning a
+     * [PreparedCheckout] witness that callers can hand to code that reads repo contents.
+     * Clones the repo if [checkoutDir] is empty; if the SHA cannot be resolved locally (e.g. the
+     * SHA constant was bumped after a previous checkout), fetches updates from the remote and
+     * retries.  Safe to call repeatedly: idempotent against an already-correct checkout.
      *
      * @throws NoRepoException if [checkoutDir] exists but is not a git repo
      * @throws DirtyRepoException if [checkoutDir] has uncommitted changes or unexpected untracked files
      * @throws ShaNotResolvableException if [checkoutSHA] cannot be resolved even after fetching
      * @throws NetworkOperationFailedException if clone/fetch fails after [NETWORK_ATTEMPTS] attempts
      */
-    fun ensureCheckout() {
+    fun prepare(): PreparedCheckout {
         if (!checkoutDir.exists()) {
             checkoutDir.mkdirs()
             withNetworkRetry("clone $repoUri into $checkoutDir") {
@@ -110,6 +111,8 @@ open class CleanGitCheckout(private val repoUri: String,
         }
 
         checkoutCommit(checkoutDir, checkoutSHA)
+
+        return PreparedCheckout(checkoutDir)
     }
 
     /**
@@ -203,3 +206,12 @@ open class CleanGitCheckout(private val repoUri: String,
  * underlying git repos .gitignore, else we would deal with these there)
  */
 private val acceptableUntrackedFiles = setOf(".DS_Store", "Thumbs.db")
+
+/**
+ * Witness that the underlying repo has been cloned/fetched as needed, verified clean, and
+ * checked out at the requested SHA.  Only constructible via [CleanGitCheckout.prepare].
+ *
+ * Functions that read repo contents should accept [PreparedCheckout] rather than a bare
+ * [File] path -- the type makes it impossible to forget preparation.
+ */
+class PreparedCheckout internal constructor(val checkoutDir: File)
