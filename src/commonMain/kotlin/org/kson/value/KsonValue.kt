@@ -235,7 +235,10 @@ fun AstNode.toKsonValueOrNull(): KsonValue? = toKsonValueInternal(skipErrors = t
 private fun AstNode.toKsonValueInternal(skipErrors: Boolean): KsonValue? {
     if (this !is AstNodeImpl) {
         if (skipErrors) return null
-        throw RuntimeException("Cannot create ${KsonValue::class.simpleName} Node from a ${this::class.simpleName}")
+        /**
+         * Must have a fully valid [AstNodeImpl] to create an [KsonValue] for it
+         */
+        throw ShouldNotHappenException("Cannot create ${KsonValue::class.simpleName} Node from a ${this::class.simpleName}")
     }
     return when (this) {
         is AstNodeError -> {
