@@ -258,8 +258,22 @@ class SchemaIdLookup(val schemaRootValue: KsonValue) {
          * constraints.  For allOf and conditional branches, `parentBranch` is inherited from
          * [ref].
          */
-        private fun flatten(ref: ResolvedRef, docVal: KsonValue?): List<ResolvedRef> {
+        private fun flatten(
+            ref: ResolvedRef,
+            docVal: KsonValue?,
+            inProgress: MutableList<Pair<String, KsonValue>> = mutableListOf()
+        ): List<ResolvedRef> {
             val schemaObj = ref.resolvedValue as? KsonObject ?: return listOf(ref)
+
+            // Cycle guard: a oneOf/anyOf/allOf branch can be a `$ref` back to a node already
+            // being flattened on this path (a legal recursive grammar where one alternative is
+            // "the whole thing again").  Combinator expansion doesn't consume a pointer token the
+            // way properties/items steps do, so without this guard flatten re-enters the same node
+            // forever.  Emit the node bare and stop descending when we'd re-enter it.
+            if (inProgress.any { it.first == ref.resolvedValueBaseUri && it.second === schemaObj }) {
+                return listOf(ref)
+            }
+            inProgress.add(ref.resolvedValueBaseUri to schemaObj)
 
             val results = mutableListOf<ResolvedRef>()
             var addedBranches = false
@@ -272,7 +286,7 @@ class SchemaIdLookup(val schemaRootValue: KsonValue) {
                     resolutionType,
                     if (attachAsParentBranch) resolved else ref.parentBranch
                 )
-                results.addAll(flatten(branchRef, docVal))
+                results.addAll(flatten(branchRef, docVal, inProgress))
                 addedBranches = true
             }
 
@@ -320,6 +334,7 @@ class SchemaIdLookup(val schemaRootValue: KsonValue) {
                 results.add(ref)
             }
 
+            inProgress.removeAt(inProgress.size - 1)
             return results
         }
     }
