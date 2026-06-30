@@ -900,4 +900,44 @@ class SchemaNavigationTest {
         assertEquals("string", ((emailResults.single() as InternalKsonObject).propertyLookup["type"] as? InternalKsonString)?.value)
     }
 
+    /**
+     * A branch that `$ref`s back to the schema containing its combinator is legal JSON
+     * Schema (a recursive grammar where one alternative is "the whole thing again").
+     * Navigation must terminate rather than recursing forever through `flatten`'s
+     * combinator expansion, and the non-recursive `string` branch must still be navigable.
+     *
+     * `oneOf`/`anyOf`/`allOf` and `if`/`then`/`else` all expand through the same `flatten`
+     * path, so each combinator shape is exercised here.
+     */
+    @Test
+    fun testSelfReferentialCombinatorsTerminate() {
+        val recursiveBranchByCombinator = mapOf(
+            "oneOf" to $$""""oneOf": [ { "$ref": "#/$defs/expr" }, { "type": "string" } ]""",
+            "anyOf" to $$""""anyOf": [ { "$ref": "#/$defs/expr" }, { "type": "string" } ]""",
+            "allOf" to $$""""allOf": [ { "$ref": "#/$defs/expr" }, { "type": "string" } ]""",
+            "if/then/else" to $$""""if": { "type": "object" }, "then": { "$ref": "#/$defs/expr" }, "else": { "type": "string" }""",
+        )
+
+        for ((combinator, exprBody) in recursiveBranchByCombinator) {
+            val schema = $$"""
+                {
+                    "$defs": {
+                        "expr": { $${exprBody} }
+                    },
+                    "type": "object",
+                    "properties": {
+                        "value": { "$ref": "#/$defs/expr" }
+                    }
+                }
+            """
+
+            val results = navigateSchema(schema, listOf("value"))
+            assertEquals(true, results.isNotEmpty(), "Expected $combinator navigation to terminate and return results")
+
+            val hasStringBranch = results.any {
+                ((it as? InternalKsonObject)?.propertyLookup?.get("type") as? InternalKsonString)?.value == "string"
+            }
+            assertEquals(true, hasStringBranch, "Expected the non-recursive string branch of $combinator to be navigable")
+        }
+    }
 }
