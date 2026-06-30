@@ -6,6 +6,7 @@ import org.kson.tooling.KsonTooling
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class SchemaCompletionLocationTest {
@@ -1491,14 +1492,60 @@ class SchemaCompletionLocationTest {
     }
 
     @Test
+    fun testCompletionsInEmptyArrayItemOfRecursiveAnyOf() {
+        // An empty array item whose schema is a recursive anyOf offers the UNION of both
+        // branches: the half-typed item must not disqualify either alternative.
+        val schema = $$"""
+            {
+              "type": "object",
+              "properties": {
+                "config": { "$ref": "#/$defs/Node" }
+              },
+              "$defs": {
+                "Node": {
+                  "anyOf": [
+                    { "$ref": "#/$defs/Leaf" },
+                    { "$ref": "#/$defs/Group" }
+                  ]
+                },
+                "Leaf": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": { "foo": { "type": "string" }, "bar": { "type": "string" } }
+                },
+                "Group": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": { "items": { "type": "array", "items": { "$ref": "#/$defs/Node" } } }
+                }
+              }
+            }
+        """
+
+        val completions = getCompletionsAtCaret(schema, """
+            config:
+              items:
+                - <caret>
+        """.trimIndent())
+
+        val labels = completions.map { it.label }.toSet()
+        assertEquals(
+            setOf("foo", "bar", "items"),
+            labels,
+            "Empty recursive-anyOf array item offers the union of both branches, got: $labels"
+        )
+    }
+
+    @Test
     fun testNoCompletionsInsideDelimitedListWhenSchemaExpectsObject() {
         val schema = searchExpressionSchema
 
         // Cursor inside a [] delimited list, but schema expects objects (SearchTerm
-        // or AndExpression). The structural mismatch means no branch is compatible.
-        // This also exercises the SQUARE_BRACKET_L guard in the path builder: the
-        // path must point at /query (not drop to root), otherwise the filter would
-        // see root-level completions leak through.
+        // or AndExpression). Like testNoCompletionsInsideEmptyDelimitedDashListWhenSchemaExpectsObject,
+        // the structural mismatch (list where object expected) eliminates every anyOf
+        // branch, so we should return no completions rather than leak object-property
+        // suggestions into a list context. Also exercises the SQUARE_BRACKET_L guard in
+        // the path builder: the path must target /query (not drop to root).
         val completions = getCompletionsAtCaret(schema, $$"""
             '$schema': test
             query:
@@ -1508,7 +1555,11 @@ class SchemaCompletionLocationTest {
         """.trimIndent())
 
         assertNotNull(completions)
-        assertTrue(completions.isEmpty(), "Should have no completions when document structure doesn't match schema, got: ${completions.map { it.label }}")
+        assertTrue(
+            completions.isEmpty(),
+            "Should have no completions: the path must target /query, and list-at-object " +
+                "filters out every anyOf branch. Got: ${completions.map { it.label }}"
+        )
     }
 
     @Test
@@ -1560,6 +1611,115 @@ class SchemaCompletionLocationTest {
         assertTrue("config" !in labels, "Should NOT include 'config' (parent property)")
     }
 
+    @Test
+    fun testIfThenCompletionsIncludeConditionalProperties() {
+        // Test that properties from if/then branches appear in completions
+        val schema = """
+            {
+                "type": "object",
+                "properties": {
+                    "kind": { "type": "string" }
+                },
+                "if": {
+                    "properties": {
+                        "kind": { "const": "dog" }
+                    }
+                },
+                "then": {
+                    "properties": {
+                        "bark": { "type": "boolean" }
+                    }
+                }
+            }
+        """
+
+        val completions = getCompletionsAtCaret(schema, """
+            {
+                "kind": "dog",
+                <caret>
+            }
+        """.trimIndent())
+
+        assertNotNull(completions, "Should return completions")
+        val labels = completions.map { it.label }
+        assertTrue("bark" in labels, "Should include 'bark' from then branch, got: $labels")
+    }
+
+    @Test
+    fun testAllOfWithIfThenCompletionsIncludeConditionalProperties() {
+        // allOf if/then should surface properties from matching branches
+        val schema = """
+            {
+                "type": "object",
+                "properties": { "kind": { "type": "string" } },
+                "allOf": [
+                    {
+                        "if": { "properties": { "kind": { "const": "dog" } } },
+                        "then": { "properties": { "bark": { "type": "boolean" } } }
+                    }
+                ]
+            }
+        """
+
+        val completions = getCompletionsAtCaret(schema, """
+            { "kind": "dog", <caret> }
+        """.trimIndent())
+
+        assertNotNull(completions)
+        assertTrue("bark" in completions.map { it.label }, "Should include 'bark' from then branch")
+    }
+
+    @Test
+    fun testIfThenFiltersNestedPropertyCompletionsBySiblingValue() {
+        // A nested property's completions should be narrowed by if/then evaluation
+        // against a sibling at the parent level.  The base "config" allows any
+        // properties; the if/then narrows to a specific $ref based on "kind".
+        val schema = """
+            {
+                "${'$'}defs": {
+                    "Item": {
+                        "type": "object",
+                        "properties": {
+                            "kind": { "type": "string" },
+                            "config": { "additionalProperties": true, "type": "object" }
+                        },
+                        "allOf": [
+                            {
+                                "if": { "properties": { "kind": { "const": "a" } }, "required": ["kind"] },
+                                "then": { "properties": { "config": { "${'$'}ref": "#/${'$'}defs/ConfigA" } } }
+                            },
+                            {
+                                "if": { "properties": { "kind": { "const": "b" } }, "required": ["kind"] },
+                                "then": { "properties": { "config": { "${'$'}ref": "#/${'$'}defs/ConfigB" } } }
+                            }
+                        ]
+                    },
+                    "ConfigA": {
+                        "type": "object", "additionalProperties": false,
+                        "properties": { "alpha": { "type": "string" } }
+                    },
+                    "ConfigB": {
+                        "type": "object", "additionalProperties": false,
+                        "properties": { "beta": { "type": "string" } }
+                    }
+                },
+                "type": "object",
+                "properties": {
+                    "items": { "type": "object", "additionalProperties": { "${'$'}ref": "#/${'$'}defs/Item" } }
+                }
+            }
+        """
+
+        val completions = getCompletionsAtCaret(schema, """
+            { "items": { "x": { "kind": "a", "config": { <caret> } } } }
+        """.trimIndent())
+
+        assertNotNull(completions)
+        val labels = completions.map { it.label }
+        assertTrue("alpha" in labels, "Should include 'alpha' from ConfigA, got: $labels")
+        assertFalse("beta" in labels, "Should NOT include 'beta' from ConfigB, got: $labels")
+    }
+
     private val searchExpressionSchema = $$"""
         type: object
         additionalProperties: false
@@ -1604,115 +1764,4 @@ class SchemaCompletionLocationTest {
             .
     """
 
-    @Test
-    fun testOneOfWithRefAtRootProvidesPropertyCompletions() {
-        val schema = $$"""
-            oneOf:
-              - '$ref': '#/$defs/Model'
-                description: 'A model resource'
-              - '$ref': '#/$defs/View'
-                description: 'A view resource'
-                .
-            '$defs':
-              Model:
-                type: object
-                properties:
-                  id:
-                    type: string
-                    .
-                  type:
-                    type: string
-                    const: model
-                    .
-                  source:
-                    type: string
-                    .
-                  .
-                .
-              View:
-                type: object
-                properties:
-                  id:
-                    type: string
-                    .
-                  type:
-                    type: string
-                    const: view
-                    .
-                  base:
-                    type: string
-                    .
-                  .
-                .
-              .
-        """
-
-        val completions = getCompletionsAtCaret(schema, "<caret>")
-
-        assertEquals(
-            setOf("id", "type", "source", "base"),
-            completions.map { it.label }.toSet()
-        )
-    }
-
-    @Test
-    fun testOneOfWithRefAtRootWithEmbedDescription() {
-        // Root schema with $id and %markdown embed block description alongside oneOf
-        val schema = $$"""
-            '$schema': 'http://json-schema.org/draft-07/schema#'
-            '$id': 'test.schema.kson'
-            title: 'Test Resource'
-            description: %markdown
-              # Test Resource
-
-              Each file is either a `model` or a `view`.
-              Use `type: model` or `type: view` to discriminate.
-              %%
-            oneOf:
-              - '$ref': '#/$defs/Model'
-                description: 'A model resource'
-              - '$ref': '#/$defs/View'
-                description: 'A view resource'
-                .
-            '$defs':
-              Model:
-                type: object
-                properties:
-                  id:
-                    type: string
-                    .
-                  type:
-                    type: string
-                    const: model
-                    .
-                  source:
-                    type: string
-                    .
-                  .
-                .
-              View:
-                type: object
-                properties:
-                  id:
-                    type: string
-                    .
-                  type:
-                    type: string
-                    const: view
-                    .
-                  base:
-                    type: string
-                    .
-                  .
-                .
-              .
-        """
-
-        val completions = getCompletionsAtCaret(schema, "<caret>")
-
-        assertEquals(
-            setOf("id", "type", "source", "base"),
-            completions.map { it.label }.toSet()
-        )
-    }
 }

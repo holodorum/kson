@@ -594,4 +594,44 @@ class SchemaDefinitionLocationTest {
         )
     }
 
+    @Test
+    fun testJumpToDefinition_arrayItem_filteredByOwnValue() {
+        // Each array item is an anyOf discriminated by its own `type` value.  Go-to-def on a
+        // property of an item resolves to the single branch the item's committed value selects:
+        // the leaf value is authoritative for navigation, unlike in completion.
+        assertDefinitionLocation(
+            schemaWithCaret = """
+                {
+                  "type": "array",
+                  "items": {
+                    "anyOf": [
+                      {
+                        "properties": {
+                          "type": { "const": "foo" },
+                          "config": <caret>{
+                            "type": "string",
+                            "description": "config for foo"
+                          }<caret>
+                        }
+                      },
+                      {
+                        "properties": {
+                          "type": { "const": "bar" },
+                          "config": {
+                            "type": "number",
+                            "description": "config for bar"
+                          }
+                        }
+                      }
+                    ]
+                  }
+                }
+            """.trimIndent(),
+            documentWithCaret = """
+                - type: foo
+                  config<caret>: hello
+            """.trimIndent()
+        )
+    }
+
 }

@@ -7,10 +7,12 @@ import org.kson.tooling.navigation.KsonValuePathBuilder
 import org.kson.tooling.navigation.SchemaInformation
 import org.kson.tooling.navigation.extractSchemaInfo
 import org.kson.parser.Coordinates
+import org.kson.parser.Location
 import org.kson.schema.ResolvedRef
 import org.kson.value.navigation.json_pointer.JsonPointer
 import org.kson.schema.SchemaIdLookup
 import org.kson.validation.SourceContext
+import org.kson.value.KsonList
 import org.kson.value.KsonObject
 import org.kson.value.KsonString
 import org.kson.value.KsonValue
@@ -49,9 +51,9 @@ object KsonTooling {
     ): String? {
         val parsedSchema = schema.ksonValue ?: return null
         val documentPointer = KsonValuePathBuilder(document, Coordinates(line, column)).buildJsonPointerToPosition() ?: return null
-        val context = ResolvedSchemaContext.resolveAndFilterSchemas(parsedSchema, document.ksonValue, documentPointer)
+        val validSchemas = resolveSchemas(parsedSchema, document, documentPointer)
 
-        val schemaInfos = context.validSchemas.mapNotNull { ref ->
+        val schemaInfos = validSchemas.mapNotNull { ref ->
             ref.resolvedValue.extractSchemaInfo()
         }
 
@@ -79,9 +81,9 @@ object KsonTooling {
     ): List<Range> {
         val parsedSchema = schema.ksonValue ?: return emptyList()
         val documentPointer = KsonValuePathBuilder(document, Coordinates(line, column)).buildJsonPointerToPosition() ?: return emptyList()
-        val context = ResolvedSchemaContext.resolveAndFilterSchemas(parsedSchema, document.ksonValue, documentPointer)
+        val validSchemas = resolveSchemas(parsedSchema, document, documentPointer)
 
-        return context.validSchemas.map {
+        return validSchemas.map {
             Range(
                 it.resolvedValue.location.start.line,
                 it.resolvedValue.location.start.column,
@@ -159,9 +161,10 @@ object KsonTooling {
     ): List<CompletionItem> {
         val parsedSchema = schema.ksonValue ?: return emptyList()
         val documentPointer = KsonValuePathBuilder(document, Coordinates(line, column)).buildJsonPointerToPosition(includePropertyKeys = false) ?: return emptyList()
-        val context = ResolvedSchemaContext.resolveAndFilterSchemas(parsedSchema, document.ksonValue, documentPointer)
+        val placeholderLocation = placeholderLocationAt(document.ksonValue, documentPointer, Coordinates(line, column))
+        val validSchemas = resolveSchemas(parsedSchema, document, documentPointer, placeholderLocation)
 
-        return SchemaInformation.getCompletions(context.schemaIdLookup.schemaRootValue, documentPointer, context.validSchemas, context.parsedDocument)
+        return SchemaInformation.getCompletions(parsedSchema, documentPointer, validSchemas, document.ksonValue)
     }
 
     /**
@@ -280,41 +283,61 @@ object KsonTooling {
     }
 
     /**
-     * Internal helper data class to hold the result of schema resolution and filtering.
+     * Navigate to the schemas governing a document path.
+     *
+     * Creates a [SchemaIdLookup] and navigates to the candidate schemas at the pointer.
+     * Navigation flattens combinators and conditionals into individual branches and
+     * narrows them doc-aware at every level (see [SchemaIdLookup.navigateByDocumentPointer]),
+     * so no separate filtering pass is needed.
+     *
+     * [placeholderLocation] is the span of the value the caret is authoring, excluded from
+     * narrowing (see [SchemaIdLookup.navigateByDocumentPointer]).  Completion passes the
+     * caret's half-typed value; hover / go-to-def leave it null so the committed leaf narrows.
      */
-    private data class ResolvedSchemaContext(
-        val schemaIdLookup: SchemaIdLookup,
-        val validSchemas: List<ResolvedRef>,
-        val parsedDocument: KsonValue?
-    ){
-        companion object {
-            /**
-             * Common helper to navigate and filter schemas based on a document path.
-             *
-             * Encapsulates the repeated pattern of:
-             * 1. Creating a SchemaIdLookup from the pre-parsed schema
-             * 2. Navigating to candidate schemas
-             * 3. Filtering schemas based on validation against the pre-parsed document
-             *
-             * @param parsedSchema The pre-parsed schema value
-             * @param documentValue The pre-parsed document value (may be null for broken documents)
-             * @param documentPointer The [JsonPointer] to navigate to in the schema
-             */
-            fun resolveAndFilterSchemas(
-                parsedSchema: KsonValue,
-                documentValue: KsonValue?,
-                documentPointer: JsonPointer
-            ): ResolvedSchemaContext {
-                val schemaIdLookup = SchemaIdLookup(parsedSchema)
-                val candidateSchemas = schemaIdLookup.navigateByDocumentPointer(documentPointer)
+    private fun resolveSchemas(
+        parsedSchema: KsonValue,
+        document: ToolingDocument,
+        documentPointer: JsonPointer,
+        placeholderLocation: Location? = null
+    ): List<ResolvedRef> {
+        val schemaIdLookup = SchemaIdLookup(parsedSchema)
+        return schemaIdLookup.navigateByDocumentPointer(
+            documentPointer, document.ksonValue, placeholderLocation
+        )
+    }
 
-                val filteringService = SchemaFilteringService(schemaIdLookup)
-                val validSchemas = filteringService.getValidSchemas(candidateSchemas, documentValue, documentPointer)
-
-                return ResolvedSchemaContext(schemaIdLookup, validSchemas, documentValue)
-            }
+    /**
+     * The span of the half-typed value the caret is authoring, excluded from branch narrowing
+     * during completion so an incomplete value never disqualifies the branches it selects among.
+     *
+     * - Caret on a scalar value: that value's span.
+     * - Caret inside an object: the property whose subtree the caret is authoring within — the
+     *   one the completion pointer dropped to reach the parent.  The caret may sit just past the
+     *   property's content (e.g. a fresh empty array item adds no width), so a property matches
+     *   when the caret is after its start and on a line no later than its end.  A caret in
+     *   property-NAME position (a new line below all properties) matches none, so nothing is
+     *   excluded and the object's committed siblings still narrow.
+     * - Caret on a list: null — an array literal is a committed structural choice whose type must
+     *   still contradict object-expecting branches.
+     */
+    private fun placeholderLocationAt(
+        documentValue: KsonValue?,
+        documentPointer: JsonPointer,
+        caret: Coordinates
+    ): Location? {
+        val leaf = documentValue?.let { KsonValueWalker.navigateWithJsonPointer(it, documentPointer) } ?: return null
+        return when (leaf) {
+            is KsonList -> null
+            is KsonObject -> leaf.propertyMap.values
+                .map { Location.merge(it.propName.location, it.propValue.location) }
+                .lastOrNull { span -> startsAtOrBefore(span.start, caret) && caret.line <= span.end.line }
+            else -> leaf.location
         }
     }
+
+    /** True if [first] is at or before [second] in (line, column) order. */
+    private fun startsAtOrBefore(first: Coordinates, second: Coordinates): Boolean =
+        first.line < second.line || (first.line == second.line && first.column <= second.column)
 }
 
 /**
