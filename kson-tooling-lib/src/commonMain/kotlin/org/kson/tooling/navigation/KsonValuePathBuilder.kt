@@ -1,6 +1,8 @@
 package org.kson.tooling.navigation
 
 import org.kson.ast.AstNode
+import org.kson.ast.ObjectNode
+import org.kson.ast.ObjectPropertyNodeImpl
 import org.kson.parser.Coordinates
 import org.kson.parser.Location
 import org.kson.parser.Token
@@ -10,6 +12,7 @@ import org.kson.value.navigation.json_pointer.JsonPointer
 import org.kson.walker.AstNodeWalker
 import org.kson.walker.NodeChildren
 import org.kson.walker.navigateToLocationWithPointer
+import org.kson.walker.navigateWithJsonPointer
 import org.kson.tooling.ToolingDocument
 
 /**
@@ -22,6 +25,17 @@ private data class TokenContext(
     val lastToken: Token?,
     val isInsideToken: Boolean
 )
+
+/**
+ * The result of resolving a caret position: the [JsonPointer] from the document root to the
+ * target value, plus the span of the value the caret is currently authoring (the "placeholder").
+ *
+ * [placeholderLocation] is only populated for completion (where the half-typed value must not
+ * disqualify the schema branches it selects among); it is null for definition/hover lookups,
+ * which treat the committed value at the caret as authoritative.  See
+ * [org.kson.schema.SchemaIdLookup.navigateByDocumentPointer].
+ */
+data class CaretPath(val pointer: JsonPointer, val placeholderLocation: Location?)
 
 /**
  * Builds a JSON Pointer path from the document root to a specific cursor
@@ -59,8 +73,23 @@ class KsonValuePathBuilder(
      * @return A [JsonPointer] representing the path from root to target,
      *         or null if the document is completely unparseable
      */
-    fun buildJsonPointerToPosition(includePropertyKeys: Boolean = true): JsonPointer? {
-        val rootNode = document.rootAstNode ?: return if (document.content.isBlank()) JsonPointer.ROOT else null
+    fun buildJsonPointerToPosition(includePropertyKeys: Boolean = true): JsonPointer? =
+        buildCaretPath(includePropertyKeys)?.pointer
+
+    /**
+     * Resolves the caret position into a [CaretPath]: the [JsonPointer] to the target value plus
+     * the placeholder span of the value the caret is authoring.
+     *
+     * The placeholder is derived from the same token context that drives path adjustment, so it is
+     * known precisely at the point the pointer is built — no re-derivation from the parsed value by
+     * caret coordinates is needed.  It is only populated for completion (`includePropertyKeys =
+     * false`); definition/hover lookups leave it null and treat the committed value as authoritative.
+     *
+     * @return The resolved [CaretPath], or null if the document is completely unparseable
+     */
+    fun buildCaretPath(includePropertyKeys: Boolean = true): CaretPath? {
+        val rootNode = document.rootAstNode
+            ?: return if (document.content.isBlank()) CaretPath(JsonPointer.ROOT, null) else null
 
         // Analyze token context using meaningful (non-whitespace) tokens
         val tokenContext = analyzeTokenContext(document.meaningfulTokens, location)
@@ -71,7 +100,7 @@ class KsonValuePathBuilder(
         // Navigate to the target node and build the path via the AST walker
         val navResult = AstNodeWalker.navigateToLocationWithPointer(
             rootNode, searchPosition
-        ) ?: return JsonPointer.ROOT
+        ) ?: return CaretPath(JsonPointer.ROOT, null)
 
         // Adjust the path based on token context (colon handling, boundary checks)
         return adjustPathForLocationContext(
@@ -80,7 +109,8 @@ class KsonValuePathBuilder(
             targetNode = navResult.value,
             isLocationInsideToken = tokenContext.isInsideToken,
             includePropertyKeys = includePropertyKeys,
-            meaningfulTokens = document.meaningfulTokens
+            meaningfulTokens = document.meaningfulTokens,
+            rootNode = rootNode
         )
     }
 
@@ -186,8 +216,9 @@ class KsonValuePathBuilder(
         targetNode: AstNode,
         isLocationInsideToken: Boolean,
         includePropertyKeys: Boolean,
-        meaningfulTokens: List<Token>
-    ): JsonPointer {
+        meaningfulTokens: List<Token>,
+        rootNode: AstNode
+    ): CaretPath {
         // Check if the nearest preceding colon indicates we're entering a value.
         // Only apply when the colon falls INSIDE the targetNode's bounds — this
         // means targetNode is the parent object that owns the colon. If the colon
@@ -201,9 +232,12 @@ class KsonValuePathBuilder(
         val isAfterColonAtParent = colonPropertyName != null &&
                 AstNodeWalker.getChildren(targetNode) is NodeChildren.Object &&
                 Location.containsCoordinates(AstNodeWalker.getLocation(targetNode), colonToken.lexeme.location.start)
-        val tokens = when {
+        return when {
             isAfterColonAtParent -> {
-                pointer.tokens + colonPropertyName
+                // Caret sits right after `key:` with no value committed yet — there is no
+                // half-typed value to exclude from narrowing (a committed value would instead
+                // land the caret inside its token, handled by the value-token case below).
+                CaretPath(JsonPointer.fromTokens(pointer.tokens + colonPropertyName), placeholderLocation = null)
             }
             // Location is on a property key (UNQUOTED_STRING, STRING_OPEN_QUOTE, or STRING_CONTENT token) and we're at the parent object
             // This happens when location is in the middle of a property name like "user<caret>name"
@@ -218,7 +252,7 @@ class KsonValuePathBuilder(
                     QuotedStringContentTransformer(lastToken.lexeme.text, lastToken.lexeme.location).processedContent
                 else
                     lastToken.lexeme.text
-                pointer.tokens + propertyName
+                CaretPath(JsonPointer.fromTokens(pointer.tokens + propertyName), placeholderLocation = null)
             }
             // Location is outside the token - target the parent element (for completions)
             // But keep the path as-is for definition lookups.
@@ -229,11 +263,46 @@ class KsonValuePathBuilder(
                     && lastToken?.tokenType != TokenType.SQUARE_BRACKET_L
                     && lastToken?.tokenType != TokenType.CURLY_BRACE_L
                     && lastToken?.tokenType != TokenType.ANGLE_BRACKET_L -> {
-                pointer.tokens.dropLast(1)
+                val parentPointer = JsonPointer.fromTokens(pointer.tokens.dropLast(1))
+                // A caret authoring a fresh dash-list item (`- `) is editing the property whose
+                // value is that list: exclude the whole property so its incomplete item never
+                // disqualifies the branches being completed.  On a fresh property-name line the
+                // caret follows a committed sibling's last token (not a dash), so there is no
+                // placeholder and those committed siblings still narrow.
+                val placeholder = if (lastToken?.tokenType == TokenType.LIST_DASH)
+                    enclosingPropertyLocation(rootNode, parentPointer, targetNode)
+                else null
+                CaretPath(parentPointer, placeholder)
             }
             // Normal case - return path as-is
-            else -> pointer.tokens
+            else -> {
+                // A scalar value the caret is inside is the placeholder.  An object or array
+                // literal is a committed structural choice whose own type must still narrow
+                // (e.g. a list literal where an object is expected), so it is never excluded.
+                val placeholder = if (!includePropertyKeys && AstNodeWalker.getChildren(targetNode) is NodeChildren.Leaf)
+                    AstNodeWalker.getLocation(targetNode)
+                else null
+                CaretPath(pointer, placeholder)
+            }
         }
-        return JsonPointer.fromTokens(tokens)
+    }
+
+    /**
+     * Location of the object property at [parentPointer] whose value is [valueNode], or null when
+     * [parentPointer] is not an object or owns no such property (e.g. a dash list nested directly
+     * in another list).  The property's location spans its key through its value, so excluding it
+     * during narrowing drops type/additional-property errors the half-typed item would otherwise
+     * trigger against sibling-discriminated branches.
+     */
+    private fun enclosingPropertyLocation(
+        rootNode: AstNode,
+        parentPointer: JsonPointer,
+        valueNode: AstNode
+    ): Location? {
+        val parent = AstNodeWalker.navigateWithJsonPointer(rootNode, parentPointer) as? ObjectNode ?: return null
+        val property = parent.properties.firstOrNull {
+            (it as? ObjectPropertyNodeImpl)?.value === valueNode
+        } ?: return null
+        return AstNodeWalker.getLocation(property)
     }
 }

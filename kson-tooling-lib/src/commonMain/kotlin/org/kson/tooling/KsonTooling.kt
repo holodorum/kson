@@ -12,7 +12,6 @@ import org.kson.schema.ResolvedRef
 import org.kson.value.navigation.json_pointer.JsonPointer
 import org.kson.schema.SchemaIdLookup
 import org.kson.validation.SourceContext
-import org.kson.value.KsonList
 import org.kson.value.KsonObject
 import org.kson.value.KsonString
 import org.kson.value.KsonValue
@@ -160,11 +159,10 @@ object KsonTooling {
         column: Int
     ): List<CompletionItem> {
         val parsedSchema = schema.ksonValue ?: return emptyList()
-        val documentPointer = KsonValuePathBuilder(document, Coordinates(line, column)).buildJsonPointerToPosition(includePropertyKeys = false) ?: return emptyList()
-        val placeholderLocation = placeholderLocationAt(document.partialKsonValue, documentPointer, Coordinates(line, column))
-        val validSchemas = resolveSchemas(parsedSchema, document, documentPointer, placeholderLocation)
+        val caretPath = KsonValuePathBuilder(document, Coordinates(line, column)).buildCaretPath(includePropertyKeys = false) ?: return emptyList()
+        val validSchemas = resolveSchemas(parsedSchema, document, caretPath.pointer, caretPath.placeholderLocation)
 
-        return SchemaInformation.getCompletions(parsedSchema, documentPointer, validSchemas, document.ksonValue)
+        return SchemaInformation.getCompletions(parsedSchema, caretPath.pointer, validSchemas, document.ksonValue)
     }
 
     /**
@@ -308,39 +306,6 @@ object KsonTooling {
             documentPointer, document.partialKsonValue, placeholderLocation
         )
     }
-
-    /**
-     * The span of the half-typed value the caret is authoring, excluded from branch narrowing
-     * during completion so an incomplete value never disqualifies the branches it selects among.
-     *
-     * - Caret on a scalar value: that value's span.
-     * - Caret inside an object: the property whose subtree the caret is authoring within — the
-     *   one the completion pointer dropped to reach the parent.  The caret may sit just past the
-     *   property's content (e.g. a fresh empty array item adds no width), so a property matches
-     *   when the caret is after its start and on a line no later than its end.  A caret in
-     *   property-NAME position (a new line below all properties) matches none, so nothing is
-     *   excluded and the object's committed siblings still narrow.
-     * - Caret on a list: null — an array literal is a committed structural choice whose type must
-     *   still contradict object-expecting branches.
-     */
-    private fun placeholderLocationAt(
-        documentValue: KsonValue?,
-        documentPointer: JsonPointer,
-        caret: Coordinates
-    ): Location? {
-        val leaf = documentValue?.let { KsonValueWalker.navigateWithJsonPointer(it, documentPointer) } ?: return null
-        return when (leaf) {
-            is KsonList -> null
-            is KsonObject -> leaf.propertyMap.values
-                .map { Location.merge(it.propName.location, it.propValue.location) }
-                .lastOrNull { span -> startsAtOrBefore(span.start, caret) && caret.line <= span.end.line }
-            else -> leaf.location
-        }
-    }
-
-    /** True if [first] is at or before [second] in (line, column) order. */
-    private fun startsAtOrBefore(first: Coordinates, second: Coordinates): Boolean =
-        first.line < second.line || (first.line == second.line && first.column <= second.column)
 }
 
 /**

@@ -102,24 +102,23 @@ class SchemaIdLookup(val schemaRootValue: KsonValue) {
      * val schemaRefs = idLookup.navigateByDocumentPath(listOf("users", "0", "name"))
      * ```
      *
-     * Narrowing treats the document as authoritative for committed context, but the value the
-     * caret is authoring must never disqualify the branches it selects among.  [placeholderLocation]
-     * is the span of that in-flux value: validation errors falling within it are ignored during
-     * narrowing at every level.  Completion passes the caret's half-typed value span; hover and
-     * go-to-definition pass null (the leaf value is committed, so it narrows too).  Null is the
-     * default so direct-navigation callers narrow by the real document values.
+     * Narrowing treats the document as authoritative for committed context.  [incompleteRegion],
+     * when set, marks a span of the document that is not yet fully authored: validation errors
+     * falling within it are ignored during narrowing at every level, so a branch is judged only
+     * by the committed parts of the document.  Null is the default, narrowing by the whole
+     * document value.
      *
      * @param documentPointer Pointer through the document (from [org.kson.walker.navigateToLocationWithPointer])
      * @param documentValue The document being navigated against (drives branch narrowing)
-     * @param placeholderLocation Span of the value being authored at the caret, excluded from narrowing
+     * @param incompleteRegion Span of the document whose validation errors are ignored during narrowing
      * @return List of [ResolvedRef] containing all sub-schemas at that location (empty if not found)
      */
     fun navigateByDocumentPointer(
         documentPointer: JsonPointer,
         documentValue: KsonValue? = null,
-        placeholderLocation: Location? = null,
+        incompleteRegion: Location? = null,
     ): List<ResolvedRef> {
-        return SchemaNavigator(this).navigate(documentPointer, documentValue, placeholderLocation)
+        return SchemaNavigator(this, incompleteRegion).navigate(documentPointer, documentValue)
     }
 
     /**
@@ -160,18 +159,20 @@ class SchemaIdLookup(val schemaRootValue: KsonValue) {
      * [org.kson.walker.navigateWithJsonPointer]) — one entry point, small internal
      * helpers — so the pattern is recognizable.
      */
-    private class SchemaNavigator(private val idLookup: SchemaIdLookup) {
+    private class SchemaNavigator(
+        private val idLookup: SchemaIdLookup,
+        private val incompleteRegion: Location?
+    ) {
 
         fun navigate(
             documentPointer: JsonPointer,
-            documentValue: KsonValue?,
-            placeholderLocation: Location?
+            documentValue: KsonValue?
         ): List<ResolvedRef> {
             val rootBaseUri = idLookup.rootBaseUri()
             val rootRef = idLookup.resolveRefIfPresent(idLookup.schemaRootValue, rootBaseUri)
 
             val tokens = documentPointer.tokens
-            var current = flatten(rootRef, documentValue, placeholderLocation)
+            var current = flatten(rootRef, documentValue)
             var currentDocValue = documentValue
 
             for (token in tokens) {
@@ -179,7 +180,7 @@ class SchemaIdLookup(val schemaRootValue: KsonValue) {
                 currentDocValue = currentDocValue?.let { docVal ->
                     KsonValueWalker.navigateWithJsonPointer(docVal, JsonPointer.fromTokens(listOf(token)))
                 }
-                current = stepped.flatMap { flatten(it, currentDocValue, placeholderLocation) }
+                current = stepped.flatMap { flatten(it, currentDocValue) }
                 if (current.isEmpty()) break
             }
 
@@ -196,7 +197,7 @@ class SchemaIdLookup(val schemaRootValue: KsonValue) {
          *
          * Branch context inheritance: if [ref]'s resolutionType is a branch marker
          * (ONE_OF / ANY_OF / ALL_OF / IF_THEN / IF_ELSE), stepped results keep that marker
-         * so downstream completion merging still treats them as conditional.  Otherwise the
+         * so downstream value merging still treats them as conditional.  Otherwise the
          * stepped result's resolutionType reflects how the step resolved the token
          * (DIRECT_PROPERTY / PATTERN_PROPERTY / ADDITIONAL_PROPERTY / ARRAY_ITEMS).
          */
@@ -264,13 +265,13 @@ class SchemaIdLookup(val schemaRootValue: KsonValue) {
          *   - oneOf / anyOf: a branch is emitted only when it is compatible with [docVal]
          *     (soft validation — see [isCompatibleWithDocument]).  Because narrowing happens
          *     where the combinator lives, sibling discriminators (e.g. a `const` on a property
-         *     other than the one being completed) are visible and contradicted branches are
+         *     other than the one being navigated to) are visible and contradicted branches are
          *     dropped right here, with full ancestor context.  When [docVal] is null, all
          *     branches are emitted (nothing to narrow against).
          *   - allOf: unconditional expansion, every branch emitted (all must hold).
          *   - if / then / else: see [evaluateIf].  A matching `if` emits `then`; a
          *     contradicted `if` emits `else`; an undecidable `if` (no document, unparseable
-         *     condition, or failing only because a required discriminator isn't typed yet)
+         *     condition, or failing only because a required discriminator isn't present yet)
          *     emits both branches.
          *
          * Recurses into each branch so nested combinators/conditionals are fully flattened,
@@ -282,7 +283,6 @@ class SchemaIdLookup(val schemaRootValue: KsonValue) {
         private fun flatten(
             ref: ResolvedRef,
             docVal: KsonValue?,
-            excludeLocation: Location?,
             inProgress: MutableList<Pair<String, KsonValue>> = mutableListOf()
         ): List<ResolvedRef> {
             val schemaObj = ref.resolvedValue as? KsonObject ?: return listOf(ref)
@@ -307,7 +307,7 @@ class SchemaIdLookup(val schemaRootValue: KsonValue) {
                     resolved.resolvedValueBaseUri,
                     resolutionType
                 )
-                results.addAll(flatten(branchRef, docVal, excludeLocation, inProgress))
+                results.addAll(flatten(branchRef, docVal, inProgress))
                 addedBranches = true
             }
 
@@ -317,7 +317,7 @@ class SchemaIdLookup(val schemaRootValue: KsonValue) {
             // post-navigation sibling/leaf filtering pass is needed.
             fun addNarrowedBranch(branch: KsonValue, resolutionType: SchemaResolutionType) {
                 val resolved = idLookup.resolveRefIfPresent(branch, ref.resolvedValueBaseUri)
-                if (docVal != null && !isCompatibleWithDocument(resolved, docVal, excludeLocation)) {
+                if (docVal != null && !isCompatibleWithDocument(resolved, docVal)) {
                     // narrowing still happened even if every branch was dropped
                     addedBranches = true
                     return
@@ -327,7 +327,7 @@ class SchemaIdLookup(val schemaRootValue: KsonValue) {
                     resolved.resolvedValueBaseUri,
                     resolutionType
                 )
-                results.addAll(flatten(branchRef, docVal, excludeLocation, inProgress))
+                results.addAll(flatten(branchRef, docVal, inProgress))
                 addedBranches = true
             }
 
@@ -376,20 +376,18 @@ class SchemaIdLookup(val schemaRootValue: KsonValue) {
         /**
          * Soft-validates [ref]'s schema against [docVal]: a branch is "compatible" unless it
          * produces a validation error that is NOT merely a missing-required-property /
-         * missing-dependency error.  Missing required properties are expected mid-completion
-         * (the document is being typed), so they never disqualify a branch; type/const/enum/
-         * pattern violations on properties that ARE present do.  Fail-open if the branch
-         * schema can't be parsed.
+         * missing-dependency error.  Missing required properties are expected while a document
+         * is still incomplete, so they never disqualify a branch; type/const/enum/pattern
+         * violations on properties that ARE present do.  Fail-open if the branch schema can't
+         * be parsed.
          *
-         * [excludeLocation], when set, is the span of the caret leaf — the half-typed
-         * placeholder being completed (an object property's value or an array item).  Errors
-         * located within that span are ignored, so a branch is judged only by its constraints
-         * on the committed parts of the document, never by the incomplete value at the caret.
+         * Errors located within [incompleteRegion] (when set) are ignored, so a branch is
+         * judged only by its constraints on the committed parts of the document, never by an
+         * error in the not-yet-authored region.
          */
         private fun isCompatibleWithDocument(
             ref: ResolvedRef,
-            docVal: KsonValue,
-            excludeLocation: Location?
+            docVal: KsonValue
         ): Boolean {
             val schema = SchemaParser.parseSchemaElement(
                 ref.resolvedValue, MessageSink(), ref.resolvedValueBaseUri, idLookup
@@ -398,17 +396,17 @@ class SchemaIdLookup(val schemaRootValue: KsonValue) {
             schema.validate(docVal, sink)
             return sink.loggedMessages().none { logged ->
                 if (logged.message.type in IGNORABLE_VALIDATION_ERRORS) return@none false
-                // keep the error unless it falls within the caret leaf being completed
-                val within = excludeLocation != null &&
-                    excludeLocation.startOffset <= logged.location.startOffset &&
-                    logged.location.endOffset <= excludeLocation.endOffset
+                // keep the error unless it falls within the not-yet-authored region
+                val within = incompleteRegion != null &&
+                    incompleteRegion.startOffset <= logged.location.startOffset &&
+                    logged.location.endOffset <= incompleteRegion.endOffset
                 !within
             }
         }
 
         /**
          * Evaluate an `if` condition against [docVal] into three states.  A condition that
-         * fails ONLY because a required discriminator property hasn't been typed yet is
+         * fails ONLY because a required discriminator property isn't present yet is
          * [IfState.UNDETERMINED], not [IfState.NO_MATCH]: the document is incomplete, so we
          * can't yet rule out `then`.  This distinguishes "not decidable due to incompleteness"
          * (emit both branches) from "decidably false against present data" (emit `else`).
@@ -433,10 +431,10 @@ class SchemaIdLookup(val schemaRootValue: KsonValue) {
 
     companion object {
         /**
-         * Validation errors that never disqualify a branch during completion narrowing:
-         * a missing required property (or dependency) is expected while the document is
-         * still being typed.  Any other error (type/const/enum/pattern mismatch on a
-         * property that IS present) marks the branch incompatible with the document.
+         * Validation errors that never disqualify a branch during narrowing: a missing
+         * required property (or dependency) is expected while a document is still
+         * incomplete.  Any other error (type/const/enum/pattern mismatch on a property
+         * that IS present) marks the branch incompatible with the document.
          */
         private val IGNORABLE_VALIDATION_ERRORS = setOf(
             MessageType.SCHEMA_REQUIRED_PROPERTY_MISSING,
