@@ -135,6 +135,23 @@ class OneOfSiblingNarrowingCompletionTest : SchemaCompletionTest {
     }
 
     @Test
+    fun testParametersNarrowedByIntegrationAndJob() {
+        val completions = getCompletionsAtCaret(schema,
+            """{"integration": "ALPHA", "job": "ALPHA_SYNC", "parameters": { "<caret>" }}""")
+        assertNotNull(completions, "Should return parameter completions")
+        assertEquals(listOf("url"), completions.map { it.label }.sorted(),
+            "Should offer AlphaParams properties, not all parameter types")
+    }
+
+    @Test
+    fun testNarrowingWithKsonSyntax() {
+        assertCompletionLabels(schema,
+            "integration: ALPHA\njob: <caret>",
+            listOf("ALPHA_SYNC"),
+            "Narrowing should work with KSON syntax via partial value")
+    }
+
+    @Test
     fun testPropertyNameCompletionsIncludeOneOfProperties() {
         val completions = getCompletionsAtCaret(schema,
             "name: foo\n<caret>")

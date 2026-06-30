@@ -161,7 +161,7 @@ object KsonTooling {
     ): List<CompletionItem> {
         val parsedSchema = schema.ksonValue ?: return emptyList()
         val documentPointer = KsonValuePathBuilder(document, Coordinates(line, column)).buildJsonPointerToPosition(includePropertyKeys = false) ?: return emptyList()
-        val placeholderLocation = placeholderLocationAt(document.ksonValue, documentPointer, Coordinates(line, column))
+        val placeholderLocation = placeholderLocationAt(document.partialKsonValue, documentPointer, Coordinates(line, column))
         val validSchemas = resolveSchemas(parsedSchema, document, documentPointer, placeholderLocation)
 
         return SchemaInformation.getCompletions(parsedSchema, documentPointer, validSchemas, document.ksonValue)
@@ -290,6 +290,9 @@ object KsonTooling {
      * narrows them doc-aware at every level (see [SchemaIdLookup.navigateByDocumentPointer]),
      * so no separate filtering pass is needed.
      *
+     * Uses [ToolingDocument.partialKsonValue] so narrowing can see successfully-parsed
+     * sibling values even when the document has parse errors at the cursor.
+     *
      * [placeholderLocation] is the span of the value the caret is authoring, excluded from
      * narrowing (see [SchemaIdLookup.navigateByDocumentPointer]).  Completion passes the
      * caret's half-typed value; hover / go-to-def leave it null so the committed leaf narrows.
@@ -302,7 +305,7 @@ object KsonTooling {
     ): List<ResolvedRef> {
         val schemaIdLookup = SchemaIdLookup(parsedSchema)
         return schemaIdLookup.navigateByDocumentPointer(
-            documentPointer, document.ksonValue, placeholderLocation
+            documentPointer, document.partialKsonValue, placeholderLocation
         )
     }
 

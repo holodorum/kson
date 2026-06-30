@@ -9,9 +9,9 @@ import kotlin.test.assertTrue
 /**
  * End-to-end tests for bidirectional if/then completion narrowing.
  *
- * Validates the full completions pipeline: schema navigation, if/then
- * condition evaluation, enum intersection, and the fallback to full enum
- * when no sibling is set.
+ * Validates the full completions pipeline: schema navigation with partial
+ * document values, if/then condition evaluation, enum intersection, and the
+ * fallback to full enum when no sibling is set.
  *
  * The schema uses bidirectional if/then clauses where property A narrows
  * property B and vice versa — a common pattern for interdependent enums.
@@ -83,6 +83,14 @@ class BidirectionalIfThenCompletionTest : SchemaCompletionTest {
     }
 
     @Test
+    fun testJobNarrowedWithEmptyKsonValue() {
+        assertCompletionLabels(schema,
+            "integration: SNOWFLAKE\njob: <caret>",
+            listOf("SNOW_QUERY", "SNOW_TEST"),
+            "KSON empty value should still narrow via partial AST")
+    }
+
+    @Test
     fun testJobNarrowedWithPartialKsonValue() {
         assertCompletionLabels(schema,
             "integration: SNOWFLAKE\njob: <caret>S",
@@ -104,6 +112,14 @@ class BidirectionalIfThenCompletionTest : SchemaCompletionTest {
             """{"job": "DBT_RUN", "integration": "<caret>"}""",
             listOf("DBT"),
             "DBT_RUN job should narrow integration to DBT")
+    }
+
+    @Test
+    fun testIntegrationNarrowedWithEmptyKsonValue() {
+        assertCompletionLabels(schema,
+            "job: SNOW_QUERY\nintegration: <caret>",
+            listOf("SNOWFLAKE"),
+            "Reverse narrowing should work with KSON empty value")
     }
 
     @Test
