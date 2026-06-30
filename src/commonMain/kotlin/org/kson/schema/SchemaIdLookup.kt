@@ -167,7 +167,7 @@ class SchemaIdLookup(val schemaRootValue: KsonValue) {
             documentValue: KsonValue?,
             placeholderLocation: Location?
         ): List<ResolvedRef> {
-            val rootBaseUri = ""
+            val rootBaseUri = idLookup.rootBaseUri()
             val rootRef = idLookup.resolveRefIfPresent(idLookup.schemaRootValue, rootBaseUri)
 
             val tokens = documentPointer.tokens
