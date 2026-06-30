@@ -619,8 +619,8 @@ private fun resolveJsonPointer(pointer: JsonPointer, ksonValue: KsonValue, curre
 }
 
 /**
- * Describes how a schema was resolved during navigation.
- * This information is used by completion providers to determine which schemas need validation.
+ * Describes how a schema was reached during navigation, recording the combinator or
+ * structural step that produced it.
  */
 enum class SchemaResolutionType {
     /** Schema found via direct property lookup in "properties" */
@@ -643,23 +643,6 @@ enum class SchemaResolutionType {
     IF_ELSE,
     /** Root schema or schema resolved via $ref */
     ROOT;
-
-    /**
-     * True if this branch contributes value completions that must be intersected
-     * with other reductive branches — a value must satisfy all reductive schemas
-     * simultaneously (e.g., a base property's enum intersected with an if/then's
-     * narrower enum).  Additive branches (oneOf/anyOf) merge their completions
-     * as alternatives instead.
-     *
-     * Exhaustive by design: adding a new enum entry forces a compile error here so
-     * the reductive-vs-additive classification is an explicit decision, not a default.
-     */
-    val isReductive: Boolean
-        get() = when (this) {
-            DIRECT_PROPERTY, PATTERN_PROPERTY, ADDITIONAL_PROPERTY,
-            ARRAY_ITEMS, ALL_OF, IF_THEN, IF_ELSE, ROOT -> true
-            ANY_OF, ONE_OF -> false
-        }
 
     /**
      * True if this resolution type was produced by a branching construct (combinator

@@ -31,6 +31,176 @@ class SchemaCompletionLocationTest {
     }
 
     @Test
+    fun testConstValueCompletions() {
+        val schema = """
+            {
+                type: object
+                properties: {
+                    status: {
+                        const: "active"
+                        description: "Always active"
+                    }
+                }
+            }
+        """
+
+        val completions = getCompletionsAtCaret(schema, """
+            {
+                status: "<caret>"
+            }
+        """.trimIndent())
+
+        assertNotNull(completions, "Should return completions for const value")
+        val labels = completions.map { it.label }
+        assertEquals(listOf("active"), labels, "Should offer only the const value")
+    }
+
+    @Test
+    fun testIfThenNarrowsConstValueForSiblingProperty() {
+        // if/then narrows a property to a const based on a sibling value
+        val schema = """
+            {
+                "type": "object",
+                "properties": {
+                    "kind": { "type": "string" },
+                    "breed": { "type": "string" }
+                },
+                "allOf": [
+                    {
+                        "if": {
+                            "properties": { "kind": { "const": "dog" } },
+                            "required": ["kind"]
+                        },
+                        "then": {
+                            "properties": {
+                                "breed": { "const": "labrador" }
+                            }
+                        }
+                    }
+                ]
+            }
+        """
+
+        val completions = getCompletionsAtCaret(schema, """
+            {
+                "kind": "dog",
+                "breed": "<caret>"
+            }
+        """.trimIndent())
+
+        assertNotNull(completions, "Should return completions")
+        val labels = completions.map { it.label }
+        assertEquals(listOf("labrador"), labels, "Should narrow to only the const value, got: $labels")
+    }
+
+    @Test
+    fun testIfThenNarrowsEnumValueForSiblingProperty() {
+        // if/then narrows a property's enum based on a sibling value.
+        // The base property has all enum values; the matching if/then branch
+        // constrains it to a subset via intersection semantics.
+        val schema = """
+            {
+                "type": "object",
+                "properties": {
+                    "integration": { "type": "string" },
+                    "job": {
+                        "type": "string",
+                        "enum": ["SNOW_QUERY", "SNOW_TEST", "DBT_RUN", "DBT_TEST"]
+                    }
+                },
+                "allOf": [
+                    {
+                        "if": {
+                            "properties": { "integration": { "const": "SNOWFLAKE" } },
+                            "required": ["integration"]
+                        },
+                        "then": {
+                            "properties": {
+                                "job": { "enum": ["SNOW_QUERY", "SNOW_TEST"] }
+                            }
+                        }
+                    },
+                    {
+                        "if": {
+                            "properties": { "integration": { "const": "DBT" } },
+                            "required": ["integration"]
+                        },
+                        "then": {
+                            "properties": {
+                                "job": { "enum": ["DBT_RUN", "DBT_TEST"] }
+                            }
+                        }
+                    }
+                ]
+            }
+        """
+
+        val completions = getCompletionsAtCaret(schema, """
+            {
+                "integration": "SNOWFLAKE",
+                "job": "<caret>"
+            }
+        """.trimIndent())
+
+        assertNotNull(completions, "Should return completions")
+        val labels = completions.map { it.label }
+        assertEquals(listOf("SNOW_QUERY", "SNOW_TEST"), labels.sorted(),
+            "Should narrow to SNOWFLAKE jobs only, got: $labels")
+    }
+
+    @Test
+    fun testIfThenEnumNarrowingFallsBackWhenNoSiblingValue() {
+        // When no sibling value is set, all enum values should be available
+        val schema = """
+            {
+                "type": "object",
+                "properties": {
+                    "integration": { "type": "string" },
+                    "job": {
+                        "type": "string",
+                        "enum": ["SNOW_QUERY", "DBT_RUN"]
+                    }
+                },
+                "allOf": [
+                    {
+                        "if": {
+                            "properties": { "integration": { "const": "SNOWFLAKE" } },
+                            "required": ["integration"]
+                        },
+                        "then": {
+                            "properties": {
+                                "job": { "enum": ["SNOW_QUERY"] }
+                            }
+                        }
+                    },
+                    {
+                        "if": {
+                            "properties": { "integration": { "const": "DBT" } },
+                            "required": ["integration"]
+                        },
+                        "then": {
+                            "properties": {
+                                "job": { "enum": ["DBT_RUN"] }
+                            }
+                        }
+                    }
+                ]
+            }
+        """
+
+        val completions = getCompletionsAtCaret(schema, """
+            {
+                "job": "<caret>"
+            }
+        """.trimIndent())
+
+        assertNotNull(completions, "Should return completions")
+        val labels = completions.map { it.label }
+        assertEquals(listOf("DBT_RUN", "SNOW_QUERY"), labels.sorted(),
+            "Should include all enum values when integration is not set, got: $labels")
+    }
+
+    @Test
     fun testEnumValueCompletions() {
         val schema = """
             {
