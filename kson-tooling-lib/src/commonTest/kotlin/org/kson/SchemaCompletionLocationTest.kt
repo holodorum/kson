@@ -327,6 +327,103 @@ class SchemaCompletionLocationTest {
         assertEquals(3, completions.size, "Should have 3 values (true, false, null)")
     }
 
+    /**
+     * A value typed `anyOf[string, null]` — the null branch contributes a `null` VALUE completion,
+     * used to exercise the "caret past a committed value" suppression in [testNoValueCompletionsAfterCommittedScalar].
+     */
+    private val nullableValueSchema = """
+        {
+            type: object
+            properties: {
+                value: {
+                    anyOf: [
+                        { type: string }
+                        { type: "null" }
+                    ]
+                }
+            }
+        }
+    """
+
+    @Test
+    fun testNoValueCompletionsAfterCommittedScalar() {
+        // Caret rests right after a complete, committed value: there's nothing left to choose, so the
+        // null-branch `null` suggestion must be suppressed.
+        val completions = getCompletionsAtCaret(nullableValueSchema, """
+            {
+                value: "committed"<caret>
+            }
+        """.trimIndent())
+
+        assertNotNull(completions, "Should return a (possibly empty) completion list")
+        assertTrue(
+            completions.none { it.kind == CompletionKind.VALUE },
+            "Caret after a committed value should offer no value completions, got: ${completions.map { it.label }}"
+        )
+        assertTrue("null" !in completions.map { it.label }, "Should not suggest 'null' after a committed value")
+    }
+
+    @Test
+    fun testValueCompletionsOfferedForEmptySlot() {
+        // An empty value slot (no committed value) still offers the null-branch suggestion.
+        val completions = getCompletionsAtCaret(nullableValueSchema, """
+            {
+                value: <caret>
+            }
+        """.trimIndent())
+
+        assertNotNull(completions, "Should return completions for an empty value slot")
+        assertTrue("null" in completions.map { it.label },
+            "Empty slot should still offer 'null', got: ${completions.map { it.label }}")
+    }
+
+    @Test
+    fun testValueCompletionsOfferedInsideEmptyQuotes() {
+        // Caret between the quotes of an empty string is still authoring the value — it precedes the
+        // close-quote token — so value suggestions must remain (this is how narrowing tests probe a slot).
+        val completions = getCompletionsAtCaret(nullableValueSchema, """
+            {
+                value: "<caret>"
+            }
+        """.trimIndent())
+
+        assertNotNull(completions, "Should return completions inside empty quotes")
+        assertTrue("null" in completions.map { it.label },
+            "Caret inside empty quotes should still offer 'null', got: ${completions.map { it.label }}")
+    }
+
+    @Test
+    fun testValueCompletionsOfferedWhenCaretWithinValue() {
+        // Caret at the start of an existing value (about to replace it) still offers value suggestions.
+        val completions = getCompletionsAtCaret(nullableValueSchema, """
+            {
+                value: <caret>null
+            }
+        """.trimIndent())
+
+        assertNotNull(completions, "Should return completions when replacing a value")
+        assertTrue("null" in completions.map { it.label },
+            "Caret within a value should still offer 'null', got: ${completions.map { it.label }}")
+    }
+
+    @Test
+    fun testValueCompletionsBoundaryAtClosingQuote() {
+        // The "finished value" boundary is the closing quote, not the content.  A caret BEFORE the
+        // close quote is still authoring (as you type a quoted enum value), so completions remain; a
+        // caret AFTER the close quote is done, so they are suppressed.
+        val enumSchema = """
+            { type: object, properties: { status: { type: string, enum: ["active", "inactive", "pending"] } } }
+        """
+
+        val beforeQuote = getCompletionsAtCaret(enumSchema, """{ status: "active<caret>" }""")
+        assertTrue("active" in beforeQuote.map { it.label },
+            "Caret before the closing quote should still offer enum values, got: ${beforeQuote.map { it.label }}")
+
+        val afterQuote = getCompletionsAtCaret(enumSchema, """{ status: "active"<caret> }""")
+        assertTrue(afterQuote.none { it.kind == CompletionKind.VALUE },
+            "Caret after the closing quote should suppress value completions, got: ${afterQuote.map { it.label }}")
+    }
+
     @Test
     fun testEnumWithDocumentation() {
         val schema = """

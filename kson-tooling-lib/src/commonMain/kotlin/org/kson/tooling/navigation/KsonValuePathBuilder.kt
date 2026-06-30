@@ -34,8 +34,18 @@ private data class TokenContext(
  * disqualify the schema branches it selects among); it is null for definition/hover lookups,
  * which treat the committed value at the caret as authoritative.  See
  * [org.kson.schema.SchemaIdLookup.navigateByDocumentPointer].
+ *
+ * [caretPastValueToken] is true when the caret sits at or beyond the end of a committed scalar
+ * value's trailing source token — a string's close-quote, or a bare scalar's content token.  This
+ * is the "value is finished" position (`key: 'value'|`) used to stop offering value completions
+ * once the caret has moved past the value.  It is false while the caret is still inside the value
+ * (including between a string's quotes, `'|'` / `'ac|'`) and for non-value contexts.
  */
-data class CaretPath(val pointer: JsonPointer, val placeholderLocation: Location?)
+data class CaretPath(
+    val pointer: JsonPointer,
+    val placeholderLocation: Location?,
+    val caretPastValueToken: Boolean = false
+)
 
 /**
  * Builds a JSON Pointer path from the document root to a specific cursor
@@ -158,6 +168,10 @@ class KsonValuePathBuilder(
         } ?: false
     }
 
+    /** True when [caret] is at or beyond [boundary] in document (line, then column) order. */
+    private fun isAtOrAfter(caret: Coordinates, boundary: Coordinates): Boolean =
+        caret.line > boundary.line || (caret.line == boundary.line && caret.column >= boundary.column)
+
     /**
      * Finds the property name from the token stream that precedes a COLON token.
      *
@@ -279,10 +293,12 @@ class KsonValuePathBuilder(
                 // A scalar value the caret is inside is the placeholder.  An object or array
                 // literal is a committed structural choice whose own type must still narrow
                 // (e.g. a list literal where an object is expected), so it is never excluded.
-                val placeholder = if (!includePropertyKeys && AstNodeWalker.getChildren(targetNode) is NodeChildren.Leaf)
-                    AstNodeWalker.getLocation(targetNode)
-                else null
-                CaretPath(pointer, placeholder)
+                val isLeafValue = !includePropertyKeys && AstNodeWalker.getChildren(targetNode) is NodeChildren.Leaf
+                val placeholder = if (isLeafValue) AstNodeWalker.getLocation(targetNode) else null
+                // Past the value once the caret reaches the end of its trailing token (e.g. a string's close quote).
+                val caretPastValueToken = isLeafValue && lastToken != null &&
+                    isAtOrAfter(location, lastToken.lexeme.location.end)
+                CaretPath(pointer, placeholder, caretPastValueToken)
             }
         }
     }

@@ -3,6 +3,7 @@
 
 package org.kson.tooling
 
+import org.kson.tooling.navigation.CaretPath
 import org.kson.tooling.navigation.KsonValuePathBuilder
 import org.kson.tooling.navigation.SchemaInformation
 import org.kson.tooling.navigation.extractSchemaInfo
@@ -162,7 +163,31 @@ object KsonTooling {
         val caretPath = KsonValuePathBuilder(document, Coordinates(line, column)).buildCaretPath(includePropertyKeys = false) ?: return emptyList()
         val validSchemas = resolveSchemas(parsedSchema, document, caretPath.pointer, caretPath.placeholderLocation)
 
-        return SchemaInformation.getCompletions(parsedSchema, caretPath.pointer, validSchemas, document.ksonValue)
+        val completions = SchemaInformation.getCompletions(parsedSchema, caretPath.pointer, validSchemas, document.ksonValue)
+
+        // A caret resting past the end of a complete, committed value (e.g. `key: 'value'|`) is done
+        // choosing a value, so further value suggestions there are noise.  Property suggestions
+        // (filling out an object) and value suggestions for an empty or still-being-edited slot
+        // (including the caret between a string's quotes) are left untouched.
+        return if (caretIsPastCommittedValue(document, caretPath)) {
+            completions.filterNot { it.kind == CompletionKind.VALUE }
+        } else {
+            completions
+        }
+    }
+
+    /**
+     * True when the caret rests past a complete, committed scalar value at the completion target —
+     * the `key: 'value'|` position.  [CaretPath.caretPastValueToken] (computed by the path builder
+     * from the value's trailing source token) marks that the caret has moved beyond the value's
+     * closing token rather than still sitting inside it (e.g. between a string's quotes), and implies
+     * a value-authoring context.  We additionally require a parseable committed value at the pointer,
+     * so an unparseable or not-yet-committed value is never treated as finished.
+     */
+    private fun caretIsPastCommittedValue(document: ToolingDocument, caretPath: CaretPath): Boolean {
+        if (!caretPath.caretPastValueToken) return false
+        val committedDocument = document.ksonValue ?: return false
+        return KsonValueWalker.navigateWithJsonPointer(committedDocument, caretPath.pointer) != null
     }
 
     /**
