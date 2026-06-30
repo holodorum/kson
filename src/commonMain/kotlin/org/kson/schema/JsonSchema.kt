@@ -11,6 +11,7 @@ import org.kson.schema.validators.OneOfValidator
 import org.kson.schema.validators.RefValidator
 import org.kson.schema.validators.TypeValidator
 import org.kson.validation.SourceContext
+import org.kson.validation.ValidationMode
 import org.kson.validation.Validator
 
 /** Fallback description used when a schema has no title, description, or recognizable structure to describe. */
@@ -27,11 +28,23 @@ sealed interface JsonSchema: Validator {
   fun descriptionWithDefault(): String
   override fun validate(ksonValue: KsonValue, messageSink: MessageSink, sourceContext: SourceContext)
 
-  fun isValid(ksonValue: KsonValue, messageSink: MessageSink): Boolean {
+  fun isValid(
+    ksonValue: KsonValue,
+    messageSink: MessageSink,
+    sourceContext: SourceContext = SourceContext()
+  ): Boolean {
     val numErrors = messageSink.loggedMessages().size
-    validate(ksonValue, messageSink)
+    validate(ksonValue, messageSink, sourceContext)
     return messageSink.loggedMessages().size == numErrors
   }
+
+  /**
+   * True when [ksonValue] does not actively contradict this schema — the [ValidationMode.PARTIAL]
+   * notion of validity used by completion narrowing.  Incompleteness (missing required properties,
+   * not-yet-reached minimums) never fails; a present value violating a value constraint does.
+   */
+  fun isPartiallyValid(ksonValue: KsonValue): Boolean =
+    isValid(ksonValue, MessageSink(), SourceContext(mode = ValidationMode.PARTIAL))
 }
 
 /**
@@ -114,7 +127,7 @@ class JsonObjectSchema(
 
     // no `type` violations, run all other validators configured for this schema
     schemaValidators.forEach { validator ->
-      validator.validate(ksonValue, messageSink)
+      validator.validate(ksonValue, messageSink, sourceContext)
     }
   }
 }

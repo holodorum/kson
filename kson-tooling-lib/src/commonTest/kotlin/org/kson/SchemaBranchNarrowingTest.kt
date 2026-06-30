@@ -52,6 +52,161 @@ class SchemaBranchNarrowingTest {
         return (prop.propertyLookup[fieldName] as? KsonString)?.value
     }
 
+    /** Union of `properties` keys offered across all surviving branches — the completion candidates. */
+    private fun offeredPropertyNames(schemas: List<KsonValue>): Set<String> =
+        schemas.filterIsInstance<KsonObject>()
+            .mapNotNull { it.propertyLookup["properties"] as? KsonObject }
+            .flatMap { it.propertyLookup.keys }
+            .toSet()
+
+    /**
+     * Real-world repro shape: `config` is `anyOf[ allOf[Base, oneOf[per-discriminator branch]] ]`,
+     * each branch selecting a `$ref` Model by an `integration` discriminator, each Model carrying
+     * its own `required`.  A partially-filled (or empty) `params` must still narrow to the matching
+     * Model's properties.
+     */
+    private fun discriminatedConfigSchema(): String = """
+        {
+            "${'$'}defs": {
+                "AlphaModel": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": ["job_type"],
+                    "properties": {
+                        "job_type": { "type": "string" },
+                        "workspace_id": { "type": "string" }
+                    }
+                },
+                "BetaModel": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": ["region"],
+                    "properties": {
+                        "region": { "type": "string" }
+                    }
+                }
+            },
+            "type": "object",
+            "properties": {
+                "config": {
+                    "anyOf": [
+                        {
+                            "allOf": [
+                                { "properties": { "integration": { "type": "string" } } },
+                                {
+                                    "oneOf": [
+                                        {
+                                            "required": ["integration", "params"],
+                                            "properties": {
+                                                "integration": { "const": "ALPHA" },
+                                                "params": { "${'$'}ref": "#/${'$'}defs/AlphaModel" }
+                                            }
+                                        },
+                                        {
+                                            "required": ["integration", "params"],
+                                            "properties": {
+                                                "integration": { "const": "BETA" },
+                                                "params": { "${'$'}ref": "#/${'$'}defs/BetaModel" }
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            }
+        }
+    """.trimIndent()
+
+    @Test
+    fun testGetValidSchemas_partiallyFilledDiscriminatedSubObject_offersRemainingModelProps() {
+        // `integration` set and `params` partially filled inside allOf[Base, oneOf[...]]: the matching
+        // Model must still offer its remaining properties — its own `required` is incompleteness, not
+        // a contradiction, so the branch survives partial validation.
+        val document = """
+            config:
+              integration: ALPHA
+              params:
+                job_type: sync
+        """.trimIndent()
+
+        val schemas = getValidSchemasForDocument(discriminatedConfigSchema(), document, JsonPointer("/config/params"))
+        val offered = offeredPropertyNames(schemas)
+        assertTrue("job_type" in offered && "workspace_id" in offered, "AlphaModel props should be offered, got: $offered")
+        assertTrue("region" !in offered, "BetaModel props must not leak in, got: $offered")
+    }
+
+    @Test
+    fun testGetValidSchemas_emptyDiscriminatedSubObject_offersModelProps() {
+        // `params: {}` is empty but present: the matching Model still offers its properties.
+        val document = """
+            config:
+              integration: ALPHA
+              params: {}
+        """.trimIndent()
+
+        val schemas = getValidSchemasForDocument(discriminatedConfigSchema(), document, JsonPointer("/config/params"))
+        val offered = offeredPropertyNames(schemas)
+        assertTrue("job_type" in offered && "workspace_id" in offered, "AlphaModel props should be offered, got: $offered")
+        assertTrue("region" !in offered, "BetaModel props must not leak in, got: $offered")
+    }
+
+    @Test
+    fun testGetValidSchemas_discriminatorSelectsMatchingModelOnly_guardrail() {
+        // GUARDRAIL: integration AIRBYTE_CLOUD-style discriminator resolves to exactly its branch's
+        // params, never another integration's.  Here BETA is selected, so only `region` is offered.
+        val document = """
+            config:
+              integration: BETA
+              params:
+                region: us
+        """.trimIndent()
+
+        val schemas = getValidSchemasForDocument(discriminatedConfigSchema(), document, JsonPointer("/config/params"))
+        val offered = offeredPropertyNames(schemas)
+        assertTrue("region" in offered, "BetaModel props should be offered, got: $offered")
+        assertTrue("job_type" !in offered && "workspace_id" !in offered, "AlphaModel props must not leak in, got: $offered")
+    }
+
+    @Test
+    fun testGetValidSchemas_unknownDiscriminatorValue_resolvesToNoModel_guardrail() {
+        // GUARDRAIL: an integration value matching no branch's `const` resolves to no Model at all —
+        // every oneOf branch is actively contradicted, so none survive to offer params.
+        val document = """
+            config:
+              integration: NOT_A_REAL_VALUE
+              params:
+                job_type: sync
+        """.trimIndent()
+
+        val schemas = getValidSchemasForDocument(discriminatedConfigSchema(), document, JsonPointer("/config/params"))
+        val offered = offeredPropertyNames(schemas)
+        assertTrue(
+            "job_type" !in offered && "workspace_id" !in offered && "region" !in offered,
+            "No Model's props should be offered for an unknown discriminator, got: $offered"
+        )
+    }
+
+    @Test
+    fun testGetValidSchemas_presentValueOfWrongType_dropsBranch_guardrail() {
+        // GUARDRAIL: `integration` is declared `type: string` in Base; a number actively contradicts
+        // it, dropping the whole anyOf branch even in partial mode, so no Model props are offered.
+        val document = """
+            config:
+              integration: 5
+              params:
+                job_type: sync
+        """.trimIndent()
+
+        val schemas = getValidSchemasForDocument(discriminatedConfigSchema(), document, JsonPointer("/config/params"))
+        val offered = offeredPropertyNames(schemas)
+        assertTrue(
+            "job_type" !in offered && "workspace_id" !in offered && "region" !in offered,
+            "A wrong-typed present value must drop the branch, got: $offered"
+        )
+    }
+
     @Test
     fun testGetValidSchemas_withOneOfCombinator_filtersIncompatibleSchemas() {
         // Two branches discriminated by `type` const. Document says `type: email`,

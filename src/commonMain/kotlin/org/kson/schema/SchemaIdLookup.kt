@@ -2,7 +2,8 @@ package org.kson.schema
 
 import org.kson.parser.Location
 import org.kson.parser.MessageSink
-import org.kson.parser.messages.MessageType
+import org.kson.validation.SourceContext
+import org.kson.validation.ValidationMode
 import org.kson.value.navigation.json_pointer.JsonPointer
 import org.kson.value.KsonList
 import org.kson.value.KsonObject
@@ -374,12 +375,11 @@ class SchemaIdLookup(val schemaRootValue: KsonValue) {
         }
 
         /**
-         * Soft-validates [ref]'s schema against [docVal]: a branch is "compatible" unless it
-         * produces a validation error that is NOT merely a missing-required-property /
-         * missing-dependency error.  Missing required properties are expected while a document
-         * is still incomplete, so they never disqualify a branch; type/const/enum/pattern
-         * violations on properties that ARE present do.  Fail-open if the branch schema can't
-         * be parsed.
+         * Soft-validates [ref]'s schema against [docVal] using [ValidationMode.PARTIAL]: a branch is
+         * "compatible" unless the document ACTIVELY contradicts it (a present value violates a value
+         * constraint).  Mere incompleteness — a missing required property, a not-yet-reached minimum —
+         * never disqualifies a branch, because the schema layer itself skips those constraints in
+         * partial mode.
          *
          * Errors located within [incompleteRegion] (when set) are ignored, so a branch is
          * judged only by its constraints on the committed parts of the document, never by an
@@ -393,9 +393,8 @@ class SchemaIdLookup(val schemaRootValue: KsonValue) {
                 ref.resolvedValue, MessageSink(), ref.resolvedValueBaseUri, idLookup
             ) ?: return true
             val sink = MessageSink()
-            schema.validate(docVal, sink)
+            schema.validate(docVal, sink, SourceContext(mode = ValidationMode.PARTIAL))
             return sink.loggedMessages().none { logged ->
-                if (logged.message.type in IGNORABLE_VALIDATION_ERRORS) return@none false
                 // keep the error unless it falls within the not-yet-authored region
                 val within = incompleteRegion != null &&
                     incompleteRegion.startOffset <= logged.location.startOffset &&
@@ -405,22 +404,21 @@ class SchemaIdLookup(val schemaRootValue: KsonValue) {
         }
 
         /**
-         * Evaluate an `if` condition against [docVal] into three states.  A condition that
-         * fails ONLY because a required discriminator property isn't present yet is
-         * [IfState.UNDETERMINED], not [IfState.NO_MATCH]: the document is incomplete, so we
-         * can't yet rule out `then`.  This distinguishes "not decidable due to incompleteness"
-         * (emit both branches) from "decidably false against present data" (emit `else`).
+         * Evaluate an `if` condition against [docVal] into three states.  A condition that is only
+         * partially satisfied — it fails FULL validation but holds under [ValidationMode.PARTIAL],
+         * e.g. because a required discriminator property hasn't been typed yet — is
+         * [IfState.UNDETERMINED], not [IfState.NO_MATCH]: the document is incomplete, so we can't yet
+         * rule out `then`.  This distinguishes "not decidable due to incompleteness" (emit both
+         * branches) from "decidably false against present data" (emit `else`), without inspecting
+         * any validator message types.
          */
         private fun evaluateIf(ifCondition: KsonValue, baseUri: String, docVal: KsonValue?): IfState {
             if (docVal == null) return IfState.UNDETERMINED
             val ifSchema = SchemaParser.parseSchemaElement(ifCondition, MessageSink(), baseUri, idLookup)
                 ?: return IfState.UNDETERMINED
-            val sink = MessageSink()
-            ifSchema.validate(docVal, sink)
-            val errors = sink.loggedMessages()
             return when {
-                errors.isEmpty() -> IfState.MATCH
-                errors.all { it.message.type in IGNORABLE_VALIDATION_ERRORS } -> IfState.UNDETERMINED
+                ifSchema.isValid(docVal, MessageSink()) -> IfState.MATCH
+                ifSchema.isPartiallyValid(docVal) -> IfState.UNDETERMINED
                 else -> IfState.NO_MATCH
             }
         }
@@ -430,17 +428,6 @@ class SchemaIdLookup(val schemaRootValue: KsonValue) {
     private enum class IfState { MATCH, NO_MATCH, UNDETERMINED }
 
     companion object {
-        /**
-         * Validation errors that never disqualify a branch during narrowing: a missing
-         * required property (or dependency) is expected while a document is still
-         * incomplete.  Any other error (type/const/enum/pattern mismatch on a property
-         * that IS present) marks the branch incompatible with the document.
-         */
-        private val IGNORABLE_VALIDATION_ERRORS = setOf(
-            MessageType.SCHEMA_REQUIRED_PROPERTY_MISSING,
-            MessageType.SCHEMA_MISSING_REQUIRED_DEPENDENCIES
-        )
-
         /**
          * Recursively walks a schema value to collect all `$id` entries with fully-qualified URIs.
          *
