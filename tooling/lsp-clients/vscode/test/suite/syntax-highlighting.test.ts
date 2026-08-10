@@ -120,6 +120,7 @@ after: %python
                 'the block after `%jsonnet` should be unaffected');
         }).timeout(10000);
     });
+
     /**
      * An embed block's content "always ends at the first raw occurrence of the end-delimiter ...
      * without exception" (docs/readme.md:370), which includes a delimiter sitting at the end of
@@ -164,5 +165,81 @@ after: %python
                     `the \`%${tag}\` block ran on past its closer`);
             }).timeout(10000);
         }
+    });
+
+    describe('Embed block indentation', () => {
+        // The parser strips a block's minimum indent, but the buffer keeps it, so markdown
+        // reads that indentation as its own syntax. See generateIndentGuard for why the
+        // fix is shaped the way it is.
+
+        const doc = (...lines: string[]) => lines.join('\n');
+
+        it('Should highlight an indented heading as markdown, not as a code block', async () => {
+            const [uri, document] = await createTestFile(doc(
+                'key: %markdown',
+                '    # Heading',
+                '    %%'));
+            testFileUri = uri;
+
+            const scopes = await getTokenScopesAtPosition(document, 1, 6);
+            assert.ok(scopes.some(s => s.includes('markup.heading.markdown')),
+                `a heading indented by 4 should stay a heading; got ${JSON.stringify(scopes)}`);
+        }).timeout(10000);
+
+        it('Should terminate an indented markdown block instead of swallowing the file', async () => {
+            const [uri, document] = await createTestFile(doc(
+                'key: %markdown',
+                '    # Heading',
+                '    %%',
+                "after: 'plain kson'"));
+            testFileUri = uri;
+
+            const closing = await getTokenScopesAtPosition(document, 2, 4);
+            assert.ok(closing.some(s => s.includes('punctuation.section.embedded.end.kson')),
+                `the indented \`%%\` should close the block; got ${JSON.stringify(closing)}`);
+
+            const after = await getTokenScopesAtPosition(document, 3, 8);
+            assert.ok(after.some(s => s.includes('string.quoted.single.kson')),
+                `content after the block should be plain kson; got ${JSON.stringify(after)}`);
+        }).timeout(10000);
+
+        it("Should preserve indentation belonging to the markdown content", async () => {
+            // The code block sits four spaces deeper than the block's base indent of two,
+            // so it must survive. Stripping all leading whitespace would flatten it.
+            const [uri, document] = await createTestFile(doc(
+                'key: %markdown',
+                '  Paragraph.',
+                '',
+                '      code_line()',
+                '  %%'));
+            testFileUri = uri;
+
+            const scopes = await getTokenScopesAtPosition(document, 3, 8);
+            assert.ok(scopes.some(s => s.includes('markup.raw.block.markdown')),
+                `an intentional code block should survive; got ${JSON.stringify(scopes)}`);
+        }).timeout(10000);
+
+        it('Should let a block contain the delimiter pair it was not opened with', async () => {
+            // `$markdown` closes at `$$`, so a `%%` in the content is ordinary text. This is
+            // why the guard is emitted once per delimiter: one watching for both pairs would
+            // treat this line as a terminator and discard the fence open across it.
+            const fence = '```';
+            const [uri, document] = await createTestFile(doc(
+                'key: $markdown',
+                `  ${fence}`,
+                '  %%',
+                '  still inside the fence',
+                `  ${fence}`,
+                '  $$'));
+            testFileUri = uri;
+
+            const inside = await getTokenScopesAtPosition(document, 3, 4);
+            assert.ok(inside.some(s => s.includes('markup.fenced_code.block.markdown')),
+                `the fence should span the stray \`%%\`; got ${JSON.stringify(inside)}`);
+
+            const closing = await getTokenScopesAtPosition(document, 5, 2);
+            assert.ok(closing.some(s => s.includes('punctuation.section.embedded.end.kson')),
+                `the block should still close at \`$$\`; got ${JSON.stringify(closing)}`);
+        }).timeout(10000);
     });
 });
