@@ -240,6 +240,7 @@ function generateEmbedPattern(lang?: LanguageConfig, delimiter?: Delimiter) {
                 name: "entity.name.tag.embedded.kson"
             }
         },
+        // TODO both comments might be unnecessary.
         // `^` anchors the match at column 0 so it ties with an embedded grammar's own column-0
         // rules and wins (`end` is tried first). `.*?` is non-greedy, so the block ends at the
         // FIRST delimiter on that line, per docs/readme.md ("the first raw occurrence of the

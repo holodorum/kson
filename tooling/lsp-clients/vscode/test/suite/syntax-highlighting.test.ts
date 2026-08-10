@@ -137,6 +137,7 @@ after: %python
             return scope?.slice('meta.embedded.block.'.length, -'.kson'.length);
         }
 
+        // TODO add extra test case. Embed delimiter inside body?
         const cases: Array<{ tag: string, body: string, expected: string }> = [
             {tag: 'markdown', body: '# Heading `tick`', expected: 'markdown'},
             {tag: 'python', body: 'print("x")', expected: 'python'},
@@ -148,6 +149,7 @@ after: %python
 
         for (const {tag, body, expected} of cases) {
             it(`Should end a \`%${tag}\` block at a closer on the last content line`, async () => {
+                // TODO add same test for other delimiter ($)
                 const [uri, document] = await createTestFile(`key: %${tag}\n  ${body}%%\nafter: 1`);
                 testFileUri = uri;
 
