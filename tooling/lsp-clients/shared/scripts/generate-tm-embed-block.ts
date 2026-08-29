@@ -172,9 +172,20 @@ function generateEmbedPattern(lang?: LanguageConfig) {
                 name: "entity.name.tag.embedded.kson"
             }
         },
-        end: "^\\s*(\\1\\1)",
+        // `^` anchors the match at column 0 so it ties with an embedded grammar's own column-0
+        // rules and wins (`end` is tried first). `.*?` is non-greedy, so the block ends at the
+        // FIRST delimiter on that line, per docs/readme.md ("the first raw occurrence of the
+        // end-delimiter ... without exception").
+        end: "^(.*?)(\\1\\1)",
         endCaptures: {
             "1": {
+                // Text before the closer is still content: hand it back to the embedded grammar and
+                // keep `contentName`, so the closing line's scope stack matches every other content
+                // line (package.json's `embeddedLanguages` is keyed on `meta.embedded.<lang>`).
+                ...(isGeneric ? {} : {patterns}),
+                name: contentName
+            },
+            "2": {
                 name: "punctuation.section.embedded.end.kson"
             }
         },

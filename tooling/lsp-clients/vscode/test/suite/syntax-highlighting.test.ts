@@ -120,4 +120,49 @@ after: %python
                 'the block after `%jsonnet` should be unaffected');
         }).timeout(10000);
     });
+    /**
+     * An embed block's content "always ends at the first raw occurrence of the end-delimiter ...
+     * without exception" (docs/readme.md:370), which includes a delimiter sitting at the end of
+     * the last content line. A line-anchored `end` pattern cannot match one there, so the block
+     * runs on and takes the rest of the document with it. The risk is per-language: only a block
+     * whose rule `include`s another grammar has to outrace that grammar's own patterns, so the
+     * languages below carry the risk and the untagged `%nosuchlang` case is the control.
+     */
+    describe('Embed block termination', () => {
+        /** The embed-block rule covering a position, or undefined when it is outside any block. */
+        async function embedBlockAtLine(document: vscode.TextDocument, line: number, character: number): Promise<string | undefined> {
+            const scopes = await getTokenScopesAtPosition(document, line, character);
+            const scope = scopes.find(s => /^meta\.embedded\.block\..+\.kson$/.test(s));
+            return scope?.slice('meta.embedded.block.'.length, -'.kson'.length);
+        }
+
+        const cases: Array<{ tag: string, body: string, expected: string }> = [
+            {tag: 'markdown', body: '# Heading `tick`', expected: 'markdown'},
+            {tag: 'python', body: 'print("x")', expected: 'python'},
+            {tag: 'ruby', body: 'puts "x"', expected: 'ruby'},
+            {tag: 'sql', body: 'select 1', expected: 'sql'},
+            {tag: 'javascript', body: 'let x = 1', expected: 'javascript'},
+            {tag: 'nosuchlang', body: 'whatever', expected: 'generic'},
+        ];
+
+        for (const {tag, body, expected} of cases) {
+            it(`Should end a \`%${tag}\` block at a closer on the last content line`, async () => {
+                const [uri, document] = await createTestFile(`key: %${tag}\n  ${body}%%\nafter: 1`);
+                testFileUri = uri;
+
+                // The content still reaches the right language's grammar.
+                assert.strictEqual(await embedBlockAtLine(document, 1, 2), expected,
+                    `\`%${tag}\` content should be scoped as ${expected}`);
+
+                // The closer scopes as the block's end, not as embedded content.
+                const closerScopes = await getTokenScopesAtPosition(document, 1, 2 + body.length);
+                assert.ok(closerScopes.includes('punctuation.section.embedded.end.kson'),
+                    `the \`%%\` on the content line should close the block; got ${JSON.stringify(closerScopes)}`);
+
+                // And the block ends there, rather than swallowing the key that follows.
+                assert.strictEqual(await embedBlockAtLine(document, 2, 0), undefined,
+                    `the \`%${tag}\` block ran on past its closer`);
+            }).timeout(10000);
+        }
+    });
 });

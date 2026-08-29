@@ -100,9 +100,17 @@
               "name": "entity.name.tag.embedded.kson"
             }
           },
-          "end": "^\\s*(\\1\\1)",
+          "end": "^(.*?)(\\1\\1)",
           "endCaptures": {
             "1": {
+              "patterns": [
+                {
+                  "include": "source.ts"
+                }
+              ],
+              "name": "meta.embedded.typescript"
+            },
+            "2": {
               "name": "punctuation.section.embedded.end.kson"
             }
           },
@@ -128,9 +136,17 @@
               "name": "entity.name.tag.embedded.kson"
             }
           },
-          "end": "^\\s*(\\1\\1)",
+          "end": "^(.*?)(\\1\\1)",
           "endCaptures": {
             "1": {
+              "patterns": [
+                {
+                  "include": "source.jinja"
+                }
+              ],
+              "name": "meta.embedded.jinja"
+            },
+            "2": {
               "name": "punctuation.section.embedded.end.kson"
             }
           },
@@ -156,9 +172,17 @@
               "name": "entity.name.tag.embedded.kson"
             }
           },
-          "end": "^\\s*(\\1\\1)",
+          "end": "^(.*?)(\\1\\1)",
           "endCaptures": {
             "1": {
+              "patterns": [
+                {
+                  "include": "source.js"
+                }
+              ],
+              "name": "meta.embedded.javascript"
+            },
+            "2": {
               "name": "punctuation.section.embedded.end.kson"
             }
           },
@@ -184,9 +208,17 @@
               "name": "entity.name.tag.embedded.kson"
             }
           },
-          "end": "^\\s*(\\1\\1)",
+          "end": "^(.*?)(\\1\\1)",
           "endCaptures": {
             "1": {
+              "patterns": [
+                {
+                  "include": "source.sql"
+                }
+              ],
+              "name": "meta.embedded.sql"
+            },
+            "2": {
               "name": "punctuation.section.embedded.end.kson"
             }
           },
@@ -212,9 +244,17 @@
               "name": "entity.name.tag.embedded.kson"
             }
           },
-          "end": "^\\s*(\\1\\1)",
+          "end": "^(.*?)(\\1\\1)",
           "endCaptures": {
             "1": {
+              "patterns": [
+                {
+                  "include": "source.python"
+                }
+              ],
+              "name": "meta.embedded.python"
+            },
+            "2": {
               "name": "punctuation.section.embedded.end.kson"
             }
           },
@@ -240,9 +280,17 @@
               "name": "entity.name.tag.embedded.kson"
             }
           },
-          "end": "^\\s*(\\1\\1)",
+          "end": "^(.*?)(\\1\\1)",
           "endCaptures": {
             "1": {
+              "patterns": [
+                {
+                  "include": "source.json"
+                }
+              ],
+              "name": "meta.embedded.json"
+            },
+            "2": {
               "name": "punctuation.section.embedded.end.kson"
             }
           },
@@ -268,9 +316,17 @@
               "name": "entity.name.tag.embedded.kson"
             }
           },
-          "end": "^\\s*(\\1\\1)",
+          "end": "^(.*?)(\\1\\1)",
           "endCaptures": {
             "1": {
+              "patterns": [
+                {
+                  "include": "text.html.basic"
+                }
+              ],
+              "name": "meta.embedded.html"
+            },
+            "2": {
               "name": "punctuation.section.embedded.end.kson"
             }
           },
@@ -296,9 +352,17 @@
               "name": "entity.name.tag.embedded.kson"
             }
           },
-          "end": "^\\s*(\\1\\1)",
+          "end": "^(.*?)(\\1\\1)",
           "endCaptures": {
             "1": {
+              "patterns": [
+                {
+                  "include": "source.css"
+                }
+              ],
+              "name": "meta.embedded.css"
+            },
+            "2": {
               "name": "punctuation.section.embedded.end.kson"
             }
           },
@@ -324,9 +388,17 @@
               "name": "entity.name.tag.embedded.kson"
             }
           },
-          "end": "^\\s*(\\1\\1)",
+          "end": "^(.*?)(\\1\\1)",
           "endCaptures": {
             "1": {
+              "patterns": [
+                {
+                  "include": "source.java"
+                }
+              ],
+              "name": "meta.embedded.java"
+            },
+            "2": {
               "name": "punctuation.section.embedded.end.kson"
             }
           },
@@ -352,9 +424,17 @@
               "name": "entity.name.tag.embedded.kson"
             }
           },
-          "end": "^\\s*(\\1\\1)",
+          "end": "^(.*?)(\\1\\1)",
           "endCaptures": {
             "1": {
+              "patterns": [
+                {
+                  "include": "source.cpp"
+                }
+              ],
+              "name": "meta.embedded.cpp"
+            },
+            "2": {
               "name": "punctuation.section.embedded.end.kson"
             }
           },
@@ -380,9 +460,17 @@
               "name": "entity.name.tag.embedded.kson"
             }
           },
-          "end": "^\\s*(\\1\\1)",
+          "end": "^(.*?)(\\1\\1)",
           "endCaptures": {
             "1": {
+              "patterns": [
+                {
+                  "include": "source.cs"
+                }
+              ],
+              "name": "meta.embedded.csharp"
+            },
+            "2": {
               "name": "punctuation.section.embedded.end.kson"
             }
           },
@@ -408,9 +496,17 @@
               "name": "entity.name.tag.embedded.kson"
             }
           },
-          "end": "^\\s*(\\1\\1)",
+          "end": "^(.*?)(\\1\\1)",
           "endCaptures": {
             "1": {
+              "patterns": [
+                {
+                  "include": "source.go"
+                }
+              ],
+              "name": "meta.embedded.go"
+            },
+            "2": {
               "name": "punctuation.section.embedded.end.kson"
             }
           },
@@ -436,9 +532,17 @@
               "name": "entity.name.tag.embedded.kson"
             }
           },
-          "end": "^\\s*(\\1\\1)",
+          "end": "^(.*?)(\\1\\1)",
           "endCaptures": {
             "1": {
+              "patterns": [
+                {
+                  "include": "source.rust"
+                }
+              ],
+              "name": "meta.embedded.rust"
+            },
+            "2": {
               "name": "punctuation.section.embedded.end.kson"
             }
           },
@@ -464,9 +568,17 @@
               "name": "entity.name.tag.embedded.kson"
             }
           },
-          "end": "^\\s*(\\1\\1)",
+          "end": "^(.*?)(\\1\\1)",
           "endCaptures": {
             "1": {
+              "patterns": [
+                {
+                  "include": "source.ruby"
+                }
+              ],
+              "name": "meta.embedded.ruby"
+            },
+            "2": {
               "name": "punctuation.section.embedded.end.kson"
             }
           },
@@ -492,9 +604,17 @@
               "name": "entity.name.tag.embedded.kson"
             }
           },
-          "end": "^\\s*(\\1\\1)",
+          "end": "^(.*?)(\\1\\1)",
           "endCaptures": {
             "1": {
+              "patterns": [
+                {
+                  "include": "source.yaml"
+                }
+              ],
+              "name": "meta.embedded.yaml"
+            },
+            "2": {
               "name": "punctuation.section.embedded.end.kson"
             }
           },
@@ -520,9 +640,17 @@
               "name": "entity.name.tag.embedded.kson"
             }
           },
-          "end": "^\\s*(\\1\\1)",
+          "end": "^(.*?)(\\1\\1)",
           "endCaptures": {
             "1": {
+              "patterns": [
+                {
+                  "include": "text.xml"
+                }
+              ],
+              "name": "meta.embedded.xml"
+            },
+            "2": {
               "name": "punctuation.section.embedded.end.kson"
             }
           },
@@ -548,9 +676,17 @@
               "name": "entity.name.tag.embedded.kson"
             }
           },
-          "end": "^\\s*(\\1\\1)",
+          "end": "^(.*?)(\\1\\1)",
           "endCaptures": {
             "1": {
+              "patterns": [
+                {
+                  "include": "text.html.markdown"
+                }
+              ],
+              "name": "meta.embedded.markdown"
+            },
+            "2": {
               "name": "punctuation.section.embedded.end.kson"
             }
           },
@@ -576,9 +712,17 @@
               "name": "entity.name.tag.embedded.kson"
             }
           },
-          "end": "^\\s*(\\1\\1)",
+          "end": "^(.*?)(\\1\\1)",
           "endCaptures": {
             "1": {
+              "patterns": [
+                {
+                  "include": "source.shell"
+                }
+              ],
+              "name": "meta.embedded.shell"
+            },
+            "2": {
               "name": "punctuation.section.embedded.end.kson"
             }
           },
@@ -604,9 +748,12 @@
               "name": "entity.name.tag.embedded.kson"
             }
           },
-          "end": "^\\s*(\\1\\1)",
+          "end": "^(.*?)(\\1\\1)",
           "endCaptures": {
             "1": {
+              "name": "string.unquoted.embedded.kson"
+            },
+            "2": {
               "name": "punctuation.section.embedded.end.kson"
             }
           },
