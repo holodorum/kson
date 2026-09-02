@@ -11,7 +11,12 @@ interface LanguageConfig {
     aliases?: string[];
     scopeName: string;
     contentName: string;
+
     /**
+     * TODO |       could we remove this and strip indent EVERYWHERE? Claude complains how the textmate for `shell`
+     * TODO |       breaks in that case. I don't understand that exactly and don't see it break either...
+     * TODO |       Intuitively stripping the indent everywhere feels better and less complex  since the indentation is not a part of the embed block.
+     * TODO |       If we do keep this we can probably remove the comment. minimize comment
      * Strip the block's own indentation before the injected grammar sees a line, for
      * grammars whose rules are sensitive to leading whitespace. Markdown is one: it
      * reads four leading spaces as a code block. Emitted once per delimiter -- see
@@ -144,6 +149,10 @@ const DELIMITERS = ['%', '$'] as const;
 type Delimiter = typeof DELIMITERS[number];
 
 /**
+ * // TODO minimize comment although this reads pretty easily.
+ * // TODO Could this be the place for the end guard introduced in the previous commit?
+ * // We write out the textmate grammar twice, once for each delimiter. So instead of having the end delimiter pattern
+ * // introduced in the previous commit ("^(.*?)(\\1\\1)") we might just use $ or % immediately.
  * Build the indentation guard for a `stripIndent` language.
  *
  * `begin` captures the first content line's indent; the engine substitutes it into
@@ -228,6 +237,8 @@ function generateEmbedPattern(lang?: LanguageConfig, delimiter?: Delimiter) {
         name,
         // `[ \t\r]` is the lexer's inline whitespace; `\s` would also match the newline
         // that ends the tag. The lookahead is non-capturing so `end` can backreference \1.
+        // TODO check whether this delimiterPattern could be used for the end delimiter change that we introduced in the
+        // previous commit.
         begin: `${delimiterPattern}[ \\t\\r]*${langPattern}${isGeneric ? '' : '(?=[ \\t\\r]|$)'}(:|.|\\s)*?$`,
         beginCaptures: {
             "0": {
