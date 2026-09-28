@@ -1,9 +1,11 @@
 import {TextDocument} from "vscode-languageserver-textdocument";
 import {
+    ClientCapabilities,
     CompletionList,
     CompletionTriggerKind,
     DiagnosticSeverity,
     DidOpenTextDocumentParams,
+    InsertTextFormat,
     TextEdit,
 } from "vscode-languageserver";
 import assert from "assert";
@@ -209,6 +211,60 @@ describe('KsonTextDocumentService', () => {
             openDocument('server: x');
             const midWord = await connection.requestCompletion(TEST_URI, pos(0, 8), triggeredBy(' '));
             assert.strictEqual(midWord, null);
+        });
+
+        describe('property snippets', () => {
+            const SCHEMA = `{
+                type: object
+                properties: {
+                    tags: {
+                        type: array
+                    }
+                }
+            }`;
+
+            /**
+             * The `tags` completion for the typed key `ta|`, from a service set up with the given
+             * client capabilities.
+             */
+            async function completeTags(capabilities: ClientCapabilities) {
+                const schemaProvider = new SchemaProviderTestStub();
+                schemaProvider.addSchema(TEST_URI, TextDocument.create('test://schema.kson', 'kson', 1, SCHEMA));
+                const snippetConnection = new ConnectionStub();
+                const snippetDocuments = new KsonDocumentsManager(schemaProvider);
+                const snippetService = new KsonTextDocumentService(
+                    snippetDocuments, createCommandExecutor, null, TEST_DISTRIBUTION_ID, capabilities
+                );
+                snippetDocuments.listen(snippetConnection);
+                snippetService.connect(snippetConnection);
+                snippetConnection.didOpenHandler({
+                    textDocument: {uri: TEST_URI, languageId: 'kson', version: 1, text: 'ta'}
+                });
+
+                const result = await snippetConnection.requestCompletion(TEST_URI, pos(0, 2)) as CompletionList | null;
+                const tags = result?.items.find(item => item.label === 'tags');
+                assert.ok(tags, "expected a 'tags' completion");
+                return tags;
+            }
+
+            it('should send snippet edits to a client that declares snippet support', async () => {
+                const tags = await completeTags({textDocument: {completion: {completionItem: {snippetSupport: true}}}});
+
+                assert.strictEqual(tags.insertTextFormat, InsertTextFormat.Snippet);
+                assert.deepStrictEqual(tags.textEdit, {range: {start: pos(0, 0), end: pos(0, 2)}, newText: 'tags: [$0]'});
+            });
+
+            it('should keep completions plain for a client that does not', async () => {
+                const undeclared = await completeTags({});
+                const declinedExplicitly = await completeTags(
+                    {textDocument: {completion: {completionItem: {snippetSupport: false}}}}
+                );
+
+                for (const tags of [undeclared, declinedExplicitly]) {
+                    assert.strictEqual(tags.textEdit, undefined);
+                    assert.strictEqual(tags.insertTextFormat, undefined);
+                }
+            });
         });
     });
 
