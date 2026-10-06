@@ -2,6 +2,8 @@ package org.kson.schema.validators
 
 import org.kson.parser.messages.MessageType.*
 import org.kson.schema.JsonSchemaTest
+import org.kson.validation.SourceContext
+import org.kson.validation.ValidationMode
 import kotlin.test.Test
 import kotlin.test.assertFalse
 
@@ -86,25 +88,32 @@ class OneOfValidatorTest : JsonSchemaTest {
         assertFalse(errors[0].message.toString().contains("required_prop"))
     }
 
+    /**
+     * In [ValidationMode.PARTIAL] mode a half-typed document may match several branches before the
+     * disambiguating value is typed, so the multiple-match error is withheld there.
+     */
     @Test
     fun testOneOfMultipleMatches() {
-        assertKsonSchemaErrors(
-            """
-                description: "hello"
-            """.trimIndent(),
-            """
-                oneOf:
-                  - properties:
-                      description:
-                        type: string
+        val document = """
+            description: "hello"
+        """.trimIndent()
+        val schema = """
+            oneOf:
+              - properties:
+                  description:
+                    type: string
 
-                  - properties:
-                      description:
-                        type: string
-            """.trimIndent(),
-            listOf(
-                SCHEMA_ONE_OF_MULTIPLE_MATCHES
-            )
+              - properties:
+                  description:
+                    type: string
+        """.trimIndent()
+
+        assertKsonSchemaErrors(document, schema, listOf(SCHEMA_ONE_OF_MULTIPLE_MATCHES))
+        assertKsonEnforcesSchema(
+            document,
+            schema,
+            shouldAcceptAsValid = true,
+            sourceContext = SourceContext(mode = ValidationMode.PARTIAL)
         )
     }
 
