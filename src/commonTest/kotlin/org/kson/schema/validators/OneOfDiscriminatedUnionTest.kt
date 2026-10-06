@@ -303,11 +303,12 @@ class OneOfDiscriminatedUnionTest : JsonSchemaTest {
     }
 
     /**
-     * `kind: "B"` is admitted only by the J3 branch and `kind_job: "J1"` only by the J1 branch, so both
-     * are reported, each with its contradicted pin — not the wildcard elimination alone would leave.
+     * Selection never resurrects a contradicted branch: `kind_job: "J1"` is admitted by the J1 branch
+     * alone and `kind: "B"` by the J3 branch alone, but each contradicts the other's pin, so the
+     * surviving wildcard is reported instead.
      */
     @Test
-    fun testOneOfConflictingPinsReportEverySelectedBranch() {
+    fun testOneOfSelectionNeverResurrectsContradictedBranch() {
         val errors = assertKsonSchemaErrors(
             """
                 kind: "B"
@@ -316,16 +317,12 @@ class OneOfDiscriminatedUnionTest : JsonSchemaTest {
             """.trimIndent(),
             duplicateConstUnionWithWildcard,
             listOf(
-                SCHEMA_ONE_OF_VALIDATION_FAILED,
-                SCHEMA_SUB_SCHEMA_ERRORS
+                SCHEMA_NOT_VALIDATION_FAILED,
+                SCHEMA_REQUIRED_PROPERTY_MISSING
             )
         )
 
-        val dump = errors[1].message.toString()
-        assertContains(dump, "p1")
-        assertContains(dump, "p3")
-        assertFalse(dump.contains("p2"))
-        assertFalse(dump.contains("p4"))
+        assertEquals("Missing required properties: p4", errors[1].message.toString())
     }
 
     /**
@@ -365,10 +362,12 @@ class OneOfDiscriminatedUnionTest : JsonSchemaTest {
             )
         )
 
-        val dump = errors[1].message.toString()
-        assertContains(dump, "BranchA")
-        assertContains(dump, "BranchW")
-        assertFalse(dump.contains("BranchB"))
+        assertEquals(
+            "Value matches none of these sub-schemas:\n" +
+                "- BranchA:\n    - Missing required properties: needs_a (1:1)\n" +
+                "- BranchW:\n    - Missing required properties: needs_w (1:1)",
+            errors[1].message.toString()
+        )
     }
 
     /**

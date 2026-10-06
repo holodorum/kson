@@ -49,7 +49,7 @@ class OneOfPresenceUnionTest : JsonSchemaTest {
                   "${'$'}defs": {
                     "node": {
                       "properties": {
-                        "kind": { "const": "node" },
+                        "kind": { "type": "string" },
                         "child": { "${'$'}ref": "#/${'$'}defs/node" }
                       },
                       "required": ["child"]
@@ -146,7 +146,7 @@ class OneOfPresenceUnionTest : JsonSchemaTest {
     }
 
     /**
-     * `kind: "A"` eliminates branch B even though the present `beta` would make presence pick it.
+     * `kind: "A"` rules out branch B even though the present `beta` would make presence pick it.
      */
     @Test
     fun testOneOfValueDiscriminatorTakesPrecedenceOverPresence() {

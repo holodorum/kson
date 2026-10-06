@@ -15,16 +15,18 @@ import org.kson.validation.ValidationMode
  * declares or requires.  Both are read through `$ref` and `allOf` by [JsonObjectSchema.pinnedProperties]
  * and [JsonObjectSchema.knownProperties].
  *
- * For an object document, in order:
- *  1. a value only one branch's pin admits selects that branch, whatever its other pins say;
+ * For an object document, a branch whose pin the document's value falls outside of is never reported
+ * while another survives.  Then, in order:
+ *  1. a value only one surviving branch's pin admits selects that branch;
  *  2. a value every branch pins and none admits is wrong whichever branch is meant, so it is reported
  *     as the enum error the pinned values would give — given two or more branches, as a lone branch's
  *     own errors say more;
- *  3. otherwise the branches no pin rules out, preferring those that know a property the document
- *     carries and not every branch knows; failing that, every branch.
+ *  3. otherwise the survivors, preferring those that know a property the document carries and not
+ *     every branch knows; failing that, every branch.
  *
  * A non-object document, or [ValidationMode.PARTIAL] mode (where a half-typed document shouldn't get
- * the enum error), reports every branch.
+ * the enum error), reports every branch.  At least one error is always emitted: the union validators
+ * emit nothing of their own on failure.
  */
 internal fun reportUnionMatchFailure(
     branches: List<JsonSchema>,
@@ -44,15 +46,17 @@ internal fun reportUnionMatchFailure(
     val document = ksonValue.propertyLookup
     val pins = branches.map { (it as? JsonObjectSchema)?.pinnedProperties() ?: emptyMap() }
 
-    val selected = selectedBranches(pins, document)
+    val contradicted = pins.map { branchPins ->
+        branchPins.filter { (property, values) -> document[property]?.let { it !in values } ?: false }.keys
+    }
+    val survivors = branches.indices.filter { contradicted[it].isEmpty() }
+
+    val selected = selectedBranches(pins, document).filter { it in survivors }
     if (selected.isNotEmpty()) {
         report(selected)
         return
     }
 
-    val contradicted = pins.map { branchPins ->
-        branchPins.filter { (property, values) -> document[property]?.let { it !in values } ?: false }.keys
-    }
     // a lone branch offers no choice to block; an empty union has nothing to reduce
     val noBranchAdmits =
         if (branches.size > 1) contradicted.reduce { shared, next -> shared intersect next } else emptySet()
@@ -65,12 +69,11 @@ internal fun reportUnionMatchFailure(
     }
 
     val known = branches.map { (it as? JsonObjectSchema)?.knownProperties() ?: emptySet() }
-    val survivors = branches.indices.filter { contradicted[it].isEmpty() }
-    val lookedLike = survivors.filter { it in branchesLookedLike(known, document.keys) }
+    val lookedLike = branchesLookedLike(known, document.keys).filter { it in survivors }
     report(lookedLike.ifEmpty { survivors }.ifEmpty { branches.indices.toList() })
 }
 
-/** The branches some value of [document] is admitted by the pin of, and of no other branch. */
+/** The branches whose pin alone admits some value of [document]. */
 private fun selectedBranches(pins: List<Map<String, Set<KsonValue>>>, document: Map<String, KsonValue>): List<Int> =
     pins.indices.filter { i ->
         pins[i].any { (property, values) ->

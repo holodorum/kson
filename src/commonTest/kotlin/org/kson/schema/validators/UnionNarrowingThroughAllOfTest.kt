@@ -51,8 +51,7 @@ class UnionNarrowingThroughAllOfTest : JsonSchemaTest {
                   }
                 }
             """.trimIndent(),
-            // inside `Item`, `action: "fetch"` selects the `read` branch, whose `mode` const is what fails
-            listOf(SCHEMA_VALUE_NOT_EQUAL_TO_CONST)
+            listOf(SCHEMA_ENUM_VALUE_NOT_ALLOWED)
         )
 
         assertContains(errors[0].message.toString(), "read")

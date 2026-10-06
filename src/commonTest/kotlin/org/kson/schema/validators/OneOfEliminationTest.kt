@@ -157,12 +157,12 @@ class OneOfEliminationTest : JsonSchemaTest {
     }
 
     /**
-     * `version: 2` is outside both branches' pin, but `kind: "A"` selects branch A, so its own const
-     * error and missing `alpha` are reported rather than one enum error on `version` hiding `alpha`.
+     * `kind: "A"` is admitted by branch A alone, but `version: 2` rules branch A out with every other,
+     * so the shared value is blamed alone; branch A's missing `alpha` waits until `version` is fixed.
      */
     @Test
-    fun testOneOfSelectedBranchOutranksSharedPinRejection() {
-        val errors = assertKsonSchemaErrors(
+    fun testOneOfSharedPinRejectionIsReportedAlone() {
+        val errors = assertKsonSchemaErrorAtLocation(
             """
                 version: 2
                 kind: "A"
@@ -191,12 +191,15 @@ class OneOfEliminationTest : JsonSchemaTest {
                 }
             """.trimIndent(),
             listOf(
-                SCHEMA_VALUE_NOT_EQUAL_TO_CONST,
-                SCHEMA_REQUIRED_PROPERTY_MISSING
+                SCHEMA_ENUM_VALUE_NOT_ALLOWED
+            ),
+            // at the `version` value `2`
+            listOf(
+                Location(Coordinates(0, 9), Coordinates(0, 10), 9, 10)
             )
         )
 
-        assertContains(errors[1].message.toString(), "alpha")
+        assertEquals("Value must be one of: 1", errors[0].message.toString())
     }
 
     /**
