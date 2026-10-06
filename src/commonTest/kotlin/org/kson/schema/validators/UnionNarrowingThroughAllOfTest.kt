@@ -55,7 +55,8 @@ class UnionNarrowingThroughAllOfTest : JsonSchemaTest {
                   }
                 }
             """.trimIndent(),
-            listOf(SCHEMA_ENUM_VALUE_NOT_ALLOWED)
+            // inside `Item`, `action: "fetch"` selects the `read` branch, whose `mode` const is what fails
+            listOf(SCHEMA_VALUE_NOT_EQUAL_TO_CONST)
         )
 
         // the surviving error is about `mode`, not about Group's unmet shape

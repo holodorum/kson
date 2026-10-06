@@ -49,8 +49,9 @@ class RefValidator(
      * shared lazy [refParseResult] so callers reuse [SchemaParser]'s single parse of the target rather
      * than re-parsing it.
      *
-     * Used by [JsonObjectSchema.pinnedProperties] to see through a combinator branch written as a lone
-     * `$ref` (e.g. `oneOf: [{ $ref: … }]`) to the target's discriminator pins.
+     * Used by [JsonObjectSchema.pinnedProperties] and [JsonObjectSchema.knownProperties] to see through
+     * a combinator branch written as a lone `$ref` (e.g. `oneOf: [{ $ref: … }]`) to the target's
+     * declarations.
      */
     internal fun resolvedSchema(): JsonSchema? = refParseResult.first
 

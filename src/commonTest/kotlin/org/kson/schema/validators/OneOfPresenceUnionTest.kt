@@ -7,17 +7,17 @@ import kotlin.test.assertContains
 import kotlin.test.assertFalse
 
 /**
- * Presence narrowing — the `M` half of the elimination∩presence composition.  None of the
- * branches here carries a pin the document contradicts, so every branch survives elimination and the
- * composition degenerates to pure presence: narrow the union to the branch(es) whose *known*
- * (declared ∪ required) properties the document actually carries, and report only those.  Value-based
- * discrimination keeps priority when both could apply.
+ * Presence narrowing, the last resort among the branches elimination leaves.  Most branches here
+ * carry no pin the document contradicts, so every branch survives elimination and narrowing comes
+ * down to pure presence: narrow the union to the branch(es) whose *known* (declared ∪ required)
+ * properties the document actually carries, and report only those.  Values keep priority when both
+ * could apply: a pin the document contradicts eliminates, and one only a branch admits selects it.
  */
 class OneOfPresenceUnionTest : JsonSchemaTest {
     /**
-     * A union with no value discriminator (no property pinned to a `const`/`enum`) but distinct
-     * *required* properties per branch — the shape the presence-based fallback narrows.  Each branch
-     * has its own selector property plus a deeper requirement that a matched-but-incomplete document trips.
+     * A union with no pins (no property fixed to a `const`/`enum`) but distinct *required* properties
+     * per branch — the shape presence narrows.  Each branch has its own selector property plus a deeper
+     * requirement that a matched-but-incomplete document trips.
      */
     private val presenceUnion = """
         {
@@ -35,9 +35,8 @@ class OneOfPresenceUnionTest : JsonSchemaTest {
     """.trimIndent()
 
     /**
-     * A single pinned branch is too few to form a value discriminator, so presence takes over.  `kind`
-     * is a known property of only the `node` branch (declared there, absent from the other), so the
-     * document's `kind` narrows to `node` and surfaces its missing `child`.  Both pin detection and the
+     * `kind: "node"` is admitted only by the `node` branch's pin, and `kind` is known only to that branch,
+     * so the document narrows to `node` and surfaces its missing `child`.  Both the pin and the
      * known-property accessors resolve the `node` `$ref` exactly one hop and never follow its `child`
      * property — itself a `$ref` back to `node` — so the self-reference can't drive infinite recursion.
      */
@@ -78,8 +77,8 @@ class OneOfPresenceUnionTest : JsonSchemaTest {
     }
 
     /**
-     * With no value discriminator, the presence-based fallback picks the branch whose distinguishing
-     * required property the document actually carries: `selector_a` is present (and required only by
+     * With no pins in play, presence picks the branch whose distinguishing required property the
+     * document actually carries: `selector_a` is present (and required only by
      * branch A), so only branch A's deeper failure — its missing `needs_a` — surfaces, not branch B's
      * requirements.  A single narrowed branch collapses to that branch's error directly, with no dump.
      */
@@ -170,10 +169,10 @@ class OneOfPresenceUnionTest : JsonSchemaTest {
     }
 
     /**
-     * When both strategies could apply — the branches share a value discriminator (`kind` pinned to distinct
-     * consts) *and* have distinct required properties — the value discriminator wins.  The document's
-     * `kind: "A"` selects branch A (surfacing its missing `alpha`), even though the present `beta` would
-     * have made presence narrow to branch B instead.
+     * When both could apply — the branches share a value discriminator (`kind` pinned to distinct
+     * consts) *and* have distinct required properties — the value wins.  The document's `kind: "A"`
+     * eliminates branch B, leaving branch A (surfacing its missing `alpha`), even though the present
+     * `beta` would have made presence narrow to branch B instead.
      */
     @Test
     fun testOneOfValueDiscriminatorTakesPrecedenceOverPresence() {
@@ -201,14 +200,55 @@ class OneOfPresenceUnionTest : JsonSchemaTest {
             )
         )
 
-        // value discriminator selected branch A via `kind`; presence would have picked branch B via `beta`
+        // `kind` eliminated branch B, which presence alone would have picked via `beta`
         assertContains(errors[0].message.toString(), "alpha")
         assertFalse(errors[0].message.toString().contains("beta"))
     }
 
     /**
-     * A `$ref`-based union with no value discriminator (the targets pin nothing) but distinct *required*
-     * properties still narrows by presence: [org.kson.schema.JsonObjectSchema.knownProperties] reads
+     * A chosen value outranks a shared shape even when no branch is eliminated.  `kind: "A"` is
+     * admitted only by branch A's pin, while `beta` is a property only branch B knows; B takes any
+     * `kind`, so neither branch is contradicted and `kind` is no presence clue — presence alone would
+     * pick B.  The pin selects branch A: its missing `alpha` is reported, not branch B's `gamma`.
+     */
+    @Test
+    fun testOneOfPinnedValueTakesPrecedenceOverPresence() {
+        val errors = assertKsonSchemaErrors(
+            """
+                kind: "A"
+                beta: "present"
+            """.trimIndent(),
+            """
+                {
+                  "oneOf": [
+                    {
+                      "properties": { "kind": { "const": "A" }, "alpha": { "type": "string" } },
+                      "required": ["kind", "alpha"]
+                    },
+                    {
+                      "properties": {
+                        "kind": { "type": "string" },
+                        "beta": { "type": "string" },
+                        "gamma": { "type": "string" }
+                      },
+                      "required": ["beta", "gamma"]
+                    }
+                  ]
+                }
+            """.trimIndent(),
+            listOf(
+                SCHEMA_REQUIRED_PROPERTY_MISSING
+            )
+        )
+
+        // branch A pins the document's `kind`; presence of `beta` alone would have picked branch B
+        assertContains(errors[0].message.toString(), "alpha")
+        assertFalse(errors[0].message.toString().contains("gamma"))
+    }
+
+    /**
+     * A `$ref`-based union whose targets pin nothing but have distinct *required* properties still
+     * narrows by presence: [org.kson.schema.JsonObjectSchema.knownProperties] reads
      * through each branch's `$ref` to its target's requirements, so the present `needs_a` selects
      * branch A and only its deeper `detail_a` failure surfaces, not branch B's.
      */
@@ -248,7 +288,7 @@ class OneOfPresenceUnionTest : JsonSchemaTest {
 
     /**
      * Mirrors the real-world deployment-target case: three `kind`-keyed branches, but the document omits
-     * `kind` so the value discriminator declines.  `region` is *required* by Lambda yet only *declared*
+     * `kind`, so its pins can't narrow.  `region` is *required* by Lambda yet only *declared*
      * (optional) by Kubernetes — matching on known properties (declared ∪ required) narrows to both, since
      * both recognize `region`, while Static (which never mentions `region`) is dropped.  Matching on
      * `required` alone would wrongly pin to Lambda only.
