@@ -18,10 +18,7 @@ class EnumValidator(private val enum: KsonList) : JsonSchemaValidator {
     override fun pinnedValues(): Set<KsonValue> = enum.elements.toSet()
 }
 
-/**
- * Reports [ksonValue] as not one of [allowedValues], listing them: the error an `enum` gives, which
- * union narrowing also gives for a value no branch of a union admits.
- */
+/** The `enum` error, shared with union narrowing so a value no branch admits reads the same way. */
 internal fun reportEnumValueNotAllowed(ksonValue: KsonValue, messageSink: MessageSink, allowedValues: Iterable<KsonValue>) {
     val allowed = allowedValues.joinToString(", ") { it.toDisplayString() }
     messageSink.error(ksonValue.location, MessageType.SCHEMA_ENUM_VALUE_NOT_ALLOWED.create(allowed))

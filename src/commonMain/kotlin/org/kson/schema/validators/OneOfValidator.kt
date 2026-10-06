@@ -14,8 +14,7 @@ class OneOfValidator(internal val oneOf: List<JsonSchema>) : JsonSchemaValidator
         val matchAttemptMessageSinks: MutableList<LabelledMessageSink> = mutableListOf()
         val matchedSchemas: MutableList<JsonSchema> = mutableListOf()
 
-        // Unlike anyOf (which can short-circuit on the first match), oneOf must evaluate all
-        // sub-schemas to detect the multiple-match case
+        // every branch is evaluated, since more than one matching is itself a failure
         oneOf.forEach {
             val oneOfMessageSink = MessageSink()
             it.validate(ksonValue, oneOfMessageSink, sourceContext)
@@ -35,10 +34,7 @@ class OneOfValidator(internal val oneOf: List<JsonSchema>) : JsonSchemaValidator
                 )
             }
 
-            // Exactly-one cardinality is itself incompleteness-sensitive: a half-typed document can
-            // match several branches before the disambiguating value is typed.  In PARTIAL mode the
-            // branch set is viable as long as at least one branch is not contradicted; only an
-            // all-branches-contradicted document fails.
+            // a half-typed document may match several branches until the disambiguating value is typed
             sourceContext.mode == ValidationMode.PARTIAL -> { /* viable */ }
 
             else -> {
