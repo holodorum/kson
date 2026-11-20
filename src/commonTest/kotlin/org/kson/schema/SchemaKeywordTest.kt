@@ -33,29 +33,67 @@ class SchemaKeywordTest {
     private fun titleOf(schema: JsonSchema?): String? = (schema as JsonObjectSchema?)?.title
 
     @Test
-    fun everySubschemaAKeywordCompilesIsIndexed() {
-        val placements = listOf(
-            """"properties": { "p": PROBE }""",
-            """"patternProperties": { "^p": PROBE }""",
-            """"additionalProperties": PROBE""",
-            """"items": PROBE""",
-            """"items": [PROBE]""",
-            """"items": [], "additionalItems": PROBE""",
-            """"contains": PROBE""",
-            """"allOf": [PROBE]""",
-            """"anyOf": [PROBE]""",
-            """"oneOf": [PROBE]""",
-            """"not": PROBE""",
-            """"if": PROBE""",
-            """"if": {}, "then": PROBE""",
-            """"if": {}, "else": PROBE""",
-            """"dependencies": { "p": PROBE }""",
-            """"propertyNames": PROBE""",
-            """"definitions": { "d": PROBE }"""
+    fun everySubschemaAKeywordCompilesIsIndexedDraft7() {
+        assertEachPlacementIsIndexedAndCompiled(
+            SchemaDraft.DRAFT_7,
+            listOf(
+                """"properties": { "p": PROBE }""",
+                """"patternProperties": { "^p": PROBE }""",
+                """"additionalProperties": PROBE""",
+                """"items": PROBE""",
+                """"items": [PROBE]""",
+                """"items": [], "additionalItems": PROBE""",
+                """"contains": PROBE""",
+                """"allOf": [PROBE]""",
+                """"anyOf": [PROBE]""",
+                """"oneOf": [PROBE]""",
+                """"not": PROBE""",
+                """"if": PROBE""",
+                """"if": {}, "then": PROBE""",
+                """"if": {}, "else": PROBE""",
+                """"dependencies": { "p": PROBE }""",
+                """"propertyNames": PROBE""",
+                """"definitions": { "d": PROBE }"""
+            )
         )
+    }
+
+    @Test
+    fun everySubschemaAKeywordCompilesIsIndexedDraft2020_12() {
+        assertEachPlacementIsIndexedAndCompiled(
+            SchemaDraft.DRAFT_2020_12,
+            listOf(
+                """"properties": { "p": PROBE }""",
+                """"patternProperties": { "^p": PROBE }""",
+                """"additionalProperties": PROBE""",
+                """"items": PROBE""",
+                // Uncomment once `prefixItems` lands
+                //  """"prefixItems": [PROBE]""",
+                //  """"prefixItems": [], "items": PROBE""",
+                """"contains": PROBE""",
+                """"allOf": [PROBE]""",
+                """"anyOf": [PROBE]""",
+                """"oneOf": [PROBE]""",
+                """"not": PROBE""",
+                """"if": PROBE""",
+                """"if": {}, "then": PROBE""",
+                """"if": {}, "else": PROBE""",
+                """"dependencies": { "p": PROBE }""",
+                """"propertyNames": PROBE""",
+                $$""""$defs": { "d": PROBE }""",
+            )
+        )
+    }
+
+    /**
+     * Asserts that [probe], when placed into each of [placements] in a root schema, is indexed and compiled once,
+     * based on the specified schema [draft]
+     */
+    private fun assertEachPlacementIsIndexedAndCompiled(draft: SchemaDraft, placements: List<String>) {
         for (placement in placements) {
-            val root = assertNotNull(KsonCore.parseToAst("{ ${placement.replace("PROBE", probe)} }").ksonValue)
-            val documents = IndexedSchemaDocuments(SchemaDocument(root))
+            val source = "{ ${placement.replace("PROBE", probe)} }"
+            val root = assertNotNull(KsonCore.parseToAst(source).ksonValue)
+            val documents = IndexedSchemaDocuments(SchemaDocument(root), emptyList(), listOf(draft))
 
             val resolution = documents.resolveRef("urn:example:probe", documents.rootSubschemaBaseUri)
             assertIs<RefResolution.Found>(resolution, placement)
