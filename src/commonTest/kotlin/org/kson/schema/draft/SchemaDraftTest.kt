@@ -470,7 +470,8 @@ class SchemaDraftTest {
     @Test
     fun draft2020_12ReadsTheKeywordsOfDraft7WithDefsForDefinitionsAndWithoutAdditionalItems() {
         assertEquals(
-            SchemaDraft.DRAFT_7.keywordsByName.keys - setOf("definitions", "additionalItems") + $$"$defs",
+            SchemaDraft.DRAFT_7.keywordsByName.keys - setOf("definitions", "additionalItems") +
+                setOf($$"$defs", "dependentRequired"),
             SchemaDraft.DRAFT_2020_12.keywordsByName.keys
         )
     }

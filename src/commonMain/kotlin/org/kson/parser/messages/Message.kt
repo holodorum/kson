@@ -472,15 +472,6 @@ enum class MessageType(
             return "Array must contain at least one item that matches the contains schema"
         }
     },
-    SCHEMA_DEPENDENCIES_ARRAY_STRING_REQUIRED(MessageSeverity.ERROR) {
-        override fun expectedArgs(): List<String> {
-            return emptyList()
-        }
-
-        override fun doFormat(parsedArgs: ParsedErrorArgs): String {
-            return "Property names in a \"dependencies\" list must be strings"
-        }
-    },
     SCHEMA_EMPTY_SCHEMA(MessageSeverity.ERROR) {
         override fun expectedArgs(): List<String> {
             return emptyList()

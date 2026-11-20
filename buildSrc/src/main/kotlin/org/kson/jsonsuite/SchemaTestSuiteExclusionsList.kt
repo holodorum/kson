@@ -687,14 +687,8 @@ private val minMaxContainsTests = setOf(
     "contains::minContains=2 with contains::some elements match, invalid minContains"
 )
 
-/** Kson does not support `dependentRequired` or `dependentSchemas`, only their Draft 7 predecessor `dependencies` */
+/** Kson does not support `dependentSchemas` */
 private val dependentKeywordTests = setOf(
-    "dependentRequired::dependencies with escaped characters::CRLF missing dependent",
-    "dependentRequired::dependencies with escaped characters::quoted quotes missing dependent",
-    "dependentRequired::multiple dependents required::missing both dependencies",
-    "dependentRequired::multiple dependents required::missing dependency",
-    "dependentRequired::multiple dependents required::missing other dependency",
-    "dependentRequired::single dependency::missing dependency",
     "dependentSchemas::boolean subschemas::object with both properties is invalid",
     "dependentSchemas::boolean subschemas::object with property having schema false is invalid",
     "dependentSchemas::dependent subschema incompatible with root::matches both",

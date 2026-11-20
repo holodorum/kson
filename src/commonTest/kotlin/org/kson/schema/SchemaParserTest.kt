@@ -267,6 +267,78 @@ class SchemaParserTest : JsonSchemaTest {
     }
 
     @Test
+    fun testParseSchemaWithDependentRequired() {
+        assertValidObjectSchema($$"""
+            {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "dependentRequired": {
+                    "name": ["age"]
+                }
+            }
+        """)
+    }
+
+    @Test
+    fun testParseSchemaWithNonObjectDependentRequired() {
+        assertSchemaHasValidationErrors(
+            $$"""
+                {
+                    "$schema": "https://json-schema.org/draft/2020-12/schema",
+                    "dependentRequired": ["age"]
+                }
+            """,
+            listOf(MessageType.SCHEMA_OBJECT_REQUIRED)
+        )
+    }
+
+    @Test
+    fun testParseSchemaWithNonArrayDependentRequired() {
+        assertSchemaHasValidationErrors(
+            $$"""
+                {
+                    "$schema": "https://json-schema.org/draft/2020-12/schema",
+                    "dependentRequired": {
+                        "name": "age"
+                    }
+                }
+            """,
+            listOf(MessageType.SCHEMA_ARRAY_REQUIRED)
+        )
+    }
+
+    @Test
+    fun testParseSchemaWithInvalidDependentRequiredEntry() {
+        assertSchemaHasValidationErrors(
+            $$"""
+                {
+                    "$schema": "https://json-schema.org/draft/2020-12/schema",
+                    "dependentRequired": {
+                        "name": ["age", 123]
+                    }
+                }
+            """,
+            listOf(MessageType.SCHEMA_STRING_ARRAY_ENTRY_ERROR)
+        )
+    }
+
+    @Test
+    fun testParseSchemaWithDependentRequiredIgnoredByDraft7() {
+        // Draft 7 has no `dependentRequired`, so `name` without `age` is still valid
+        assertKsonEnforcesSchema(
+            "name: x",
+            $$"""
+                {
+                    "$schema": "http://json-schema.org/draft-07/schema#",
+                    "dependentRequired": {
+                        "name": ["age"]
+                    }
+                }
+            """,
+            true
+        )
+    }
+
+    @Test
     fun testParseInvalidSchemaType() {
         assertSchemaHasValidationErrors(
             "123",

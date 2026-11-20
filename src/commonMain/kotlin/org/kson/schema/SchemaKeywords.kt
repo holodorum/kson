@@ -318,7 +318,7 @@ internal object DependenciesKeyword : SchemaKeyword(setOf("dependencies")) {
         val dependencyMap = buildMap {
             dependencies.propertyLookup.forEach { (property, value) ->
                 val dependency = if (value is KsonList) {
-                    requiredProperties(value, context)
+                    requiredProperties(value, "dependencies", context)
                 } else {
                     subschemasByProperty.getValue(property).compiled?.let(::DependencyValidatorSchema)
                 }
@@ -327,16 +327,42 @@ internal object DependenciesKeyword : SchemaKeyword(setOf("dependencies")) {
         }
         return DependenciesValidator(dependencyMap)
     }
+}
 
-    private fun requiredProperties(list: KsonList, context: KeywordContext): DependencyValidatorArray {
-        val dependencyArrayEntries = mutableSetOf<KsonString>()
-        for (element in list.elements) {
-            if (element is KsonString) {
-                dependencyArrayEntries.add(element)
-            } else {
-                context.messageSink.error(element.location, SCHEMA_DEPENDENCIES_ARRAY_STRING_REQUIRED.create())
+/**
+ * `dependentRequired`.  For each property, it gives the other properties that an object with it must have.
+ */
+internal object DependentRequiredKeyword : SchemaKeyword(setOf("dependentRequired")) {
+    override fun compile(context: KeywordContext, subschemas: List<CompilableSubschema>): JsonSchemaValidator? {
+        val dependentRequired = context.properties.getValue("dependentRequired")
+
+        if (dependentRequired !is KsonObject) {
+            context.messageSink.error(dependentRequired.location, SCHEMA_OBJECT_REQUIRED.create("dependentRequired"))
+            return null
+        }
+
+        val dependencyMap = buildMap {
+            dependentRequired.propertyLookup.forEach { (property, value) ->
+                if (value is KsonList) {
+                    put(property, requiredProperties(value, "dependentRequired", context))
+                } else {
+                    context.messageSink.error(value.location, SCHEMA_ARRAY_REQUIRED.create(property))
+                }
             }
         }
-        return DependencyValidatorArray(dependencyArrayEntries)
+
+        return DependenciesValidator(dependencyMap)
     }
+}
+
+private fun requiredProperties(list: KsonList, keyword: String, context: KeywordContext): DependencyValidatorArray {
+    val dependencyArrayEntries = mutableSetOf<KsonString>()
+    for (element in list.elements) {
+        if (element is KsonString) {
+            dependencyArrayEntries.add(element)
+        } else {
+            context.messageSink.error(element.location, SCHEMA_STRING_ARRAY_ENTRY_ERROR.create(keyword))
+        }
+    }
+    return DependencyValidatorArray(dependencyArrayEntries)
 }
