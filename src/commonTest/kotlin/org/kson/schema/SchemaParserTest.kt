@@ -339,6 +339,65 @@ class SchemaParserTest : JsonSchemaTest {
     }
 
     @Test
+    fun testParseSchemaWithDependentSchemas() {
+        assertValidObjectSchema($$"""
+            {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "dependentSchemas": {
+                    "name": {"required": ["age"]},
+                    "nickname": true,
+                    "alias": false
+                }
+            }
+        """)
+    }
+
+    @Test
+    fun testParseSchemaWithNonObjectDependentSchemas() {
+        assertSchemaHasValidationErrors(
+            $$"""
+                {
+                    "$schema": "https://json-schema.org/draft/2020-12/schema",
+                    "dependentSchemas": ["age"]
+                }
+            """,
+            listOf(MessageType.SCHEMA_OBJECT_REQUIRED)
+        )
+    }
+
+    @Test
+    fun testParseSchemaWithNonSchemaDependentSchema() {
+        assertSchemaHasValidationErrors(
+            $$"""
+                {
+                    "$schema": "https://json-schema.org/draft/2020-12/schema",
+                    "dependentSchemas": {
+                        "name": 42
+                    }
+                }
+            """,
+            listOf(MessageType.SCHEMA_OBJECT_OR_BOOLEAN)
+        )
+    }
+
+    @Test
+    fun testParseSchemaWithDependentSchemasIgnoredByDraft7() {
+        // Draft 7 has no `dependentSchemas`, so the `false` dependent schema doesn't reject `name`
+        assertKsonEnforcesSchema(
+            "name: x",
+            $$"""
+                {
+                    "$schema": "http://json-schema.org/draft-07/schema#",
+                    "dependentSchemas": {
+                        "name": false
+                    }
+                }
+            """,
+            true
+        )
+    }
+
+    @Test
     fun testParseInvalidSchemaType() {
         assertSchemaHasValidationErrors(
             "123",

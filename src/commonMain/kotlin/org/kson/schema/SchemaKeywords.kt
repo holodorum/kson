@@ -366,3 +366,33 @@ private fun requiredProperties(list: KsonList, keyword: String, context: Keyword
     }
     return DependencyValidatorArray(dependencyArrayEntries)
 }
+
+/**
+ * `dependentSchemas`.  For each property, it gives a subschema that an object with that property must also pass.
+ */
+internal object DependentSchemasKeyword : SchemaKeyword(setOf("dependentSchemas")) {
+    override fun declaredSubschemas(schema: KsonObject): List<DeclaredSubschema> =
+        (schema.propertyLookup["dependentSchemas"] as? KsonObject)?.propertyLookup.orEmpty()
+            .map { (property, value) ->
+                DeclaredSubschema(listOf("dependentSchemas", property), value, Applies.IfPresent(property))
+            }
+
+    override fun compile(context: KeywordContext, subschemas: List<CompilableSubschema>): JsonSchemaValidator? {
+        val dependentSchemas = context.properties.getValue("dependentSchemas")
+
+        if (dependentSchemas !is KsonObject) {
+            context.messageSink.error(dependentSchemas.location, SCHEMA_OBJECT_REQUIRED.create("dependentSchemas"))
+            return null
+        }
+
+        val dependencyMap = buildMap {
+            subschemas.forEach { subschema ->
+                subschema.compiled?.let {
+                    put((subschema.applies as Applies.IfPresent).property, DependencyValidatorSchema(it))
+                }
+            }
+        }
+
+        return DependenciesValidator(dependencyMap)
+    }
+}

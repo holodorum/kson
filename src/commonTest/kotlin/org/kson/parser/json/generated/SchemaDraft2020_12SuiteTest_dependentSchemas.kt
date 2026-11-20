@@ -1,7 +1,6 @@
 package org.kson.parser.json.generated
 
 import org.kson.schema.JsonSchemaTest
-import kotlin.test.Ignore
 import kotlin.test.Test
 
 /**
@@ -92,11 +91,7 @@ class SchemaDraft2020_12SuiteTest_dependentSchemas : JsonSchemaTest {
      *     "single dependency -> wrong type"
      *
      * Test ID: "dependentSchemas::single dependency::wrong type"
-     *
-     * TODO implement the schema functionality under test, then run this test by removing its
-     *   exclusion entry from [org.kson.jsonsuite.schemaTestSuiteExclusions]
      */
-    @Ignore
     @Test
     fun jsonSchemaSuiteTest_3() {
         
@@ -133,11 +128,7 @@ class SchemaDraft2020_12SuiteTest_dependentSchemas : JsonSchemaTest {
      *     "single dependency -> wrong type other"
      *
      * Test ID: "dependentSchemas::single dependency::wrong type other"
-     *
-     * TODO implement the schema functionality under test, then run this test by removing its
-     *   exclusion entry from [org.kson.jsonsuite.schemaTestSuiteExclusions]
      */
-    @Ignore
     @Test
     fun jsonSchemaSuiteTest_4() {
         
@@ -174,11 +165,7 @@ class SchemaDraft2020_12SuiteTest_dependentSchemas : JsonSchemaTest {
      *     "single dependency -> wrong type both"
      *
      * Test ID: "dependentSchemas::single dependency::wrong type both"
-     *
-     * TODO implement the schema functionality under test, then run this test by removing its
-     *   exclusion entry from [org.kson.jsonsuite.schemaTestSuiteExclusions]
      */
-    @Ignore
     @Test
     fun jsonSchemaSuiteTest_5() {
         
@@ -347,11 +334,7 @@ class SchemaDraft2020_12SuiteTest_dependentSchemas : JsonSchemaTest {
      *     "boolean subschemas -> object with property having schema false is invalid"
      *
      * Test ID: "dependentSchemas::boolean subschemas::object with property having schema false is invalid"
-     *
-     * TODO implement the schema functionality under test, then run this test by removing its
-     *   exclusion entry from [org.kson.jsonsuite.schemaTestSuiteExclusions]
      */
-    @Ignore
     @Test
     fun jsonSchemaSuiteTest_10() {
         
@@ -379,11 +362,7 @@ class SchemaDraft2020_12SuiteTest_dependentSchemas : JsonSchemaTest {
      *     "boolean subschemas -> object with both properties is invalid"
      *
      * Test ID: "dependentSchemas::boolean subschemas::object with both properties is invalid"
-     *
-     * TODO implement the schema functionality under test, then run this test by removing its
-     *   exclusion entry from [org.kson.jsonsuite.schemaTestSuiteExclusions]
      */
-    @Ignore
     @Test
     fun jsonSchemaSuiteTest_11() {
         
@@ -475,11 +454,7 @@ class SchemaDraft2020_12SuiteTest_dependentSchemas : JsonSchemaTest {
      *     "dependents with escaped characters -> quoted quote"
      *
      * Test ID: "dependentSchemas::dependents with escaped characters::quoted quote"
-     *
-     * TODO implement the schema functionality under test, then run this test by removing its
-     *   exclusion entry from [org.kson.jsonsuite.schemaTestSuiteExclusions]
      */
-    @Ignore
     @Test
     fun jsonSchemaSuiteTest_14() {
         
@@ -515,11 +490,7 @@ class SchemaDraft2020_12SuiteTest_dependentSchemas : JsonSchemaTest {
      *     "dependents with escaped characters -> quoted tab invalid under dependent schema"
      *
      * Test ID: "dependentSchemas::dependents with escaped characters::quoted tab invalid under dependent schema"
-     *
-     * TODO implement the schema functionality under test, then run this test by removing its
-     *   exclusion entry from [org.kson.jsonsuite.schemaTestSuiteExclusions]
      */
-    @Ignore
     @Test
     fun jsonSchemaSuiteTest_15() {
         
@@ -554,11 +525,7 @@ class SchemaDraft2020_12SuiteTest_dependentSchemas : JsonSchemaTest {
      *     "dependents with escaped characters -> quoted quote invalid under dependent schema"
      *
      * Test ID: "dependentSchemas::dependents with escaped characters::quoted quote invalid under dependent schema"
-     *
-     * TODO implement the schema functionality under test, then run this test by removing its
-     *   exclusion entry from [org.kson.jsonsuite.schemaTestSuiteExclusions]
      */
-    @Ignore
     @Test
     fun jsonSchemaSuiteTest_16() {
         
@@ -592,11 +559,7 @@ class SchemaDraft2020_12SuiteTest_dependentSchemas : JsonSchemaTest {
      *     "dependent subschema incompatible with root -> matches root"
      *
      * Test ID: "dependentSchemas::dependent subschema incompatible with root::matches root"
-     *
-     * TODO implement the schema functionality under test, then run this test by removing its
-     *   exclusion entry from [org.kson.jsonsuite.schemaTestSuiteExclusions]
      */
-    @Ignore
     @Test
     fun jsonSchemaSuiteTest_17() {
         
@@ -666,11 +629,7 @@ class SchemaDraft2020_12SuiteTest_dependentSchemas : JsonSchemaTest {
      *     "dependent subschema incompatible with root -> matches both"
      *
      * Test ID: "dependentSchemas::dependent subschema incompatible with root::matches both"
-     *
-     * TODO implement the schema functionality under test, then run this test by removing its
-     *   exclusion entry from [org.kson.jsonsuite.schemaTestSuiteExclusions]
      */
-    @Ignore
     @Test
     fun jsonSchemaSuiteTest_19() {
         

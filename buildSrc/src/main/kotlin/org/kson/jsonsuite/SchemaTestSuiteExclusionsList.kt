@@ -20,7 +20,6 @@ fun schemaTestSuiteExclusions(): Map<SchemaDraft, Set<String>> = mapOf(
         unevaluatedTests +
         prefixItemsTests +
         minMaxContainsTests +
-        dependentKeywordTests +
         anchorTests +
         vocabularyTests +
         unicodePropertyEscapeTests +
@@ -685,20 +684,6 @@ private val minMaxContainsTests = setOf(
     "contains::minContains=2 with contains with a decimal value::one element matches, invalid minContains",
     "contains::minContains=2 with contains::all elements match, invalid minContains",
     "contains::minContains=2 with contains::some elements match, invalid minContains"
-)
-
-/** Kson does not support `dependentSchemas` */
-private val dependentKeywordTests = setOf(
-    "dependentSchemas::boolean subschemas::object with both properties is invalid",
-    "dependentSchemas::boolean subschemas::object with property having schema false is invalid",
-    "dependentSchemas::dependent subschema incompatible with root::matches both",
-    "dependentSchemas::dependent subschema incompatible with root::matches root",
-    "dependentSchemas::dependents with escaped characters::quoted quote",
-    "dependentSchemas::dependents with escaped characters::quoted quote invalid under dependent schema",
-    "dependentSchemas::dependents with escaped characters::quoted tab invalid under dependent schema",
-    "dependentSchemas::single dependency::wrong type",
-    "dependentSchemas::single dependency::wrong type both",
-    "dependentSchemas::single dependency::wrong type other"
 )
 
 /** Kson does not support `$anchor` */

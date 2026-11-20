@@ -106,7 +106,8 @@ internal class SchemaDraft(
                 // 2020-12 replaced `dependencies`, but its meta-schema still describes it
                 DependenciesKeyword,
                 SubschemaKeyword("propertyNames", Applies.PropertyNames, ::PropertyNamesValidator),
-                DependentRequiredKeyword
+                DependentRequiredKeyword,
+                DependentSchemasKeyword
             ),
             metaSchemas = { KsonDraft202012MetaSchemas.documents }
         )

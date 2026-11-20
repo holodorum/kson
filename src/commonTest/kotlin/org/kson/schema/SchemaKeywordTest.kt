@@ -80,6 +80,7 @@ class SchemaKeywordTest {
                 """"if": {}, "else": PROBE""",
                 """"dependencies": { "p": PROBE }""",
                 """"propertyNames": PROBE""",
+                """"dependentSchemas": { "p": PROBE }""",
                 $$""""$defs": { "d": PROBE }""",
             )
         )
