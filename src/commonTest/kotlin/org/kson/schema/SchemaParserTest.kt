@@ -213,6 +213,70 @@ class SchemaParserTest : JsonSchemaTest {
     }
 
     @Test
+    fun testParseSchemaWithContainsBounds() {
+        assertValidObjectSchema($$"""
+            {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "contains": {"type": "string"},
+                "minContains": 2,
+                "maxContains": 3
+            }
+        """)
+    }
+
+    @Test
+    fun testParseSchemaWithNonIntegerContainsBounds() {
+        assertSchemaHasValidationErrors(
+            $$"""
+                {
+                    "$schema": "https://json-schema.org/draft/2020-12/schema",
+                    "contains": {"type": "string"},
+                    "minContains": "two",
+                    "maxContains": true
+                }
+            """,
+            listOf(MessageType.SCHEMA_INTEGER_REQUIRED, MessageType.SCHEMA_INTEGER_REQUIRED)
+        )
+    }
+
+    @Test
+    fun testParseSchemaWithContainsBoundWithoutContains() {
+        // without `contains` the bound validates nothing, but a malformed one is still a malformed schema
+        assertSchemaHasValidationErrors(
+            $$"""
+                {
+                    "$schema": "https://json-schema.org/draft/2020-12/schema",
+                    "minContains": "two"
+                }
+            """,
+            listOf(MessageType.SCHEMA_INTEGER_REQUIRED)
+        )
+    }
+
+    @Test
+    fun testParseSchemaWithContainsBoundsIgnoredByDraft7() {
+        // Draft 7 has no `minContains` or `maxContains`: it neither reports the malformed bound nor applies the other
+        assertValidObjectSchema($$"""
+            {
+                "$schema": "http://json-schema.org/draft-07/schema#",
+                "contains": {"type": "string"},
+                "minContains": "two"
+            }
+        """)
+        assertKsonEnforcesSchema(
+            "[a, b]",
+            $$"""
+                {
+                    "$schema": "http://json-schema.org/draft-07/schema#",
+                    "contains": {"type": "string"},
+                    "maxContains": 1
+                }
+            """,
+            true
+        )
+    }
+
+    @Test
     fun testParseSchemaWithObjectValidators() {
         assertValidObjectSchema("""
             minProperties: 1

@@ -472,6 +472,28 @@ enum class MessageType(
             return "Array must contain at least one item that matches the contains schema"
         }
     },
+    SCHEMA_CONTAINS_TOO_MANY(MessageSeverity.ERROR) {
+        override fun expectedArgs(): List<String> {
+            return listOf("Maximum Number Of Matching Items", "Actual Number Of Matching Items")
+        }
+
+        override fun doFormat(parsedArgs: ParsedErrorArgs): String {
+            val maxContains = parsedArgs.getArg("Maximum Number Of Matching Items")
+            val actualMatches = parsedArgs.getArg("Actual Number Of Matching Items")
+            return "Number of items matching the contains schema must be <= $maxContains, but is $actualMatches"
+        }
+    },
+    SCHEMA_CONTAINS_TOO_FEW(MessageSeverity.ERROR) {
+        override fun expectedArgs(): List<String> {
+            return listOf("Minimum Number Of Matching Items", "Actual Number Of Matching Items")
+        }
+
+        override fun doFormat(parsedArgs: ParsedErrorArgs): String {
+            val minContains = parsedArgs.getArg("Minimum Number Of Matching Items")
+            val actualMatches = parsedArgs.getArg("Actual Number Of Matching Items")
+            return "Number of items matching the contains schema must be >= $minContains, but is $actualMatches"
+        }
+    },
     SCHEMA_EMPTY_SCHEMA(MessageSeverity.ERROR) {
         override fun expectedArgs(): List<String> {
             return emptyList()

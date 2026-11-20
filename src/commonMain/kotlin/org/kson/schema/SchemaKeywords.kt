@@ -214,6 +214,38 @@ internal object ItemsKeyword : SchemaKeyword(setOf("items", "additionalItems")) 
 }
 
 /**
+ * `contains`, `minContains` and `maxContains`.  `minContains` (default 1) and `maxContains` (default unbounded)
+ * restrict how many items must match the `contains` subschema.  Non-integer numbers are ignored without an error.
+ * Without `contains`, they validate nothing.
+ */
+internal object ContainsKeyword : SchemaKeyword(setOf("contains", "minContains", "maxContains")) {
+    override fun declaredSubschemas(schema: KsonObject): List<DeclaredSubschema> =
+        listOfNotNull(schema.propertyLookup["contains"]?.let { DeclaredSubschema(listOf("contains"), it, Applies.SomeItem) })
+
+    override fun compile(context: KeywordContext, subschemas: List<CompilableSubschema>): JsonSchemaValidator? {
+        val minContains = readInteger("minContains", context)
+        val maxContains = readInteger("maxContains", context)
+        val containsSchema = subschemas.singleOrNull()?.compiled ?: return null
+
+        return ContainsValidator(
+            containsSchema,
+            minContains ?: 1,
+            maxContains
+        )
+    }
+
+    private fun readInteger(name: String, context: KeywordContext): Long? {
+        val value = context.properties[name] ?: return null
+        if (value !is KsonNumber) {
+            context.messageSink.error(value.location, SCHEMA_INTEGER_REQUIRED.create(name))
+            return null
+        }
+
+        return asSchemaInteger(value)
+    }
+}
+
+/**
  * `properties`, `patternProperties` and `additionalProperties`, which together decide which subschemas validate each
  * of the instance's properties.  `additionalProperties` validates the properties that the other two don't match.
  */

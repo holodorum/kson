@@ -89,7 +89,7 @@ internal class SchemaDraft(
                 SubschemaKeyword("items", Applies.ItemsFrom(0)) {
                     ItemsValidator(LeadingItemsSchemaValidator(it), additionalItemsValidator = null)
                 },
-                SubschemaKeyword("contains", Applies.SomeItem, ::ContainsValidator),
+                ContainsKeyword,
                 IntegerKeyword("minItems", ::MinItemsValidator),
                 IntegerKeyword("maxItems", ::MaxItemsValidator),
                 UniqueItemsKeyword,

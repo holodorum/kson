@@ -2421,11 +2421,7 @@ class SchemaDraft2020_12SuiteTest_unevaluatedItems : JsonSchemaTest {
      *     "unevaluatedItems with minContains = 0 -> empty array is valid"
      *
      * Test ID: "unevaluatedItems::unevaluatedItems with minContains = 0::empty array is valid"
-     *
-     * TODO implement the schema functionality under test, then run this test by removing its
-     *   exclusion entry from [org.kson.jsonsuite.schemaTestSuiteExclusions]
      */
-    @Ignore
     @Test
     fun jsonSchemaSuiteTest_58() {
         
@@ -2452,7 +2448,11 @@ class SchemaDraft2020_12SuiteTest_unevaluatedItems : JsonSchemaTest {
      *     "unevaluatedItems with minContains = 0 -> no items evaluated by contains"
      *
      * Test ID: "unevaluatedItems::unevaluatedItems with minContains = 0::no items evaluated by contains"
+     *
+     * TODO implement the schema functionality under test, then run this test by removing its
+     *   exclusion entry from [org.kson.jsonsuite.schemaTestSuiteExclusions]
      */
+    @Ignore
     @Test
     fun jsonSchemaSuiteTest_59() {
         

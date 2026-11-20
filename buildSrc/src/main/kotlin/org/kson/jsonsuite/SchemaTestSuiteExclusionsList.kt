@@ -19,7 +19,6 @@ fun schemaTestSuiteExclusions(): Map<SchemaDraft, Set<String>> = mapOf(
         dynamicRefTests +
         unevaluatedTests +
         prefixItemsTests +
-        minMaxContainsTests +
         anchorTests +
         vocabularyTests +
         unicodePropertyEscapeTests +
@@ -590,7 +589,7 @@ private val unevaluatedTests = setOf(
     "unevaluatedItems::unevaluatedItems with boolean schemas::with unevaluated items",
     "unevaluatedItems::unevaluatedItems with if/then/else (prefixItems)::when if doesn't match and it has unevaluated items",
     "unevaluatedItems::unevaluatedItems with if/then/else (prefixItems)::when if matches and it has unevaluated items",
-    "unevaluatedItems::unevaluatedItems with minContains = 0::empty array is valid",
+    "unevaluatedItems::unevaluatedItems with minContains = 0::no items evaluated by contains",
     "unevaluatedItems::unevaluatedItems with minContains = 0::some but not all items evaluated by contains",
     "unevaluatedItems::unevaluatedItems with nested items::with invalid additional item",
     "unevaluatedItems::unevaluatedItems with nested tuple (prefixItems)::with unevaluated items",
@@ -662,28 +661,6 @@ private val prefixItemsTests = setOf(
     "uniqueItems::uniqueItems=false with prefixItems and items=false::[false, true] from items array is valid",
     "uniqueItems::uniqueItems=false with prefixItems and items=false::[true, false] from items array is valid",
     "uniqueItems::uniqueItems=false with prefixItems and items=false::[true, true] from items array is valid"
-)
-
-/** Kson does not support `minContains` or `maxContains` */
-private val minMaxContainsTests = setOf(
-    "contains::maxContains < minContains::invalid maxContains",
-    "contains::maxContains < minContains::invalid maxContains and minContains",
-    "contains::maxContains < minContains::invalid minContains",
-    "contains::maxContains = 0 with minContains = 0::empty array",
-    "contains::maxContains = 0 with minContains = 0::one matching item",
-    "contains::maxContains = minContains::all elements match, invalid maxContains",
-    "contains::maxContains = minContains::all elements match, invalid minContains",
-    "contains::maxContains with contains, value with a decimal::too many elements match, invalid maxContains",
-    "contains::maxContains with contains::all elements match, invalid maxContains",
-    "contains::maxContains with contains::some elements match, invalid maxContains",
-    "contains::minContains < maxContains::minContains < maxContains < actual",
-    "contains::minContains = 0 with maxContains::empty data",
-    "contains::minContains = 0 with maxContains::too many",
-    "contains::minContains = 0::empty data",
-    "contains::minContains = 0::minContains = 0 makes contains always pass",
-    "contains::minContains=2 with contains with a decimal value::one element matches, invalid minContains",
-    "contains::minContains=2 with contains::all elements match, invalid minContains",
-    "contains::minContains=2 with contains::some elements match, invalid minContains"
 )
 
 /** Kson does not support `$anchor` */
