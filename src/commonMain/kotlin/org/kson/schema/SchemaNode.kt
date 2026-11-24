@@ -28,8 +28,12 @@ data class SchemaNode internal constructor(
     /** The base URI inside [value], which its `$ref` resolves against and its subschemas inherit */
     val innerBaseUri: UriReference by lazy { baseUri.withIdOf(value, draft) }
 
-    /** Returns a node for [child], a value inside this schema, with [innerBaseUri] as its base URI */
-    internal fun enter(child: KsonValue): SchemaNode = SchemaNode(child, innerBaseUri, draft, indexedDocuments)
+    /**
+     * Returns a node for [child], a value inside this schema, with [innerBaseUri] as its base URI.  [child] is read in
+     * this schema's draft, unless it is a resource that names its own (see [IndexedSchemaDocuments.draftOf]).
+     */
+    internal fun enter(child: KsonValue): SchemaNode =
+        SchemaNode(child, innerBaseUri, indexedDocuments.draftOf(child, draft), indexedDocuments)
 
     /**
      * Returns the node for the last value in [path], or this node when the path is empty.  The first value must sit

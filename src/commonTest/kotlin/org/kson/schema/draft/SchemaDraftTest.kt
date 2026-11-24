@@ -41,6 +41,8 @@ class SchemaDraftTest {
 
     private val draft2020Uri = "https://json-schema.org/draft/2020-12/schema"
 
+    private val draft7Uri = "http://json-schema.org/draft-07/schema#"
+
     private fun compile(
         root: SchemaDocument,
         additionalDocuments: List<SchemaDocument> = emptyList(),
@@ -65,6 +67,11 @@ class SchemaDraftTest {
         val messageSink = MessageSink()
         schema.validate(value(instance), messageSink, SourceContext())
         return messageSink.loggedMessages().map { it.message.type }
+    }
+
+    private fun resolveRef(document: SchemaDocument, ref: String): RefResolution {
+        val indexedDocuments = IndexedSchemaDocuments(document)
+        return indexedDocuments.resolveRef(ref, indexedDocuments.rootBaseUri)
     }
 
     private fun indexedIn(draft: SchemaDraft, root: KsonValue): IndexedSchemaDocuments =
@@ -468,6 +475,140 @@ class SchemaDraftTest {
         val indexedDocuments = IndexedSchemaDocuments(SchemaDocument(value("type: object")), listOf(defs))
 
         assertIs<RefResolution.Found>(indexedDocuments.resolveRef("urn:example:number", indexedDocuments.rootBaseUri))
+    }
+
+    @Test
+    fun anEmbeddedResourceIsReadInTheDraftItsSchemaNames() {
+        // `count`'s `$ref` hides its `$id` and `maximum` in Draft 7 and keeps them in Draft 2020-12
+        fun document(documentDraftUri: String, resourceDraftUri: String) = SchemaDocument(
+            value(
+                $$"""
+                    '$schema': '$$documentDraftUri'
+                    properties:
+                      count:
+                        '$schema': '$$resourceDraftUri'
+                        '$id': 'https://example.test/count.json'
+                        '$ref': 'urn:example:number'
+                        maximum: 1
+                        .
+                      number:
+                        '$id': 'urn:example:number'
+                        type: number
+                """
+            )
+        )
+        val draft7InDraft2020 = document(draft2020Uri, draft7Uri)
+        val draft2020InDraft7 = document(draft7Uri, draft2020Uri)
+
+        assertTrue(accepts(compileAsDeclared(draft7InDraft2020), "count: 7"))
+        assertFalse(accepts(compileAsDeclared(draft2020InDraft7), "count: 7"))
+        assertEquals(RefResolution.NotFound, resolveRef(draft7InDraft2020, "https://example.test/count.json"))
+        assertIs<RefResolution.Found>(resolveRef(draft2020InDraft7, "https://example.test/count.json"))
+    }
+
+    @Test
+    fun anEmbeddedResourceIsIndexedInTheDraftItsSchemaNames() {
+        fun document(documentDraftUri: String, resourceDraftUri: String) = SchemaDocument(
+            value(
+                $$"""
+                    '$schema': '$$documentDraftUri'
+                    properties:
+                      embedded:
+                        '$schema': '$$resourceDraftUri'
+                        '$id': 'https://example.test/embedded.json'
+                        '$anchor': here
+                        definitions:
+                          legacy:
+                            '$id': 'urn:example:legacy'
+                            .
+                          .
+                        '$defs':
+                          current:
+                            '$id': 'urn:example:current'
+                """
+            )
+        )
+        val draft7InDraft2020 = document(draft2020Uri, draft7Uri)
+        val draft2020InDraft7 = document(draft7Uri, draft2020Uri)
+        val anchorUri = "https://example.test/embedded.json#here"
+
+        assertIs<RefResolution.Found>(resolveRef(draft7InDraft2020, "urn:example:legacy"))
+        assertEquals(RefResolution.NotFound, resolveRef(draft7InDraft2020, "urn:example:current"))
+        assertEquals(RefResolution.NotFound, resolveRef(draft7InDraft2020, anchorUri))
+        assertEquals(RefResolution.NotFound, resolveRef(draft2020InDraft7, "urn:example:legacy"))
+        assertIs<RefResolution.Found>(resolveRef(draft2020InDraft7, "urn:example:current"))
+        assertIs<RefResolution.Found>(resolveRef(draft2020InDraft7, anchorUri))
+    }
+
+    @Test
+    fun aSubschemaWithoutAnIdCannotNameADraftOfItsOwn() {
+        // `count` keeps the document's draft, so its `$ref` hides `maximum` in Draft 7 and keeps it in Draft 2020-12
+        fun document(documentDraftUri: String, ignoredDraftUri: String) = SchemaDocument(
+            value(
+                $$"""
+                    '$schema': '$$documentDraftUri'
+                    properties:
+                      count:
+                        '$schema': '$$ignoredDraftUri'
+                        '$ref': 'urn:example:number'
+                        maximum: 1
+                        .
+                      number:
+                        '$id': 'urn:example:number'
+                        type: number
+                """
+            )
+        )
+
+        assertTrue(accepts(compileAsDeclared(document(draft7Uri, draft2020Uri)), "count: 7"))
+        assertFalse(accepts(compileAsDeclared(document(draft2020Uri, draft7Uri)), "count: 7"))
+    }
+
+    @Test
+    fun eachSchemaIsReadInTheDraftOfTheResourceItBelongsTo() {
+        val root = value(
+            $$"""
+                '$schema': '$$draft7Uri'
+                properties:
+                  current:
+                    '$schema': '$$draft2020Uri'
+                    '$id': 'https://example.test/current.json'
+                    properties:
+                      inheriting:
+                        '$id': 'https://example.test/inheriting.json'
+                        .
+                      unidentified:
+                        '$schema': '$$draft7Uri'
+                        .
+                      legacy:
+                        '$schema': '$$draft7Uri'
+                        '$id': 'https://example.test/legacy.json'
+                        properties:
+                          inside: {}
+                          .
+                        extension:
+                          pointedTo: {}
+            """
+        )
+        val legacy = "properties/current/properties/legacy"
+        val draftsByPath = mapOf(
+            "properties/current" to SchemaDraft.DRAFT_2020_12,
+            "properties/current/properties/inheriting" to SchemaDraft.DRAFT_2020_12,
+            "properties/current/properties/unidentified" to SchemaDraft.DRAFT_2020_12,
+            legacy to SchemaDraft.DRAFT_7,
+            "$legacy/properties/inside" to SchemaDraft.DRAFT_7,
+            "$legacy/extension/pointedTo" to SchemaDraft.DRAFT_7
+        )
+
+        val indexedDocuments = IndexedSchemaDocuments(SchemaDocument(root))
+        for ((path, draft) in draftsByPath) {
+            val values = path.split("/").runningFold(root) { parent, name ->
+                (parent as KsonObject).propertyLookup.getValue(name)
+            }
+            assertSame(draft, indexedDocuments.rootSchema.descend(values.drop(1)).draft, "$path entered")
+            val pointedTo = indexedDocuments.resolveRef("#/$path", indexedDocuments.rootBaseUri)
+            assertSame(draft, assertIs<RefResolution.Found>(pointedTo).target.draft, "$path pointed to")
+        }
     }
 
     @Test

@@ -818,6 +818,67 @@ class IndexedSchemaDocumentsTest {
     }
 
     @Test
+    fun readsValuesInTheDraftOfAnEnclosingResourceFoundAfterThem() {
+        // only `hook` makes `legacy` a schema, so `aliased` and `anchored` may be read in the document's Draft 2020-12
+        // before `legacy` puts them in Draft 7.  There `legacy`'s `$ref` hides its `$id`, so only their draft changes.
+        val deepRefs = listOf("#/extension/legacy/definitions/aliased", "#/extension/legacy/definitions/anchored")
+        for (refs in listOf(deepRefs + "#/extension/hook", listOf("#/extension/hook") + deepRefs)) {
+            val schema = $$"""
+                '$schema': 'https://json-schema.org/draft/2020-12/schema'
+                '$id': 'http://example.test/root.json'
+                allOf: [{ '$ref': '$${refs[0]}' }, { '$ref': '$${refs[1]}' }, { '$ref': '$${refs[2]}' }]
+                extension: {
+                  hook: { '$ref': '#/extension/legacy' }
+                  legacy: {
+                    '$schema': 'http://json-schema.org/draft-07/schema#'
+                    '$id': 'http://example.test/legacy.json'
+                    '$ref': 'http://example.test/root.json'
+                    definitions: {
+                      aliased: { '$id': 'aliased.json', '$ref': 'http://example.test/root.json' }
+                      anchored: { '$anchor': here, definitions: { inner: { '$id': 'inner.json' } } }
+                    }
+                  }
+                }
+            """.trimIndent()
+            val order = "refs in order $refs"
+            assertEquals(RefResolution.NotFound, resolveRef(schema, "http://example.test/legacy.json"), order)
+            assertEquals(RefResolution.NotFound, resolveRef(schema, "http://example.test/aliased.json"), order)
+            assertEquals(RefResolution.NotFound, resolveRef(schema, "http://example.test/root.json#here"), order)
+            assertIs<RefResolution.Found>(resolveRef(schema, "http://example.test/inner.json"), order)
+        }
+    }
+
+    @Test
+    fun readsAPointerRefAgainWhenItsResourceGetsAnIdFromADraftFoundLater() {
+        // `s`'s `$ref` hides its `$id` in the document's Draft 7 until `hook` makes `current` a schema, which puts `s`
+        // in Draft 2020-12.  Then `s` is s.json, which `file:///s.json#/extension/t` points into.
+        val deepRefs = listOf("file:///s.json#/extension/t", $$"#/extension/current/$defs/s")
+        for (refs in listOf(deepRefs + "#/extension/hook", listOf("#/extension/hook") + deepRefs)) {
+            val root = value($$"""
+                allOf: [{ '$ref': '$${refs[0]}' }, { '$ref': '$${refs[1]}' }, { '$ref': '$${refs[2]}' }]
+                extension: {
+                  hook: { '$ref': '#/extension/current' }
+                  current: {
+                    '$schema': 'https://json-schema.org/draft/2020-12/schema'
+                    '$id': 'http://example.test/current/'
+                    '$defs': {
+                      s: {
+                        '$id': 'file:///s.json'
+                        '$ref': 'http://example.test/current/'
+                        extension: { t: { '$ref': 'dep.json' } }
+                      }
+                    }
+                  }
+                }
+            """.trimIndent())
+            val indexedDocuments = IndexedSchemaDocuments(SchemaDocument(root, UriReference.parse("file:///root.json")))
+
+            val missing = indexedDocuments.missingDocumentUris
+            assertEquals(listOf(UriReference.parse("file:///dep.json")), missing, "refs in order $refs")
+        }
+    }
+
+    @Test
     fun resolvesAPointerWithinASchemaWithARelativeId() {
         // `other`'s `$id` resolves against the root's once, so `a` is read under sub/other.json rather than
         // sub/sub/other.json

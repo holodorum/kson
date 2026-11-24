@@ -2966,4 +2966,30 @@ class SchemaCompletionLocationTest {
         assertCompletionLabels(draft2020Schema, "{nested: {<caret>}}", setOf("nestedSibling", "inherited"))
         assertCompletionLabels(draft7Schema, "{\n  <caret>\n}", setOf("inherited"))
     }
+
+    @Test
+    fun testPropertiesBesideARefAreOfferedByTheDraftOfTheirEmbeddedResource() {
+        fun schema(documentDraftUri: String, resourceDraftUri: String) = $$"""
+            '$schema': '$$documentDraftUri'
+            properties:
+              nested:
+                '$schema': '$$resourceDraftUri'
+                '$id': 'http://example.test/nested.json'
+                '$ref': 'http://example.test/base.json'
+                properties:
+                  nestedSibling: {}
+                  .
+                .
+              base:
+                '$id': 'http://example.test/base.json'
+                properties:
+                  inherited: {}
+        """.trimIndent()
+        val draft7Uri = "http://json-schema.org/draft-07/schema#"
+        val draft2020Uri = "https://json-schema.org/draft/2020-12/schema"
+        val insideNested = "{nested: {<caret>}}"
+
+        assertCompletionLabels(schema(draft7Uri, draft2020Uri), insideNested, setOf("nestedSibling", "inherited"))
+        assertCompletionLabels(schema(draft2020Uri, draft7Uri), insideNested, setOf("inherited"))
+    }
 }
