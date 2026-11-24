@@ -647,6 +647,19 @@ enum class MessageType(
             return "Schema \"type\" must be a string or array of strings"
         }
     },
+    SCHEMA_UNRECOGNIZED_META_SCHEMA(MessageSeverity.WARNING) {
+        override fun expectedArgs(): List<String> {
+            return listOf("Meta-Schema URI", "Draft Read As", "Recognized Drafts")
+        }
+
+        override fun doFormat(parsedArgs: ParsedErrorArgs): String {
+            val metaSchemaUri = parsedArgs.getArg("Meta-Schema URI")
+            val draftReadAs = parsedArgs.getArg("Draft Read As")
+            val recognizedDrafts = parsedArgs.getArg("Recognized Drafts")
+            return "Unrecognized \"\$schema\" \"$metaSchemaUri\": this schema is read as $draftReadAs.  " +
+                    "Recognized: $recognizedDrafts"
+        }
+    },
     SCHEMA_UNUSABLE(MessageSeverity.ERROR) {
         override fun expectedArgs(): List<String> {
             return listOf("Schema Problem Location", "Schema Problem")

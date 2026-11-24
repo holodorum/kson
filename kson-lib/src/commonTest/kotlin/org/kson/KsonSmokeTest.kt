@@ -264,6 +264,27 @@ class KsonSmokeTest {
         assertEquals("1:2", result.errors[0].start.render1Based(), "the error should point at the empty value")
     }
 
+    /**
+     * A schema whose only problem is a warning, such as for an unrecognized `$schema`, still validates, and its result
+     * carries the warning
+     */
+    @Test
+    fun testParseSchema_successDespiteAWarning() {
+        val schemaKson = $$"""{"$schema": "https://json-schema.org/draft/2019-09/schema", "required": ["age"]}"""
+        val result = Kson.parseSchema(schemaKson)
+        assertIs<SchemaResult.Success>(result)
+        val warning = result.errors.single()
+        assertEquals(MessageSeverity.WARNING, warning.severity)
+        assertTrue(
+            warning.message.startsWith($$"""Unrecognized "$schema" "https://json-schema.org/draft/2019-09/schema""""),
+            warning.message
+        )
+        assertEquals(
+            listOf("Missing required properties: age"),
+            result.schemaValidator.validate("""{"name": "John"}""").map { it.message }
+        )
+    }
+
     @Test
     fun testSchemaValidator_validInput() {
         val schemaKson = """{

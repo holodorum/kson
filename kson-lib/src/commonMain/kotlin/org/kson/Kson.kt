@@ -103,7 +103,9 @@ object Kson {
     }
 
     /**
-     * Parses a Kson schema definition and returns a validator for that schema.
+     * Parses a Kson schema definition and returns a validator for that schema.  A schema with warnings but no errors
+     * still gets a validator, and the result carries the warnings, though not those about its Kson source, such as a
+     * duplicate key.
      *
      * @param schemaKson The Kson source defining a Json Schema
      * @return A SchemaValidator that can validate Kson documents against the schema
@@ -114,11 +116,11 @@ object Kson {
         val jsonSchema = schemaParseResult.jsonSchema
             ?: return SchemaResult.Failure(messages)
 
-        if (messages.isNotEmpty()) {
+        if (messages.any { it.severity == MessageSeverity.ERROR }) {
             return SchemaResult.Failure(messages)
         }
 
-        return SchemaResult.Success(SchemaValidator(jsonSchema))
+        return SchemaResult.Success(SchemaValidator(jsonSchema), messages)
     }
 
     /**
@@ -159,10 +161,12 @@ sealed class Result {
  * A [parseSchema] result
  */
 sealed class SchemaResult {
-    class Success(val schemaValidator: SchemaValidator) : SchemaResult() {
+    /** The schema is usable.  [errors] holds only warnings, as a schema with errors is a [Failure]. */
+    class Success(val schemaValidator: SchemaValidator, val errors: List<Message>) : SchemaResult() {
         override fun toString(): String = "Success"
     }
 
+    /** The schema is unusable.  [errors] holds at least one error, and may hold warnings too. */
     class Failure(val errors: List<Message>) : SchemaResult() {
         override fun toString(): String = "Failure: ${errors.size} errors"
     }

@@ -13,8 +13,8 @@ import org.kson.validation.SourceContext
  * Validates a KSON document and returns [DiagnosticMessage]s.
  *
  * If a schema is provided and parses, validation includes any schema violations in addition to the document's own
- * diagnostics. If the schema has problems of its own, it cannot validate anything: a [MessageType.SCHEMA_UNUSABLE]
- * is reported on the document.
+ * diagnostics. If the schema has errors of its own, it cannot validate anything: a [MessageType.SCHEMA_UNUSABLE]
+ * quoting the first of them is reported on the document.
  */
 internal object DiagnosticBuilder {
 
@@ -39,10 +39,10 @@ internal object DiagnosticBuilder {
         Kson.analyze(content, sourceContext.filepath, schemaValidator).errors.map { toDiagnosticMessage(it) }
 
     private fun schemaUnusableDiagnostic(schemaProblems: List<Message>): DiagnosticMessage {
-        val firstProblem = schemaProblems.first()
+        val firstError = schemaProblems.first { it.severity == MessageSeverity.ERROR }
         val message = MessageType.SCHEMA_UNUSABLE.create(
-            firstProblem.start.render1Based(),
-            firstProblem.message
+            firstError.start.render1Based(),
+            firstError.message
         )
         return DiagnosticMessage(
             message = message.toString(),

@@ -2877,7 +2877,7 @@ pub mod schema_result {
     use super::*;
 
 
-
+    /// The schema is unusable.  [errors] holds at least one error, and may hold warnings too.
     #[derive(Clone)]
     pub struct Failure {
         kotlin_ptr: KotlinPtr,
@@ -2972,7 +2972,7 @@ pub mod schema_result {
         }
     }
 
-
+    /// The schema is usable.  [errors] holds only warnings, as a schema with errors is a [Failure].
     #[derive(Clone)]
     pub struct Success {
         kotlin_ptr: KotlinPtr,
@@ -3001,16 +3001,20 @@ pub mod schema_result {
     impl Success {
         pub fn new(
             schema_validator: SchemaValidator,
+            errors: &[Message],
         ) -> Self {
             let (env, _detach_guard) = util::attach_thread_to_java_vm();
             let class = util::get_class(env, c"org/kson/SchemaResult$Success");
-            let constructor = util::get_method(env, class.as_kotlin_object(), c"<init>", c"(Lorg/kson/SchemaValidator;)V");
+            let constructor = util::get_method(env, class.as_kotlin_object(), c"<init>", c"(Lorg/kson/SchemaValidator;Ljava/util/List;)V");
 
             let schema_validator_ptr = schema_validator.to_kotlin_object();
             let schema_validator = schema_validator_ptr.as_kotlin_object();
+            let errors_ptr = util::to_kotlin_list(errors);
+            let errors = errors_ptr.as_kotlin_object();
 
             let jobject = unsafe { (**env).NewObject.unwrap()(env, class.as_kotlin_object(), constructor,
                 schema_validator,
+                errors,
             )};
             util::panic_upon_exception(env);
             Self {
@@ -3042,6 +3046,28 @@ pub mod schema_result {
             );
 
             FromKotlinObject::from_kotlin_object(result)
+        }
+
+
+        pub fn errors(
+            &self,
+        ) -> Vec<Message> {
+            let self_ptr = self.to_kotlin_object();
+            let self_obj = self_ptr.as_kotlin_object();
+
+
+            let (_, _detach_guard) = util::attach_thread_to_java_vm();
+            let result = call_jvm_function!(
+                util,
+                c"org/kson/SchemaResult$Success",
+                c"getErrors",
+                c"()Ljava/util/List;",
+                CallObjectMethod,
+                self_obj,
+
+            );
+
+            util::from_kotlin_list(result)
         }
     }
 
@@ -3554,7 +3580,9 @@ impl Kson {
         FromKotlinObject::from_kotlin_object(result)
     }
 
-    /// Parses a Kson schema definition and returns a validator for that schema.
+    /// Parses a Kson schema definition and returns a validator for that schema.  A schema with warnings but no errors
+    /// still gets a validator, and the result carries the warnings, though not those about its Kson source, such as a
+    /// duplicate key.
     ///
     /// @param schemaKson The Kson source defining a Json Schema
     /// @return A SchemaValidator that can validate Kson documents against the schema

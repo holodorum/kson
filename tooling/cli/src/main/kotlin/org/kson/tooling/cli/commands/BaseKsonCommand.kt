@@ -9,7 +9,6 @@ import com.github.ajalt.clikt.parameters.types.outputStream
 import org.kson.Kson
 import org.kson.Message
 import org.kson.SchemaResult
-import org.kson.SchemaValidator
 
 abstract class BaseKsonCommand(
     name: String? = null
@@ -60,14 +59,22 @@ abstract class BaseKsonCommand(
     }
 
     /**
-     * Returns [schema] parsed into a [SchemaValidator], or null when [schema] is null.
+     * Returns [schema] parsed, or null when [schema] is null, reporting any warnings about it.
      * An invalid non-null [schema] will exit reporting the errors that prevented parsing.
      */
-    protected fun schemaValidator(): SchemaValidator? {
+    protected fun parseSchema(): SchemaResult.Success? {
         val schemaContent = (schema ?: return null).readText()
 
         return when (val schemaResult = Kson.parseSchema(schemaContent)) {
-            is SchemaResult.Success -> schemaResult.schemaValidator
+            is SchemaResult.Success -> {
+                if (schemaResult.errors.isNotEmpty()) {
+                    echo("Warnings in schema:", err = true)
+                    schemaResult.errors.forEach { warning ->
+                        echo("  ${errorFormat(warning)}", err = true)
+                    }
+                }
+                schemaResult
+            }
             is SchemaResult.Failure -> {
                 echo("Failed to parse schema:", err = true)
                 schemaResult.errors.forEach { error ->
@@ -79,12 +86,12 @@ abstract class BaseKsonCommand(
     }
 
     /**
-     * Validates [ksonContent] against [schemaValidator], exiting on any schema validation problems, reporting those
-     * problems.  Says nothing when the document conforms: commands which transpile write their result to stdout,
+     * Validates [ksonContent] against [schema], exiting on any schema validation problems, reporting those
+     * problems.  Says nothing about a conforming document: commands which transpile write their result to stdout,
      * so anything said there on success lands in the middle of that result.
      */
     protected fun validateWithSchema(ksonContent: String) {
-        val schemaValidator = schemaValidator() ?: return
+        val schemaValidator = parseSchema()?.schemaValidator ?: return
 
         val validationErrors = schemaValidator.validate(ksonContent, getFilePath())
         if (validationErrors.isNotEmpty()) {

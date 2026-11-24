@@ -38,7 +38,7 @@ data class SchemaDocument(val value: KsonValue, val retrievalUri: UriReference? 
 class IndexedSchemaDocuments internal constructor(
     val root: SchemaDocument,
     additionalDocuments: List<SchemaDocument>,
-    private val drafts: List<SchemaDraft>
+    internal val drafts: List<SchemaDraft>
 ) {
     constructor(root: SchemaDocument, additionalDocuments: List<SchemaDocument> = emptyList()) :
         this(root, additionalDocuments, listOf(SchemaDraft.DRAFT_7, SchemaDraft.DRAFT_2020_12))
@@ -73,7 +73,13 @@ class IndexedSchemaDocuments internal constructor(
     private val idOrder =
         compareBy<Place>({ it.path.size }, { it.document }, { schemas.getValue(it).location.startOffset })
 
-    private val rootDraft: SchemaDraft = root.declaredDraft() ?: drafts.first()
+    private val rootDeclaredDraft: SchemaDraft? = root.declaredDraft()
+
+    private val rootDraft: SchemaDraft = rootDeclaredDraft ?: drafts.first()
+
+    /** [root]'s `$schema` when it names none of the [drafts] */
+    internal val unrecognizedRootMetaSchemaUri: KsonString? =
+        root.declaredMetaSchemaUri?.takeIf { rootDeclaredDraft == null }
 
     /** The base URI [root]'s value is read under: its retrieval URI without a fragment, or else empty */
     val rootBaseUri: UriReference = root.initialBaseUri
@@ -190,7 +196,7 @@ class IndexedSchemaDocuments internal constructor(
 
     /** The draft among the [drafts] whose meta-schema this document's `$schema` names, if any */
     private fun SchemaDocument.declaredDraft(): SchemaDraft? {
-        val schemaUri = (value as? KsonObject)?.propertyLookup?.get($$"$schema") as? KsonString ?: return null
+        val schemaUri = declaredMetaSchemaUri ?: return null
         val metaSchemaUri = UriReference.parse(schemaUri.value).withoutEmptyFragment()
         return drafts.find { it.metaSchemaUri == metaSchemaUri }
     }
@@ -305,6 +311,10 @@ class IndexedSchemaDocuments internal constructor(
 /** The base URI this document's root `$id` resolves against: its retrieval URI without a fragment, or else empty */
 private val SchemaDocument.initialBaseUri: UriReference
     get() = retrievalUri?.withoutFragment() ?: UriReference.parse("")
+
+/** This document's top-level `$schema` if it is a string: the URI of the meta-schema the document declares */
+private val SchemaDocument.declaredMetaSchemaUri: KsonString?
+    get() = (value as? KsonObject)?.propertyLookup?.get($$"$schema") as? KsonString
 
 /** The keywords of [schema] that apply in [draft]: a string `$ref` alone when it hides the keywords beside it */
 private fun keywordsOf(schema: KsonValue, draft: SchemaDraft): Map<String, KsonValue> {

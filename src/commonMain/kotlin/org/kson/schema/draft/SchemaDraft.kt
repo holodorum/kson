@@ -9,6 +9,7 @@ import org.kson.value.KsonString
 /**
  * A JSON Schema draft, described by its keywords, its meta-schemas and whether a `$ref` hides the keywords beside it.
  *
+ * @param name The name that messages call this draft by, such as `Draft 7`
  * @param metaSchemaUri The URI that names this draft in a schema's `$schema`
  * @param refHidesSiblings Whether a string `$ref` hides every keyword beside it.  That includes `$id`, so an `$id`
  *   beside such a `$ref` doesn't identify its schema.
@@ -20,6 +21,7 @@ import org.kson.value.KsonString
  * @throws IllegalArgumentException if two of [keywords] read the same property
  */
 internal class SchemaDraft(
+    val name: String,
     val metaSchemaUri: UriReference,
     val refHidesSiblings: Boolean,
     val supportsAnchors: Boolean,
@@ -37,6 +39,7 @@ internal class SchemaDraft(
 
     companion object {
         val DRAFT_7 = SchemaDraft(
+            name = "Draft 7",
             metaSchemaUri = UriReference.parse(KsonDraft7MetaSchema.ID),
             refHidesSiblings = true,
             supportsAnchors = false,
@@ -76,6 +79,7 @@ internal class SchemaDraft(
         )
 
         val DRAFT_2020_12 = SchemaDraft(
+            name = "Draft 2020-12",
             metaSchemaUri = UriReference.parse(KsonDraft202012MetaSchemas.ID),
             refHidesSiblings = false,
             supportsAnchors = true,

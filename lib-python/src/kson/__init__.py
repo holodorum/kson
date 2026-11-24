@@ -1306,20 +1306,25 @@ class SchemaResult(KotlinObjectBase):
                 return _from_kotlin_object(_SchemaResult_Success, jni_ref)
 
 class _SchemaResult_Success(SchemaResult):
+    """The schema is usable.  [errors] holds only warnings, as a schema with errors is a [Failure]."""
 
 
     def __init__(
         self,
         schema_validator: SchemaValidator,
+        errors: List[Message],
     ):
         if schema_validator is None:
             raise ValueError("`schema_validator` cannot be None")
+        if errors is None:
+            raise ValueError("`errors` cannot be None")
         self._jni_ref = _construct(
             b"org/kson/SchemaResult$Success",
-            b"(Lorg/kson/SchemaValidator;)V",
+            b"(Lorg/kson/SchemaValidator;Ljava/util/List;)V",
             [
 
                 schema_validator._jni_ref,
+                _to_kotlin_list(errors),
             ]
         )
 
@@ -1339,10 +1344,28 @@ class _SchemaResult_Success(SchemaResult):
         )
 
         return cast(Any, (lambda x0: _from_kotlin_object(SchemaValidator, x0))(result))
+
+    def errors(
+        self,
+    ) -> List[Message]:
+
+
+        jni_ref = self._jni_ref
+        result = _call_method(
+            b"org/kson/SchemaResult$Success",
+            jni_ref,
+            b"getErrors",
+            b"()Ljava/util/List;",
+            "ObjectMethod",
+            []
+        )
+
+        return cast(Any, (lambda x0: _from_kotlin_list(x0, lambda x1: _from_kotlin_object(Message, x1)))(result))
 SchemaResult.Success = _SchemaResult_Success
 
 
 class _SchemaResult_Failure(SchemaResult):
+    """The schema is unusable.  [errors] holds at least one error, and may hold warnings too."""
 
 
     def __init__(
@@ -1599,7 +1622,9 @@ class Kson(KotlinObjectBase):
         schema_kson: str,
 
     ) -> SchemaResult:
-        """Parses a Kson schema definition and returns a validator for that schema.
+        """Parses a Kson schema definition and returns a validator for that schema.  A schema with warnings but no errors
+        still gets a validator, and the result carries the warnings, though not those about its Kson source, such as a
+        duplicate key.
 
         @param schemaKson The Kson source defining a Json Schema
         @return A SchemaValidator that can validate Kson documents against the schema

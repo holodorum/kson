@@ -20,7 +20,11 @@ enum class SubCommands{
 }
 
 sealed class OutputExpectation {
-    data class Success(val message: String) : OutputExpectation()
+    /**
+     * A success writing [message], whose report on stderr mentions each of [stderrFragments], as a success can still
+     * warn there
+     */
+    data class Success(val message: String, val stderrFragments: List<String> = emptyList()) : OutputExpectation()
     data class Failure(val message: String) : OutputExpectation()
 
     /**
@@ -72,6 +76,7 @@ class CommandLineInterfaceTest {
                 assertEquals(expectedOutput.message, result.stderr)
             }
             is OutputExpectation.Success -> {
+                assertEquals(0, result.statusCode, "expected a successful command, stderr was: ${result.stderr}")
                 assertEquals(expectedOutput.message, outputFile.readText())
                 /**
                  * On success, a command's output to `-o`/[outputFile] must be identical to what it would pipe to
@@ -80,6 +85,12 @@ class CommandLineInterfaceTest {
                  * direct to stdout
                  */
                 assertEquals("", result.stdout, "a successful command must not say anything extra on stdout")
+                expectedOutput.stderrFragments.forEach {
+                    assertTrue(
+                        result.stderr.contains(it),
+                        "expected stderr to mention \"$it\", stderr was: ${result.stderr}"
+                    )
+                }
             }
             is OutputExpectation.FailureMentioning -> {
                 assertEquals(1, result.statusCode, "expected a failing command, stderr was: ${result.stderr}")
@@ -739,6 +750,71 @@ class CommandLineInterfaceTest {
             input = """{ name: "Alice" }""",
             expectedOutput = OutputExpectation.FailureMentioning(listOf("Failed to parse schema")),
             schema = "{ type: object"
+        )
+    }
+
+    /** [requiresAgeSchema], but naming a meta-schema KSON does not recognize, which it warns about */
+    private val requiresAgeSchemaWithAWarning = $$"""
+        {
+          '$schema': 'https://json-schema.org/draft/2019-09/schema'
+          type: object
+          properties: { name: { type: string } }
+          required: ["age"]
+        }
+    """.trimIndent()
+
+    /** The start of the report of [requiresAgeSchemaWithAWarning]'s warning, headed as the schema's */
+    private val warningAboutTheSchema = "Warnings in schema:\n  [WARNING] Unrecognized \"\$schema\""
+
+    /**
+     * A warning about the schema, such as for an unrecognized `$schema`, is reported as the schema's, and does not
+     * stop the command from applying the schema to the document.
+     */
+    @Test
+    fun testSchemaWithAnUnrecognizedMetaSchemaUriIsStillUsed() {
+        assertCommand(
+            subCommand = SubCommands.VALIDATE,
+            input = """{ name: "Alice" }""",
+            expectedOutput = OutputExpectation.FailureMentioning(
+                listOf(warningAboutTheSchema, "Missing required properties: age")
+            ),
+            schema = requiresAgeSchemaWithAWarning
+        )
+    }
+
+    /**
+     * `validate` is as strict about the schema's warnings as about the document's own, so a document that conforms
+     * to a schema with a warning fails
+     */
+    @Test
+    fun testValidateFailsOnAWarningAboutTheSchema() {
+        assertCommand(
+            subCommand = SubCommands.VALIDATE,
+            input = """{ name: "Alice", age: 30 }""",
+            expectedOutput = OutputExpectation.FailureMentioning(listOf(warningAboutTheSchema)),
+            schema = requiresAgeSchemaWithAWarning
+        )
+    }
+
+    /**
+     * Transpiling tolerates the schema's warnings as it does the document's own, but reports them, on stderr so
+     * they stay out of the result
+     */
+    @Test
+    fun testJsonReportsAWarningAboutTheSchemaAndStillTranspiles() {
+        assertCommand(
+            subCommand = SubCommands.JSON,
+            input = """{ name: "Alice", age: 30 }""",
+            expectedOutput = OutputExpectation.Success(
+                """
+                    {
+                      "name": "Alice",
+                      "age": 30
+                    }
+                """.trimIndent(),
+                stderrFragments = listOf(warningAboutTheSchema)
+            ),
+            schema = requiresAgeSchemaWithAWarning
         )
     }
 }

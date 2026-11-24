@@ -23,6 +23,7 @@ class SchemaDraftTest {
 
     /** Draft 7 without `maximum`, so a schema compiled in this draft accepts values above its `maximum`. */
     private val withoutMaximum = SchemaDraft(
+        name = "Draft 7 without maximum",
         metaSchemaUri = UriReference.parse("urn:example:without-maximum"),
         refHidesSiblings = true,
         supportsAnchors = false,
@@ -32,6 +33,7 @@ class SchemaDraftTest {
 
     /** Draft 7 where a `$ref` keeps the keywords beside it. */
     private val keepsSiblings = SchemaDraft(
+        name = "Draft 7 keeping siblings",
         metaSchemaUri = UriReference.parse("urn:example:keeps-siblings"),
         refHidesSiblings = false,
         supportsAnchors = false,
@@ -153,6 +155,7 @@ class SchemaDraftTest {
         val metaSchema =
             SchemaDocument(value($$"{ '$id': 'urn:example:meta', const: 7 }"), UriReference.parse("urn:example:meta"))
         val draft = SchemaDraft(
+            name = "Nested draft",
             metaSchemaUri = UriReference.parse("urn:example:nested-draft"),
             refHidesSiblings = true,
             supportsAnchors = false,
@@ -426,6 +429,28 @@ class SchemaDraftTest {
     }
 
     @Test
+    fun theWarningForARootWhoseSchemaNamesNoDraftListsTheDraftsItCanName() {
+        val root = SchemaDocument(value($$"'$schema': 'urn:example:unknown'"))
+        val indexedDocuments = IndexedSchemaDocuments(root, emptyList(), listOf(withoutMaximum, keepsSiblings))
+        val messageSink = MessageSink()
+
+        SchemaParser.parseSchemaRoot(indexedDocuments, messageSink)
+
+        val recognizedDrafts = """Draft 7 without maximum ("urn:example:without-maximum"), """ +
+            """Draft 7 keeping siblings ("urn:example:keeps-siblings")"""
+        assertEquals(
+            listOf(
+                MessageType.SCHEMA_UNRECOGNIZED_META_SCHEMA.create(
+                    "urn:example:unknown",
+                    "Draft 7 without maximum",
+                    recognizedDrafts
+                )
+            ),
+            messageSink.loggedMessages().map { it.message }
+        )
+    }
+
+    @Test
     fun aSuppliedDocumentIsReadInTheDraftItsSchemaNamesAndOtherwiseInTheRootsDraft() {
         // `maximum` sits beside a `$ref`, which hides it in Draft 7 and keeps it in Draft 2020-12
         fun bounded(schemaLine: String) = SchemaDocument(
@@ -535,6 +560,7 @@ class SchemaDraftTest {
     fun aDraftWhoseKeywordsReadOneNameTwiceFails() {
         assertFailsWith<IllegalArgumentException> {
             SchemaDraft(
+                name = "Two minimums",
                 metaSchemaUri = UriReference.parse("urn:example:two-minimums"),
                 refHidesSiblings = true,
                 supportsAnchors = false,

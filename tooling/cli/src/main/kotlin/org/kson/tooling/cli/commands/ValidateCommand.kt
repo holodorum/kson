@@ -53,9 +53,11 @@ class ValidateCommand : BaseKsonCommand() {
             throw ProgramResult(1)
         }
 
-        val analysis = Kson.analyze(ksonContent, getFilePath(), schemaValidator())
+        val schema = parseSchema()
+        val analysis = Kson.analyze(ksonContent, getFilePath(), schema?.schemaValidator)
+        val foundNothing = analysis.errors.isEmpty() && schema?.errors.isNullOrEmpty()
         var outputString = ""
-        if (analysis.errors.isEmpty()) {
+        if (foundNothing) {
             outputString += "✓ No errors or warnings found"
         } else {
             analysis.errors.forEach { outputString += errorFormat(it) }
@@ -68,10 +70,11 @@ class ValidateCommand : BaseKsonCommand() {
             }
         }
 
-        if (analysis.errors.isEmpty()) {
+        if (foundNothing) {
             writeOutput(outputString)
         } else {
-            echo(outputString.trimEnd(), err = true)
+            // parseSchema has already reported the schema's warnings, which may be all there is
+            if (outputString.isNotEmpty()) echo(outputString.trimEnd(), err = true)
             throw ProgramResult(1)
         }
     }

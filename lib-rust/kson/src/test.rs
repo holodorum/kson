@@ -224,6 +224,26 @@ fn test_kson_validate_schema() {
 }
 
 #[test]
+fn test_kson_parse_schema_success_carries_its_warnings() {
+    let result = Kson::parse_schema(
+        r#"{ "$schema": "https://json-schema.org/draft/2019-09/schema", "required": ["age"] }"#,
+    );
+    let Ok(success) = result else {
+        panic!("expected success, found failure")
+    };
+
+    let warnings = success.errors();
+    assert_eq!(1, warnings.len(), "expected one warning, got: {}", messages_to_string(&warnings));
+    assert!(matches!(warnings[0].severity(), MessageSeverity::Warning));
+    assert!(warnings[0].message().starts_with(r#"Unrecognized "$schema""#));
+
+    // the schema still validates
+    let errors = success.schema_validator().validate(r#"{ "name": "John" }"#, None);
+    let messages: Vec<String> = errors.iter().map(|error| error.message()).collect();
+    assert_eq!(vec!["Missing required properties: age".to_string()], messages);
+}
+
+#[test]
 fn test_kson_analyze_against_a_schema() {
     let result = Kson::parse_schema(r#"{ "type": "object", "required": ["age"] }"#);
     let Ok(success) = result else {

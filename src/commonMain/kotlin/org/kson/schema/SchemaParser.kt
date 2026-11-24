@@ -11,11 +11,14 @@ import org.kson.value.*
  */
 internal object SchemaParser {
     /**
-     * Parse the root of [indexedDocuments] as a complete JSON Schema, not a sub-schema.
+     * Parse the root of [indexedDocuments] as a complete JSON Schema, not a sub-schema.  Warns when the root's
+     * `$schema` names none of the drafts.
      * See [parseSchemaElement] for sub-schema parsing.
      */
-    fun parseSchemaRoot(indexedDocuments: IndexedSchemaDocuments, messageSink: MessageSink): JsonSchema? =
-        parseSchemaElement(indexedDocuments.rootSchema, messageSink)
+    fun parseSchemaRoot(indexedDocuments: IndexedSchemaDocuments, messageSink: MessageSink): JsonSchema? {
+        reportUnrecognizedRootMetaSchema(indexedDocuments, messageSink)
+        return parseSchemaElement(indexedDocuments.rootSchema, messageSink)
+    }
 
     /**
      *  Parse [schema] as a JSON sub-schema. See [parseSchemaRoot] for full schema parsing.
@@ -188,6 +191,17 @@ internal object SchemaParser {
             }
         }
     }
+}
+
+/** Only the root document is warned about, because a message's location cannot say which document it is in */
+private fun reportUnrecognizedRootMetaSchema(indexedDocuments: IndexedSchemaDocuments, messageSink: MessageSink) {
+    val metaSchemaUri = indexedDocuments.unrecognizedRootMetaSchemaUri ?: return
+    val draftReadAs = indexedDocuments.rootSchema.draft.name
+    val recognizedDrafts = indexedDocuments.drafts.joinToString(", ") { "${it.name} (\"${it.metaSchemaUri}\")" }
+    messageSink.error(
+        metaSchemaUri.location,
+        SCHEMA_UNRECOGNIZED_META_SCHEMA.create(metaSchemaUri.value, draftReadAs, recognizedDrafts)
+    )
 }
 
 /** Reports an `$id` that isn't a string, as JSON Schema requires it to be one */

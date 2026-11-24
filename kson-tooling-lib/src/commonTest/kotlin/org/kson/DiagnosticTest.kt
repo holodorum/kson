@@ -1,5 +1,6 @@
 package org.kson
 
+import org.kson.parser.messages.MessageType
 import org.kson.tooling.DiagnosticMessage
 import org.kson.tooling.DiagnosticSeverity
 import org.kson.tooling.KsonTooling
@@ -229,6 +230,38 @@ class DiagnosticTest {
         assertEquals(
             2, diagnostics.size,
             "expected the document's schema violations to be reported, got: $diagnostics"
+        )
+    }
+
+    /**
+     * A schema whose only problem is a warning, such as for an unrecognized `$schema`, still validates the
+     * documents it governs, and the warning is not reported on them.
+     */
+    @Test
+    fun testSchemaWithAnUnrecognizedMetaSchemaUriIsStillUsed() {
+        val schema = $$"""
+            '$schema': 'https://json-schema.org/draft/2019-09/schema'
+            properties: { age: { type: number } }
+        """.trimIndent()
+        val diagnostics = validateDocument("""{ age: "x" }""", schema)
+        val typeMismatch = MessageType.SCHEMA_VALUE_TYPE_MISMATCH.create("age", "number", "string")
+        assertEquals(
+            listOf(DiagnosticMessage(typeMismatch.toString(), DiagnosticSeverity.ERROR, Range(0, 8, 0, 9))),
+            diagnostics
+        )
+    }
+
+    /**
+     * The report of an unusable schema quotes the error that makes it unusable, not a warning before it
+     */
+    @Test
+    fun testUnusableSchemaIsReportedByItsFirstError() {
+        val schemaWithDuplicateKeyThenBadEscape = """{ type: object, type: object, title: "\q" }"""
+        val diagnostics = validateDocument("key: \"value\"", schemaWithDuplicateKeyThenBadEscape)
+        val unusable = MessageType.SCHEMA_UNUSABLE.create("1:39", MessageType.STRING_BAD_ESCAPE.create("\\q").toString())
+        assertEquals(
+            listOf(DiagnosticMessage(unusable.toString(), DiagnosticSeverity.ERROR, Range(0, 0, 0, 0))),
+            diagnostics
         )
     }
 

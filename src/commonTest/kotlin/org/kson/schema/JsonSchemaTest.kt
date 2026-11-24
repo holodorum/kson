@@ -8,6 +8,7 @@ import org.kson.parser.MessageSink
 import org.kson.parser.messages.MessageType
 import org.kson.validation.SourceContext
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
@@ -125,10 +126,9 @@ interface JsonSchemaTest {
             messageSink
         )
 
-        val parseMessages = messageSink.loggedMessages()
-        assertTrue(
-            parseMessages.isEmpty(), "Should have no error messages when parsing succeeds, got: " +
-                    parseMessages.joinToString("\n") + message
+        assertFalse(
+            messageSink.hasErrors(), "Should have no error messages when parsing succeeds, got: " +
+                    messageSink.loggedMessages().joinToString("\n") + message
         )
         assertNotNull(jsonSchema, "Should produce a non-null schema when parsing succeeds $message")
 

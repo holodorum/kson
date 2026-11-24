@@ -101,7 +101,7 @@ if (yamlResult instanceof Result.Success) {
 
 - **`parseSchema(schemaKson: string): SchemaResult`**
   Parses and validates a KSON schema. Returns a `SchemaResult` which can be:
-  - `SchemaResult.Success` with a `schemaValidator` for validating KSON documents
+  - `SchemaResult.Success` with a `schemaValidator` for validating KSON documents, and the schema's warnings
   - `SchemaResult.Failure` with error messages
 
 ### Helper Types
@@ -115,7 +115,8 @@ if (yamlResult instanceof Result.Success) {
   - `Result.Failure`: Contains `errors` property with the errors
 
 - **`SchemaResult`**: Success/Failure for schema parsing
-  - `SchemaResult.Success`: Contains `schemaValidator` for validating documents
+  - `SchemaResult.Success`: Contains `schemaValidator` for validating documents, and `errors` property with the
+    schema's warnings
   - `SchemaResult.Failure`: Contains `errors` property with the errors
 
 - **`Message`**: A single error or warning

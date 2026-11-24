@@ -3,7 +3,10 @@ package org.kson.schema
 import org.kson.parser.Coordinates
 import org.kson.parser.Location
 import org.kson.parser.LoggedMessage
+import org.kson.parser.MessageSink
+import org.kson.parser.messages.MessageSeverity
 import org.kson.parser.messages.MessageType
+import org.kson.uri.UriReference
 import kotlin.test.*
 import org.kson.KsonCore
 
@@ -883,6 +886,75 @@ class SchemaParserTest : JsonSchemaTest {
     @Test
     fun testNonStringIdReportsError() {
         assertSchemaHasValidationErrors($$"""'$id': 42""", listOf(MessageType.SCHEMA_STRING_REQUIRED))
+    }
+
+    @Test
+    fun testUnrecognizedMetaSchemaUriIsWarnedOfAtItsValue() {
+        val result = KsonCore.parseSchema($$"""'$schema': 'https://json-schema.org/draft/2019-09/schema'""")
+
+        val warning = result.messages.single()
+        assertEquals(Location(Coordinates(0, 12), Coordinates(0, 56), 12, 56), warning.location)
+        assertEquals(MessageType.SCHEMA_UNRECOGNIZED_META_SCHEMA, warning.message.type)
+        assertEquals(MessageSeverity.WARNING, warning.message.type.severity)
+        assertEquals(
+            $$"""Unrecognized "$schema" "https://json-schema.org/draft/2019-09/schema": this schema is read as """ +
+                """Draft 7.  Recognized: Draft 7 ("http://json-schema.org/draft-07/schema"), """ +
+                """Draft 2020-12 ("https://json-schema.org/draft/2020-12/schema")""",
+            warning.message.toString()
+        )
+        assertNotNull(result.jsonSchema)
+    }
+
+    @Test
+    fun testSchemaWithAnUnrecognizedMetaSchemaUriIsReadAsDraft7() {
+        // Draft 7's `$ref` hides the `maximum` beside it, where Draft 2019-09's would apply it
+        val schema = $$"""
+            '$schema': 'https://json-schema.org/draft/2019-09/schema'
+            '$ref': '#/definitions/number'
+            maximum: 1
+            definitions:
+              number:
+                type: number
+        """.trimIndent()
+        assertKsonEnforcesSchema("7", schema, true)
+        assertKsonEnforcesSchema("seven", schema, false)
+    }
+
+    @Test
+    fun testRecognizedOrAbsentMetaSchemaUriIsNotWarnedOf() {
+        val sources = listOf(
+            $$"'$schema': 'http://json-schema.org/draft-07/schema#'",
+            $$"'$schema': 'http://json-schema.org/draft-07/schema'",
+            $$"'$schema': 'https://json-schema.org/draft/2020-12/schema'",
+            $$"'$schema': 'https://json-schema.org/draft/2020-12/schema#'",
+            "type: object"
+        )
+        for (source in sources) {
+            assertEquals(emptyList(), KsonCore.parseSchema(source).messages, source)
+        }
+    }
+
+    @Test
+    fun testNonStringMetaSchemaUriIsNotWarnedOf() {
+        // unlike a non-string `$id`, not an error: that would make a usable schema unusable, and `$schema` only warns
+        assertEquals(emptyList(), KsonCore.parseSchema($$"'$schema': 7").messages)
+    }
+
+    @Test
+    fun testReferencedDocumentWithAnUnrecognizedMetaSchemaUriIsNotWarnedOf() {
+        // a message's location names no document, so a warning inside other.json would read as a place in the root
+        val root = SchemaDocument(
+            assertNotNull(KsonCore.parseToAst($$"'$ref': 'other.json'").ksonValue),
+            UriReference.parse("https://example.test/root.json")
+        )
+        val other = SchemaDocument(
+            assertNotNull(KsonCore.parseToAst($$"'$schema': 'https://json-schema.org/draft/2019-09/schema'").ksonValue),
+            UriReference.parse("https://example.test/other.json")
+        )
+        val messageSink = MessageSink()
+
+        assertNotNull(SchemaParser.parseSchemaRoot(IndexedSchemaDocuments(root, listOf(other)), messageSink))
+        assertEquals(emptyList(), messageSink.loggedMessages())
     }
 
     @Test

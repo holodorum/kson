@@ -533,6 +533,21 @@ required: [name]"""
     assert len(errors) > 0
 
 
+def test_parse_schema_success_carries_its_warnings():
+    result = Kson.parse_schema("""'$schema': 'https://json-schema.org/draft/2019-09/schema'
+required: [age]""")
+    assert isinstance(result, SchemaResult.Success)
+
+    warnings = result.errors()
+    assert len(warnings) == 1
+    assert warnings[0].severity() == MessageSeverity.WARNING
+    assert warnings[0].message().startswith('Unrecognized "$schema"')
+
+    # the schema still validates
+    errors = result.schema_validator().validate("name: John", None)
+    assert [error.message() for error in errors] == ["Missing required properties: age"]
+
+
 def test_parse_schema_failure():
     result = Kson.parse_schema("type: [invalid")
     assert isinstance(result, SchemaResult.Failure)
@@ -673,14 +688,14 @@ def test_result_failure_direct_construction():
 
 
 def test_schema_result_success_direct_construction():
-    # Get a real SchemaValidator from a successful parse
-    result = Kson.parse_schema("type: object")
+    # Get a real SchemaValidator and warning from a successful parse
+    result = Kson.parse_schema("'$schema': 'https://json-schema.org/draft/2019-09/schema'")
     assert isinstance(result, SchemaResult.Success)
-    validator = result.schema_validator()
 
-    # Reconstruct a Success from that validator
-    success = SchemaResult.Success(validator)
+    # Reconstruct a Success from them
+    success = SchemaResult.Success(result.schema_validator(), result.errors())
     assert success.schema_validator() is not None
+    assert len(success.errors()) == 1
 
 
 def test_schema_result_failure_direct_construction():
