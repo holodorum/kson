@@ -92,4 +92,44 @@ class SubschemaTest {
             subschemas.map { it.keyword to it.applies }
         )
     }
+
+    @Test
+    fun subschemasOfPrefixItemsAndItemsNameWhereEachApply() {
+        val root = kson(
+            $$"""
+                {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "prefixItems": [{ "type": "string" }, { "type": "number" }],
+                  "items": { "type": "boolean" }
+                }
+            """.trimIndent()
+        )
+
+        val subschemas = IndexedSchemaDocuments(SchemaDocument(root)).resolvedRootSchema.subschemas
+
+        assertEquals(
+            listOf(
+                "prefixItems" to Applies.Item(0),
+                "prefixItems" to Applies.Item(1),
+                "items" to Applies.ItemsFrom(2)
+            ),
+            subschemas.map { it.keyword to it.applies }
+        )
+    }
+
+    @Test
+    fun subschemaOfItemsWithoutPrefixItemsAppliesFromTheFirstItem() {
+        val root = kson(
+            $$"""
+                {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "items": { "type": "boolean" }
+                }
+            """.trimIndent()
+        )
+
+        val subschemas = IndexedSchemaDocuments(SchemaDocument(root)).resolvedRootSchema.subschemas
+
+        assertEquals(listOf("items" to Applies.ItemsFrom(0)), subschemas.map { it.keyword to it.applies })
+    }
 }

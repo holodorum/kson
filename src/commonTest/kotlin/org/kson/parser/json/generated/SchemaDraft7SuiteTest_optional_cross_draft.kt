@@ -118,11 +118,7 @@ class SchemaDraft7SuiteTest_optional_cross_draft : JsonSchemaTest {
      *     "refs to future drafts are processed as future drafts (2020) -> first item not a string is invalid"
      *
      * Test ID: "optional/cross-draft::refs to future drafts are processed as future drafts (2020)::first item not a string is invalid"
-     *
-     * TODO implement the schema functionality under test, then run this test by removing its
-     *   exclusion entry from [org.kson.jsonsuite.schemaTestSuiteExclusions]
      */
-    @Ignore
     @Test
     fun jsonSchemaSuiteTest_3() {
         

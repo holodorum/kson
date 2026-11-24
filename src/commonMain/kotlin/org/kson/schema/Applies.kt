@@ -49,12 +49,12 @@ sealed interface Applies {
     /** `propertyNames`: validates the name of each of the instance's properties. */
     data object PropertyNames : Applies
 
-    /** A list of `items`: the subschema at [index] validates the instance's item at the same index. */
+    /** `prefixItems` and a list of `items`: the subschema at [index] validates the instance's item at that index. */
     data class Item(val index: Int) : Applies
 
     /**
-     * A single `items` schema, and `additionalItems` after a list of `items`: validates each of the instance's items
-     * from index [start] on.
+     * A single `items` schema, which follows any `prefixItems`, and `additionalItems` after a list of `items`:
+     * validates each of the instance's items from index [start] on.
      */
     data class ItemsFrom(val start: Int) : Applies
 

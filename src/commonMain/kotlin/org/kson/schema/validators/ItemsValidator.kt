@@ -9,29 +9,32 @@ import org.kson.schema.JsonArrayValidator
 import org.kson.schema.JsonSchema
 import org.kson.validation.SourceContext
 
-internal class ItemsValidator(private val itemsValidator: LeadingItemsValidator, private val additionalItemsValidator: AdditionalItemsValidator?) : JsonArrayValidator() {
+internal class ItemsValidator(
+    private val leadingItemsValidator: LeadingItemsValidator,
+    private val remainingItemsValidator: RemainingItemsValidator?
+) : JsonArrayValidator() {
 
     override fun validateArray(node: KsonList, messageSink: MessageSink, sourceContext: SourceContext) {
-        val validatedCount = itemsValidator.validateArray(node, messageSink, sourceContext)
+        val validatedCount = leadingItemsValidator.validateArray(node, messageSink, sourceContext)
         val remainingItems = if (validatedCount < node.elements.size) {
             node.elements.subList(validatedCount, node.elements.size)
         } else {
             emptyList()
         }
-        additionalItemsValidator?.validateArray(remainingItems, node.elements.size, node.location, messageSink, sourceContext)
+        remainingItemsValidator?.validateArray(remainingItems, node.elements.size, node.location, messageSink, sourceContext)
     }
 }
 
 internal sealed interface LeadingItemsValidator {
     /**
-     * Validates the leading items and returns the tuple length, the index from which `additionalItems` applies.
+     * Validates the leading items and returns the tuple length, the index from which the remaining items start.
      */
     fun validateArray(list: KsonList, messageSink: MessageSink, sourceContext: SourceContext): Int
 }
 
 /**
- * Validates the item at each index against the schema at that index in [schemas].  [schemas] holds null where an
- * `items` schema doesn't compile, and the item at that index isn't validated.
+ * Validates the item at each index against the schema at that index in [schemas].  [schemas] holds null where a
+ * schema doesn't compile, and the item at that index isn't validated.
  */
 internal data class LeadingItemsTupleValidator(private val schemas: List<JsonSchema?>) : LeadingItemsValidator {
     override fun validateArray(list: KsonList, messageSink: MessageSink, sourceContext: SourceContext): Int {
@@ -54,20 +57,20 @@ internal data class LeadingItemsSchemaValidator(private val jsonSchema: JsonSche
     }
 }
 
-internal sealed interface AdditionalItemsValidator {
+internal sealed interface RemainingItemsValidator {
     fun validateArray(remainingItems: List<KsonValue>, actualCount: Int, location: Location, messageSink: MessageSink, sourceContext: SourceContext)
 }
-internal data class AdditionalItemsBooleanValidator(val allowed: Boolean, private val tupleLength: Int): AdditionalItemsValidator {
+internal data class RemainingItemsBooleanValidator(val allowed: Boolean, private val tupleLength: Int): RemainingItemsValidator {
     override fun validateArray(remainingItems: List<KsonValue>, actualCount: Int, location: Location, messageSink: MessageSink, sourceContext: SourceContext) {
         if (!allowed && remainingItems.isNotEmpty()) {
-            messageSink.error(location, MessageType.SCHEMA_ADDITIONAL_ITEMS_NOT_ALLOWED.create(
+            messageSink.error(location, MessageType.SCHEMA_REMAINING_ITEMS_NOT_ALLOWED.create(
                 tupleLength.toString(),
                 actualCount.toString()
             ))
         }
     }
 }
-internal data class AdditionalItemsSchemaValidator(val schema: JsonSchema): AdditionalItemsValidator {
+internal data class RemainingItemsSchemaValidator(val schema: JsonSchema): RemainingItemsValidator {
     override fun validateArray(remainingItems: List<KsonValue>, actualCount: Int, location: Location, messageSink: MessageSink, sourceContext: SourceContext) {
         remainingItems.forEach {
             schema.validate(it, messageSink, sourceContext)

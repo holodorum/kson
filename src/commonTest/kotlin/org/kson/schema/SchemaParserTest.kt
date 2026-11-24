@@ -213,6 +213,51 @@ class SchemaParserTest : JsonSchemaTest {
     }
 
     @Test
+    fun testParseSchemaWithPrefixItems() {
+        assertValidObjectSchema($$"""
+            {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "prefixItems": [{"type": "string"}, true],
+                "items": false
+            }
+        """)
+    }
+
+    @Test
+    fun testParseSchemaWithNonArrayPrefixItems() {
+        assertSchemaHasValidationErrors(
+            $$"""
+                {
+                    "$schema": "https://json-schema.org/draft/2020-12/schema",
+                    "prefixItems": {"type": "string"}
+                }
+            """,
+            listOf(MessageType.SCHEMA_ARRAY_REQUIRED)
+        )
+    }
+
+    @Test
+    fun testParseSchemaWithPrefixItemsIgnoredByDraft7() {
+        // Draft 7 has no `prefixItems`, so it neither reports a malformed one nor applies a valid one
+        assertValidObjectSchema($$"""
+            {
+                "$schema": "http://json-schema.org/draft-07/schema#",
+                "prefixItems": {"type": "string"}
+            }
+        """)
+        assertKsonEnforcesSchema(
+            "[1]",
+            $$"""
+                {
+                    "$schema": "http://json-schema.org/draft-07/schema#",
+                    "prefixItems": [false]
+                }
+            """,
+            true
+        )
+    }
+
+    @Test
     fun testParseSchemaWithContainsBounds() {
         assertValidObjectSchema($$"""
             {

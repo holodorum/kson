@@ -1,7 +1,6 @@
 package org.kson.parser.json.generated
 
 import org.kson.schema.JsonSchemaTest
-import kotlin.test.Ignore
 import kotlin.test.Test
 
 /**
@@ -1482,11 +1481,7 @@ class SchemaDraft2020_12SuiteTest_uniqueItems : JsonSchemaTest {
      *     "uniqueItems with prefixItems and items=false -> [false, true] from items array is valid"
      *
      * Test ID: "uniqueItems::uniqueItems with prefixItems and items=false::[false, true] from items array is valid"
-     *
-     * TODO implement the schema functionality under test, then run this test by removing its
-     *   exclusion entry from [org.kson.jsonsuite.schemaTestSuiteExclusions]
      */
-    @Ignore
     @Test
     fun jsonSchemaSuiteTest_48() {
         
@@ -1521,11 +1516,7 @@ class SchemaDraft2020_12SuiteTest_uniqueItems : JsonSchemaTest {
      *     "uniqueItems with prefixItems and items=false -> [true, false] from items array is valid"
      *
      * Test ID: "uniqueItems::uniqueItems with prefixItems and items=false::[true, false] from items array is valid"
-     *
-     * TODO implement the schema functionality under test, then run this test by removing its
-     *   exclusion entry from [org.kson.jsonsuite.schemaTestSuiteExclusions]
      */
-    @Ignore
     @Test
     fun jsonSchemaSuiteTest_49() {
         
@@ -1946,11 +1937,7 @@ class SchemaDraft2020_12SuiteTest_uniqueItems : JsonSchemaTest {
      *     "uniqueItems=false with prefixItems and items=false -> [false, true] from items array is valid"
      *
      * Test ID: "uniqueItems::uniqueItems=false with prefixItems and items=false::[false, true] from items array is valid"
-     *
-     * TODO implement the schema functionality under test, then run this test by removing its
-     *   exclusion entry from [org.kson.jsonsuite.schemaTestSuiteExclusions]
      */
-    @Ignore
     @Test
     fun jsonSchemaSuiteTest_61() {
         
@@ -1985,11 +1972,7 @@ class SchemaDraft2020_12SuiteTest_uniqueItems : JsonSchemaTest {
      *     "uniqueItems=false with prefixItems and items=false -> [true, false] from items array is valid"
      *
      * Test ID: "uniqueItems::uniqueItems=false with prefixItems and items=false::[true, false] from items array is valid"
-     *
-     * TODO implement the schema functionality under test, then run this test by removing its
-     *   exclusion entry from [org.kson.jsonsuite.schemaTestSuiteExclusions]
      */
-    @Ignore
     @Test
     fun jsonSchemaSuiteTest_62() {
         
@@ -2024,11 +2007,7 @@ class SchemaDraft2020_12SuiteTest_uniqueItems : JsonSchemaTest {
      *     "uniqueItems=false with prefixItems and items=false -> [false, false] from items array is valid"
      *
      * Test ID: "uniqueItems::uniqueItems=false with prefixItems and items=false::[false, false] from items array is valid"
-     *
-     * TODO implement the schema functionality under test, then run this test by removing its
-     *   exclusion entry from [org.kson.jsonsuite.schemaTestSuiteExclusions]
      */
-    @Ignore
     @Test
     fun jsonSchemaSuiteTest_63() {
         
@@ -2063,11 +2042,7 @@ class SchemaDraft2020_12SuiteTest_uniqueItems : JsonSchemaTest {
      *     "uniqueItems=false with prefixItems and items=false -> [true, true] from items array is valid"
      *
      * Test ID: "uniqueItems::uniqueItems=false with prefixItems and items=false::[true, true] from items array is valid"
-     *
-     * TODO implement the schema functionality under test, then run this test by removing its
-     *   exclusion entry from [org.kson.jsonsuite.schemaTestSuiteExclusions]
      */
-    @Ignore
     @Test
     fun jsonSchemaSuiteTest_64() {
         

@@ -67,9 +67,8 @@ class SchemaKeywordTest {
                 """"patternProperties": { "^p": PROBE }""",
                 """"additionalProperties": PROBE""",
                 """"items": PROBE""",
-                // Uncomment once `prefixItems` lands
-                //  """"prefixItems": [PROBE]""",
-                //  """"prefixItems": [], "items": PROBE""",
+                """"prefixItems": [PROBE]""",
+                """"prefixItems": [], "items": PROBE""",
                 """"contains": PROBE""",
                 """"allOf": [PROBE]""",
                 """"anyOf": [PROBE]""",

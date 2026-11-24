@@ -91,9 +91,7 @@ internal class SchemaDraft(
                 IntegerKeyword("maxLength", ::MaxLengthValidator),
                 PatternKeyword,
                 EnumKeyword,
-                SubschemaKeyword("items", Applies.ItemsFrom(0)) {
-                    ItemsValidator(LeadingItemsSchemaValidator(it), additionalItemsValidator = null)
-                },
+                PrefixItemsKeyword,
                 ContainsKeyword,
                 IntegerKeyword("minItems", ::MinItemsValidator),
                 IntegerKeyword("maxItems", ::MaxItemsValidator),

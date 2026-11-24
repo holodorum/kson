@@ -240,11 +240,7 @@ class SchemaDraft2020_12SuiteTest_ref : JsonSchemaTest {
      *     "relative pointer ref to array -> mismatch array"
      *
      * Test ID: "ref::relative pointer ref to array::mismatch array"
-     *
-     * TODO implement the schema functionality under test, then run this test by removing its
-     *   exclusion entry from [org.kson.jsonsuite.schemaTestSuiteExclusions]
      */
-    @Ignore
     @Test
     fun jsonSchemaSuiteTest_8() {
         

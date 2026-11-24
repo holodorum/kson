@@ -197,19 +197,46 @@ internal object ItemsKeyword : SchemaKeyword(setOf("items", "additionalItems")) 
         val additionalItems = subschemas.singleOrNull { it.keyword == "additionalItems" }
         if (items is KsonList) {
             val tupleSchemas = subschemas.filter { it.keyword == "items" }.map { it.compiled }
-            return ItemsValidator(LeadingItemsTupleValidator(tupleSchemas), additionalItems(additionalItems, tupleSchemas.size))
+            return ItemsValidator(LeadingItemsTupleValidator(tupleSchemas), remainingItems(additionalItems, tupleSchemas.size))
         }
         val itemsSchema = subschemas.first { it.keyword == "items" }.compiled ?: return null
-        return ItemsValidator(LeadingItemsSchemaValidator(itemsSchema), additionalItems(additionalItems, 0))
+        return ItemsValidator(LeadingItemsSchemaValidator(itemsSchema), remainingItems(additionalItems, 0))
+    }
+}
+
+/**
+ * `prefixItems` and `items`.  Each schema in the `prefixItems` list validates the item at the same index, and `items`
+ * validates the items after those.  Without a list of `prefixItems`, `items` validates every item.
+ */
+internal object PrefixItemsKeyword : SchemaKeyword(setOf("prefixItems", "items")) {
+    override fun declaredSubschemas(schema: KsonObject): List<DeclaredSubschema> {
+        val prefixItems = (schema.propertyLookup["prefixItems"] as? KsonList)?.elements.orEmpty()
+        val prefixSubschemas = prefixItems.mapIndexed { index, item ->
+            DeclaredSubschema(listOf("prefixItems", "$index"), item, Applies.Item(index))
+        }
+        val items = schema.propertyLookup["items"]?.let {
+            DeclaredSubschema(listOf("items"), it, Applies.ItemsFrom(prefixItems.size))
+        }
+        return prefixSubschemas + listOfNotNull(items)
     }
 
-    private fun additionalItems(subschema: CompilableSubschema?, tupleLength: Int): AdditionalItemsValidator? {
-        val value = subschema?.value ?: return null
-        return if (value is KsonBoolean) {
-            AdditionalItemsBooleanValidator(value.value, tupleLength)
-        } else {
-            subschema.compiled?.let(::AdditionalItemsSchemaValidator)
+    override fun compile(context: KeywordContext, subschemas: List<CompilableSubschema>): JsonSchemaValidator {
+        val prefixItems = context.properties["prefixItems"]
+        if (prefixItems != null && prefixItems !is KsonList) {
+            context.messageSink.error(prefixItems.location, SCHEMA_ARRAY_REQUIRED.create("prefixItems"))
         }
+        val prefixSchemas = subschemas.filter { it.keyword == "prefixItems" }.map { it.compiled }
+        val items = subschemas.singleOrNull { it.keyword == "items" }
+        return ItemsValidator(LeadingItemsTupleValidator(prefixSchemas), remainingItems(items, prefixSchemas.size))
+    }
+}
+
+private fun remainingItems(subschema: CompilableSubschema?, tupleLength: Int): RemainingItemsValidator? {
+    val value = subschema?.value ?: return null
+    return if (value is KsonBoolean) {
+        RemainingItemsBooleanValidator(value.value, tupleLength)
+    } else {
+        subschema.compiled?.let(::RemainingItemsSchemaValidator)
     }
 }
 

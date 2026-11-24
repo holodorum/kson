@@ -952,11 +952,7 @@ class SchemaDraft2020_12SuiteTest_unevaluatedItems : JsonSchemaTest {
      *     "unevaluatedItems with oneOf (prefixItems) -> with no unevaluated items"
      *
      * Test ID: "unevaluatedItems::unevaluatedItems with oneOf (prefixItems)::with no unevaluated items"
-     *
-     * TODO implement the schema functionality under test, then run this test by removing its
-     *   exclusion entry from [org.kson.jsonsuite.schemaTestSuiteExclusions]
      */
-    @Ignore
     @Test
     fun jsonSchemaSuiteTest_27() {
         
@@ -1005,7 +1001,11 @@ class SchemaDraft2020_12SuiteTest_unevaluatedItems : JsonSchemaTest {
      *     "unevaluatedItems with oneOf (prefixItems) -> with unevaluated items"
      *
      * Test ID: "unevaluatedItems::unevaluatedItems with oneOf (prefixItems)::with unevaluated items"
+     *
+     * TODO implement the schema functionality under test, then run this test by removing its
+     *   exclusion entry from [org.kson.jsonsuite.schemaTestSuiteExclusions]
      */
+    @Ignore
     @Test
     fun jsonSchemaSuiteTest_28() {
         

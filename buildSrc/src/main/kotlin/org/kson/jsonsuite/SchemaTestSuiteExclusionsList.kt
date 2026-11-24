@@ -9,16 +9,16 @@ package org.kson.jsonsuite
  * names, so an id excludes its test only from the drafts it is listed for.
  */
 fun schemaTestSuiteExclusions(): Map<SchemaDraft, Set<String>> = mapOf(
-    SchemaDraft.DRAFT_7 to crossDraftRefTests +
+    SchemaDraft.DRAFT_7 to draft7CrossDraftRefTests +
         sharedFormatAssertionTests +
         ecmascriptRegexTests +
         bignumTests +
         contentTests,
-    SchemaDraft.DRAFT_2020_12 to sharedFormatAssertionTests +
+    SchemaDraft.DRAFT_2020_12 to draft2020_12CrossDraftRefTests +
+        sharedFormatAssertionTests +
         draft2020_12OnlyFormatAssertionTests +
         dynamicRefTests +
         unevaluatedTests +
-        prefixItemsTests +
         vocabularyTests +
         unicodePropertyEscapeTests +
         ecmascriptRegexTests +
@@ -26,13 +26,19 @@ fun schemaTestSuiteExclusions(): Map<SchemaDraft, Set<String>> = mapOf(
 )
 
 /**
- * KSON has no Draft 2019-09, so the Draft 2019-09 document the (2019) test refers to is read in the root's Draft 7,
- * which ignores its `dependentRequired`.  The (2020) test refers to a Draft 2020-12 document using `prefixItems`,
- * which KSON does not support.
+ * KSON has no Draft 2019-09, so the Draft 2019-09 document this test refers to is read in the root's Draft 7, which
+ * ignores its `dependentRequired`.
  */
-private val crossDraftRefTests = setOf(
-    "optional/cross-draft::refs to future drafts are processed as future drafts (2019)::missing bar is invalid",
-    "optional/cross-draft::refs to future drafts are processed as future drafts (2020)::first item not a string is invalid"
+private val draft7CrossDraftRefTests = setOf(
+    "optional/cross-draft::refs to future drafts are processed as future drafts (2019)::missing bar is invalid"
+)
+
+/**
+ * KSON has no Draft 2019-09, so the Draft 2019-09 document this test refers to is read in the root's Draft 2020-12,
+ * which applies its `prefixItems`.
+ */
+private val draft2020_12CrossDraftRefTests = setOf(
+    "optional/cross-draft::refs to historic drafts are processed as historic drafts (2019)::first item not a string is valid"
 )
 
 /** These expect `format` to be asserted, but Kson treats `format` as an annotation only */
@@ -593,7 +599,7 @@ private val unevaluatedTests = setOf(
     "unevaluatedItems::unevaluatedItems with nested items::with invalid additional item",
     "unevaluatedItems::unevaluatedItems with nested tuple (prefixItems)::with unevaluated items",
     "unevaluatedItems::unevaluatedItems with not (prefixItems)::with unevaluated items",
-    "unevaluatedItems::unevaluatedItems with oneOf (prefixItems)::with no unevaluated items",
+    "unevaluatedItems::unevaluatedItems with oneOf (prefixItems)::with unevaluated items",
     "unevaluatedItems::unevaluatedItems with tuple (prefixItems)::with unevaluated items",
     "unevaluatedProperties::Evaluated properties collection needs to consider instance location with additionalProperties::with an unevaluated property that exists at another location",
     "unevaluatedProperties::Evaluated properties collection needs to consider instance location with patternProperties::with an unevaluated property that exists at another location",
@@ -640,26 +646,6 @@ private val unevaluatedTests = setOf(
     "unevaluatedProperties::unevaluatedProperties with nested properties::with additional properties",
     "unevaluatedProperties::unevaluatedProperties with not::with unevaluated properties",
     "unevaluatedProperties::unevaluatedProperties with oneOf::with unevaluated properties"
-)
-
-/** Kson does not support `prefixItems`, so applies `items` to every item instead of those after the prefix */
-private val prefixItemsTests = setOf(
-    "items::a schema given for prefixItems::wrong types",
-    "items::items and subitems::fewer items is valid",
-    "items::items and subitems::valid items",
-    "items::prefixItems validation adjusts the starting index for items::valid items",
-    "items::prefixItems with boolean schemas::array with two items is invalid",
-    "items::prefixItems with heterogeneous array::valid instance",
-    "items::prefixItems with no additional items permitted::equal number of items present",
-    "items::prefixItems with no additional items permitted::fewer number of items present (1)",
-    "items::prefixItems with no additional items permitted::fewer number of items present (2)",
-    "ref::relative pointer ref to array::mismatch array",
-    "uniqueItems::uniqueItems with prefixItems and items=false::[false, true] from items array is valid",
-    "uniqueItems::uniqueItems with prefixItems and items=false::[true, false] from items array is valid",
-    "uniqueItems::uniqueItems=false with prefixItems and items=false::[false, false] from items array is valid",
-    "uniqueItems::uniqueItems=false with prefixItems and items=false::[false, true] from items array is valid",
-    "uniqueItems::uniqueItems=false with prefixItems and items=false::[true, false] from items array is valid",
-    "uniqueItems::uniqueItems=false with prefixItems and items=false::[true, true] from items array is valid"
 )
 
 /** Kson does not support `$vocabulary`, so applies the keywords of vocabularies a meta-schema leaves out */

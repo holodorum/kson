@@ -370,7 +370,7 @@ enum class MessageType(
             return "The integer \"$overflowNumber\" is too large and cannot be represented."
         }
     },
-    SCHEMA_ADDITIONAL_ITEMS_NOT_ALLOWED(MessageSeverity.ERROR) {
+    SCHEMA_REMAINING_ITEMS_NOT_ALLOWED(MessageSeverity.ERROR) {
         override fun expectedArgs(): List<String> {
             return listOf("Allowed Count", "Actual Count")
         }

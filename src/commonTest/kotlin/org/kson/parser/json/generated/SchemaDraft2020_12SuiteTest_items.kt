@@ -1,7 +1,6 @@
 package org.kson.parser.json.generated
 
 import org.kson.schema.JsonSchemaTest
-import kotlin.test.Ignore
 import kotlin.test.Test
 
 /**
@@ -164,11 +163,7 @@ class SchemaDraft2020_12SuiteTest_items : JsonSchemaTest {
      *     "a schema given for prefixItems -> wrong types"
      *
      * Test ID: "items::a schema given for prefixItems::wrong types"
-     *
-     * TODO implement the schema functionality under test, then run this test by removing its
-     *   exclusion entry from [org.kson.jsonsuite.schemaTestSuiteExclusions]
      */
-    @Ignore
     @Test
     fun jsonSchemaSuiteTest_6() {
         
@@ -459,11 +454,7 @@ class SchemaDraft2020_12SuiteTest_items : JsonSchemaTest {
      *     "prefixItems with boolean schemas -> array with two items is invalid"
      *
      * Test ID: "items::prefixItems with boolean schemas::array with two items is invalid"
-     *
-     * TODO implement the schema functionality under test, then run this test by removing its
-     *   exclusion entry from [org.kson.jsonsuite.schemaTestSuiteExclusions]
      */
-    @Ignore
     @Test
     fun jsonSchemaSuiteTest_16() {
         
@@ -518,11 +509,7 @@ class SchemaDraft2020_12SuiteTest_items : JsonSchemaTest {
      *     "items and subitems -> valid items"
      *
      * Test ID: "items::items and subitems::valid items"
-     *
-     * TODO implement the schema functionality under test, then run this test by removing its
-     *   exclusion entry from [org.kson.jsonsuite.schemaTestSuiteExclusions]
      */
-    @Ignore
     @Test
     fun jsonSchemaSuiteTest_18() {
         
@@ -926,11 +913,7 @@ class SchemaDraft2020_12SuiteTest_items : JsonSchemaTest {
      *     "items and subitems -> fewer items is valid"
      *
      * Test ID: "items::items and subitems::fewer items is valid"
-     *
-     * TODO implement the schema functionality under test, then run this test by removing its
-     *   exclusion entry from [org.kson.jsonsuite.schemaTestSuiteExclusions]
      */
-    @Ignore
     @Test
     fun jsonSchemaSuiteTest_23() {
         
@@ -1266,11 +1249,7 @@ class SchemaDraft2020_12SuiteTest_items : JsonSchemaTest {
      *     "prefixItems with no additional items permitted -> fewer number of items present (1)"
      *
      * Test ID: "items::prefixItems with no additional items permitted::fewer number of items present (1)"
-     *
-     * TODO implement the schema functionality under test, then run this test by removing its
-     *   exclusion entry from [org.kson.jsonsuite.schemaTestSuiteExclusions]
      */
-    @Ignore
     @Test
     fun jsonSchemaSuiteTest_30() {
         
@@ -1300,11 +1279,7 @@ class SchemaDraft2020_12SuiteTest_items : JsonSchemaTest {
      *     "prefixItems with no additional items permitted -> fewer number of items present (2)"
      *
      * Test ID: "items::prefixItems with no additional items permitted::fewer number of items present (2)"
-     *
-     * TODO implement the schema functionality under test, then run this test by removing its
-     *   exclusion entry from [org.kson.jsonsuite.schemaTestSuiteExclusions]
      */
-    @Ignore
     @Test
     fun jsonSchemaSuiteTest_31() {
         
@@ -1335,11 +1310,7 @@ class SchemaDraft2020_12SuiteTest_items : JsonSchemaTest {
      *     "prefixItems with no additional items permitted -> equal number of items present"
      *
      * Test ID: "items::prefixItems with no additional items permitted::equal number of items present"
-     *
-     * TODO implement the schema functionality under test, then run this test by removing its
-     *   exclusion entry from [org.kson.jsonsuite.schemaTestSuiteExclusions]
      */
-    @Ignore
     @Test
     fun jsonSchemaSuiteTest_32() {
         
@@ -1509,11 +1480,7 @@ class SchemaDraft2020_12SuiteTest_items : JsonSchemaTest {
      *     "prefixItems validation adjusts the starting index for items -> valid items"
      *
      * Test ID: "items::prefixItems validation adjusts the starting index for items::valid items"
-     *
-     * TODO implement the schema functionality under test, then run this test by removing its
-     *   exclusion entry from [org.kson.jsonsuite.schemaTestSuiteExclusions]
      */
-    @Ignore
     @Test
     fun jsonSchemaSuiteTest_37() {
         
@@ -1610,11 +1577,7 @@ class SchemaDraft2020_12SuiteTest_items : JsonSchemaTest {
      *     "prefixItems with heterogeneous array -> valid instance"
      *
      * Test ID: "items::prefixItems with heterogeneous array::valid instance"
-     *
-     * TODO implement the schema functionality under test, then run this test by removing its
-     *   exclusion entry from [org.kson.jsonsuite.schemaTestSuiteExclusions]
      */
-    @Ignore
     @Test
     fun jsonSchemaSuiteTest_40() {
         
