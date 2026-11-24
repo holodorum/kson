@@ -286,6 +286,38 @@ class IndexedSchemaDocumentsTest {
     }
 
     @Test
+    fun resolvesAnAnchorInDraft2020_12ButNotInDraft7() {
+        // Draft 7 has no `$anchor`, so `#target` names no schema there, while the same anchor names one in 2020-12
+        val draft7 = $$"""
+            definitions:
+              target:
+                '$anchor': target
+        """.trimIndent()
+        val draft2020_12 = $$"""
+            '$schema': 'https://json-schema.org/draft/2020-12/schema'
+            '$defs':
+              target:
+                '$anchor': target
+        """.trimIndent()
+        assertEquals(RefResolution.NotFound, resolveRef(draft7, "#target"))
+        assertIs<RefResolution.Found>(resolveRef(draft2020_12, "#target"))
+    }
+
+    @Test
+    fun resolvesBothTheIdAndTheAnchorOfOneSchema() {
+        // `pet`'s `$anchor` gives it a second name, under its own `$id`, which it keeps
+        val schema = $$"""
+            '$schema': 'https://json-schema.org/draft/2020-12/schema'
+            '$defs':
+              pet:
+                '$id': 'http://example.test/pet.json'
+                '$anchor': pet
+        """.trimIndent()
+        assertIs<RefResolution.Found>(resolveRef(schema, "http://example.test/pet.json"))
+        assertIs<RefResolution.Found>(resolveRef(schema, "http://example.test/pet.json#pet"))
+    }
+
+    @Test
     fun doesNotReadAColonInARelativePathAsAScheme() {
         // against no base, `./a:b` is the relative path `a:b`, while the `$id` `a:b` is a URI with the scheme `a`
         val schema = $$"""
@@ -602,6 +634,36 @@ class IndexedSchemaDocumentsTest {
         val indexedDocuments = IndexedSchemaDocuments(SchemaDocument(root, UriReference.parse("file:///root.json")))
 
         assertEquals(listOf(UriReference.parse("file:///dep.json")), indexedDocuments.missingDocumentUris)
+    }
+
+    @Test
+    fun movesAnAnchorWhenTheSchemaItNamesIsReadAgainUnderAnotherBaseUri() {
+        // Anchor `foo` is first registered under `http://root.test/` when `schemas.parent.child` is referenced by
+        // `$defs.childFirst`, because `schemas.parent` hasn't been recognized as a schema yet.  `$defs.parentLater`
+        // reaches `schemas.parent` only afterward, through `refToParent`, so `schemas.parent.child` is processed again
+        // with `schemas.parent` now a schema with its own `$id`, which moves the anchor under `http://parent.test/`
+        val schema = $$"""
+            '$id': 'http://root.test/'
+            '$schema': 'https://json-schema.org/draft/2020-12/schema'
+            '$defs': {
+               childFirst: { '$ref': '#/schemas/parent/child' }
+               parentLater: { '$ref': '#/refToParent' }
+            }
+            refToParent: {
+               '$ref': '#/schemas/parent'
+            }
+            schemas: {
+               parent: {
+                   '$id': 'http://parent.test/'
+                   child: {
+                       '$anchor': foo
+                   }
+               }
+            }
+        """.trimIndent()
+
+        assertIs<RefResolution.Found>(resolveRef(schema, "http://parent.test/#foo"))
+        assertIs<RefResolution.NotFound>(resolveRef(schema, "http://root.test/#foo"))
     }
 
     @Test

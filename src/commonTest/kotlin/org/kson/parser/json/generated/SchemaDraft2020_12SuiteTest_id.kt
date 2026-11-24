@@ -1,7 +1,6 @@
 package org.kson.parser.json.generated
 
 import org.kson.schema.JsonSchemaTest
-import kotlin.test.Ignore
 import kotlin.test.Test
 
 /**
@@ -729,11 +728,7 @@ class SchemaDraft2020_12SuiteTest_id : JsonSchemaTest {
      *     "order of evaluation: $id and $anchor and $ref -> data is valid against first definition"
      *
      * Test ID: "id::order of evaluation: $id and $anchor and $ref::data is valid against first definition"
-     *
-     * TODO implement the schema functionality under test, then run this test by removing its
-     *   exclusion entry from [org.kson.jsonsuite.schemaTestSuiteExclusions]
      */
-    @Ignore
     @Test
     fun jsonSchemaSuiteTest_17() {
         
@@ -771,11 +766,7 @@ class SchemaDraft2020_12SuiteTest_id : JsonSchemaTest {
      *     "order of evaluation: $id and $anchor and $ref -> data is invalid against first definition"
      *
      * Test ID: "id::order of evaluation: $id and $anchor and $ref::data is invalid against first definition"
-     *
-     * TODO implement the schema functionality under test, then run this test by removing its
-     *   exclusion entry from [org.kson.jsonsuite.schemaTestSuiteExclusions]
      */
-    @Ignore
     @Test
     fun jsonSchemaSuiteTest_18() {
         

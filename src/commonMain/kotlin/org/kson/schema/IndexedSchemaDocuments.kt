@@ -16,8 +16,8 @@ import org.kson.value.KsonValue
 data class SchemaDocument(val value: KsonValue, val retrievalUri: UriReference? = null)
 
 /**
- * Indexes the schemas in [root] and [additionalDocuments] by retrieval URI and `$id`, to resolve `$ref`s among them.
- * It fetches no documents: [missingDocumentUris] lists those still needed.
+ * Indexes the schemas in [root] and [additionalDocuments] by retrieval URI, `$id`, and `$anchor`, to resolve `$ref`s
+ * among them.  It fetches no documents: [missingDocumentUris] lists those still needed.
  *
  * Each document is read in the draft its `$schema` names, or else in [root]'s draft.  Only a document's top-level
  * `$schema` is read.
@@ -25,9 +25,9 @@ data class SchemaDocument(val value: KsonValue, val retrievalUri: UriReference? 
  * A schema is a document's root, a subschema under one of the subschema keywords of the document's draft, or a value
  * a `$ref` points to.  Only the `$id`s of schemas change base URIs.
  *
- * A URI several schemas share identifies the document retrieved from it, or else the deepest schema with that `$id`.
- * Ties go to the last one, in the order: [root], [additionalDocuments].  The built-in meta-schemas yield their URIs
- * to any schema that claims them.
+ * A URI several schemas share identifies the document retrieved from it, or else the deepest schema with that `$id` or
+ * `$anchor`.  Ties go to the last one, in the order: [root], [additionalDocuments].  The built-in meta-schemas yield
+ * their URIs to any schema that claims them.
  *
  * @param root the root schema document, which may have no retrieval URI
  * @param additionalDocuments the documents [root] references, directly or through each other
@@ -66,7 +66,10 @@ class IndexedSchemaDocuments internal constructor(
     /** The schemas whose `$id` resolves to each URI, by that URI */
     private val schemasById = mutableMapOf<UriReference, MutableSet<Place>>()
 
-    /** Ranks schemas whose `$id`s resolve to the same URI: the URI identifies the highest-ranked one */
+    /** The schemas whose `$anchor` resolves to each URI, by that URI */
+    private val schemasByAnchor = mutableMapOf<UriReference, MutableSet<Place>>()
+
+    /** Ranks schemas whose `$id`s or `$anchor`s resolve to the same URI: the URI identifies the highest-ranked one */
     private val idOrder =
         compareBy<Place>({ it.path.size }, { it.document }, { schemas.getValue(it).location.startOffset })
 
@@ -153,11 +156,13 @@ class IndexedSchemaDocuments internal constructor(
 
     /**
      * Returns the place of the schema [uri] identifies, or null if no document was retrieved from [uri] and no schema's
-     * `$id` resolves to it
+     * `$id` or `$anchor` resolves to it
      */
     private fun schemaIdentifiedBy(uri: UriReference): Place? {
         val identifyingUri = uri.withoutEmptyFragment()
-        return documentRootsByUri[identifyingUri] ?: schemasById[identifyingUri]?.maxWithOrNull(idOrder)
+        return documentRootsByUri[identifyingUri]
+            ?: schemasById[identifyingUri]?.maxWithOrNull(idOrder)
+            ?: schemasByAnchor[identifyingUri]?.maxWithOrNull(idOrder)
     }
 
     /**
@@ -201,8 +206,8 @@ class IndexedSchemaDocuments internal constructor(
         }
 
     /**
-     * Finds the schemas in the [documents].  Reading a schema identifies it by its `$id`, follows its `$ref` and
-     * registers its subschemas.
+     * Finds the schemas in the [documents].  Reading a schema identifies it by its `$id` and `$anchor`, follows its
+     * `$ref` and registers its subschemas.
      *
      * A schema is read again when something found later can change its base URI or where its `$ref` leads: an
      * enclosing value turning out to be a schema with an `$id`, or its `$ref`'s resource gaining or losing an `$id`.
@@ -215,6 +220,9 @@ class IndexedSchemaDocuments internal constructor(
 
         /** The URI each schema's `$id` resolved to when the schema was last read */
         private val idUris = mutableMapOf<Place, UriReference>()
+
+        /** The URI each schema's `$anchor` resolved to when the schema was last read */
+        private val anchorUris = mutableMapOf<Place, UriReference>()
 
         /** The schemas whose `$ref` has pointed into each resource, by the resource's URI */
         private val referringSchemas = mutableMapOf<UriReference, MutableSet<Place>>()
@@ -246,6 +254,12 @@ class IndexedSchemaDocuments internal constructor(
             val keywords = keywordsOf(value, draft)
             val innerBaseUri = baseUriOf(schema).withIdOf(value, draft)
             if (keywords[$$"$id"] is KsonString) identifyById(schema, innerBaseUri)
+            if (draft.supportsAnchors) {
+                val anchor = keywords[$$"$anchor"] as? KsonString
+                if (anchor != null) {
+                    identifyByAnchor(schema, innerBaseUri.resolve("#${anchor.value}"))
+                }
+            }
             (keywords[$$"$ref"] as? KsonString)?.let { follow(schema, innerBaseUri.resolve(it.value)) }
             val schemaObject = value as? KsonObject
             if (schemaObject == null || hasHidingRef(schemaObject, draft)) return
@@ -272,6 +286,18 @@ class IndexedSchemaDocuments internal constructor(
             }
             schemasById.getOrPut(idUri, ::mutableSetOf) += schema
             unread += referringSchemas[idUri].orEmpty()
+        }
+
+        /**
+         * Identifies [schema] by [anchorUri], the URI its `$anchor` resolves to under its current base URI.  [schema]
+         * stops being identified by the URI its `$anchor` resolved to before, if that was different.
+         */
+        private fun identifyByAnchor(schema: Place, anchorUri: UriReference) {
+            val previousAnchorUri = anchorUris.put(schema, anchorUri)
+            if (previousAnchorUri != null) {
+                schemasByAnchor.getValue(previousAnchorUri) -= schema
+            }
+            schemasByAnchor.getOrPut(anchorUri, ::mutableSetOf) += schema
         }
     }
 }

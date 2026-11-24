@@ -19,7 +19,6 @@ fun schemaTestSuiteExclusions(): Map<SchemaDraft, Set<String>> = mapOf(
         dynamicRefTests +
         unevaluatedTests +
         prefixItemsTests +
-        anchorTests +
         vocabularyTests +
         unicodePropertyEscapeTests +
         ecmascriptRegexTests +
@@ -661,32 +660,6 @@ private val prefixItemsTests = setOf(
     "uniqueItems::uniqueItems=false with prefixItems and items=false::[false, true] from items array is valid",
     "uniqueItems::uniqueItems=false with prefixItems and items=false::[true, false] from items array is valid",
     "uniqueItems::uniqueItems=false with prefixItems and items=false::[true, true] from items array is valid"
-)
-
-/** Kson does not support `$anchor` */
-private val anchorTests = setOf(
-    $$"anchor::$ref to $ref finds detached $anchor::number is valid",
-    "anchor::Location-independent identifier in remote ref::integer is valid",
-    "anchor::Location-independent identifier with absolute URI::match",
-    "anchor::Location-independent identifier with absolute URI::mismatch",
-    "anchor::Location-independent identifier with base URI change in subschema::match",
-    "anchor::Location-independent identifier with base URI change in subschema::mismatch",
-    "anchor::Location-independent identifier::match",
-    "anchor::Location-independent identifier::mismatch",
-    "anchor::Reference an anchor with a non-relative URI::match",
-    "anchor::Reference an anchor with a non-relative URI::mismatch",
-    "anchor::URN base URI with URN and anchor ref::a non-string is invalid",
-    "anchor::URN base URI with URN and anchor ref::a string is valid",
-    "anchor::anchor within remote ref::remote anchor invalid",
-    "anchor::anchor within remote ref::remote anchor valid",
-    $$"anchor::same $anchor with different base uri::$ref does not resolve to /$defs/A/allOf/0",
-    $$"anchor::same $anchor with different base uri::$ref resolves to /$defs/A/allOf/1",
-    $$"id::order of evaluation: $id and $anchor and $ref::data is invalid against first definition",
-    $$"id::order of evaluation: $id and $anchor and $ref::data is valid against first definition",
-    $$"optional/non-schemas::anchor inside an enum is not a real identifier ($anchor)::exact match to enum, and type matches",
-    $$"optional/non-schemas::anchor inside an enum is not a real identifier ($anchor)::implementations that strip $anchor may match either definition",
-    $$"optional/non-schemas::anchor inside an enum is not a real identifier ($anchor)::match $ref to $anchor",
-    $$"optional/non-schemas::anchor inside an enum is not a real identifier ($anchor)::no match on enum or $ref to $anchor"
 )
 
 /** Kson does not support `$vocabulary`, so applies the keywords of vocabularies a meta-schema leaves out */

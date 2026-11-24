@@ -1,7 +1,6 @@
 package org.kson.parser.json.generated
 
 import org.kson.schema.JsonSchemaTest
-import kotlin.test.Ignore
 import kotlin.test.Test
 
 /**
@@ -349,11 +348,7 @@ class SchemaDraft2020_12SuiteTest_optional_non_schemas : JsonSchemaTest {
      *     "anchor inside an enum is not a real identifier ($anchor) -> exact match to enum, and type matches"
      *
      * Test ID: "optional/non-schemas::anchor inside an enum is not a real identifier ($anchor)::exact match to enum, and type matches"
-     *
-     * TODO implement the schema functionality under test, then run this test by removing its
-     *   exclusion entry from [org.kson.jsonsuite.schemaTestSuiteExclusions]
      */
-    @Ignore
     @Test
     fun jsonSchemaSuiteTest_7() {
         // the implementation must not be confused by an $anchor buried in the enum
@@ -406,11 +401,7 @@ class SchemaDraft2020_12SuiteTest_optional_non_schemas : JsonSchemaTest {
      *     "anchor inside an enum is not a real identifier ($anchor) -> implementations that strip $anchor may match either definition"
      *
      * Test ID: "optional/non-schemas::anchor inside an enum is not a real identifier ($anchor)::implementations that strip $anchor may match either definition"
-     *
-     * TODO implement the schema functionality under test, then run this test by removing its
-     *   exclusion entry from [org.kson.jsonsuite.schemaTestSuiteExclusions]
      */
-    @Ignore
     @Test
     fun jsonSchemaSuiteTest_8() {
         // the implementation must not be confused by an $anchor buried in the enum
@@ -462,11 +453,7 @@ class SchemaDraft2020_12SuiteTest_optional_non_schemas : JsonSchemaTest {
      *     "anchor inside an enum is not a real identifier ($anchor) -> match $ref to $anchor"
      *
      * Test ID: "optional/non-schemas::anchor inside an enum is not a real identifier ($anchor)::match $ref to $anchor"
-     *
-     * TODO implement the schema functionality under test, then run this test by removing its
-     *   exclusion entry from [org.kson.jsonsuite.schemaTestSuiteExclusions]
      */
-    @Ignore
     @Test
     fun jsonSchemaSuiteTest_9() {
         // the implementation must not be confused by an $anchor buried in the enum
@@ -516,11 +503,7 @@ class SchemaDraft2020_12SuiteTest_optional_non_schemas : JsonSchemaTest {
      *     "anchor inside an enum is not a real identifier ($anchor) -> no match on enum or $ref to $anchor"
      *
      * Test ID: "optional/non-schemas::anchor inside an enum is not a real identifier ($anchor)::no match on enum or $ref to $anchor"
-     *
-     * TODO implement the schema functionality under test, then run this test by removing its
-     *   exclusion entry from [org.kson.jsonsuite.schemaTestSuiteExclusions]
      */
-    @Ignore
     @Test
     fun jsonSchemaSuiteTest_10() {
         // the implementation must not be confused by an $anchor buried in the enum

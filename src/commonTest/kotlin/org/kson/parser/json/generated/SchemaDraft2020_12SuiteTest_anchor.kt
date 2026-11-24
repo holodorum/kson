@@ -1,7 +1,6 @@
 package org.kson.parser.json.generated
 
 import org.kson.schema.JsonSchemaTest
-import kotlin.test.Ignore
 import kotlin.test.Test
 
 /**
@@ -19,11 +18,7 @@ class SchemaDraft2020_12SuiteTest_anchor : JsonSchemaTest {
      *     "Location-independent identifier -> match"
      *
      * Test ID: "anchor::Location-independent identifier::match"
-     *
-     * TODO implement the schema functionality under test, then run this test by removing its
-     *   exclusion entry from [org.kson.jsonsuite.schemaTestSuiteExclusions]
      */
-    @Ignore
     @Test
     fun jsonSchemaSuiteTest_1() {
         
@@ -52,11 +47,7 @@ class SchemaDraft2020_12SuiteTest_anchor : JsonSchemaTest {
      *     "Location-independent identifier -> mismatch"
      *
      * Test ID: "anchor::Location-independent identifier::mismatch"
-     *
-     * TODO implement the schema functionality under test, then run this test by removing its
-     *   exclusion entry from [org.kson.jsonsuite.schemaTestSuiteExclusions]
      */
-    @Ignore
     @Test
     fun jsonSchemaSuiteTest_2() {
         
@@ -85,11 +76,7 @@ class SchemaDraft2020_12SuiteTest_anchor : JsonSchemaTest {
      *     "Location-independent identifier with absolute URI -> match"
      *
      * Test ID: "anchor::Location-independent identifier with absolute URI::match"
-     *
-     * TODO implement the schema functionality under test, then run this test by removing its
-     *   exclusion entry from [org.kson.jsonsuite.schemaTestSuiteExclusions]
      */
-    @Ignore
     @Test
     fun jsonSchemaSuiteTest_3() {
         
@@ -119,11 +106,7 @@ class SchemaDraft2020_12SuiteTest_anchor : JsonSchemaTest {
      *     "Location-independent identifier with absolute URI -> mismatch"
      *
      * Test ID: "anchor::Location-independent identifier with absolute URI::mismatch"
-     *
-     * TODO implement the schema functionality under test, then run this test by removing its
-     *   exclusion entry from [org.kson.jsonsuite.schemaTestSuiteExclusions]
      */
-    @Ignore
     @Test
     fun jsonSchemaSuiteTest_4() {
         
@@ -153,11 +136,7 @@ class SchemaDraft2020_12SuiteTest_anchor : JsonSchemaTest {
      *     "Location-independent identifier with base URI change in subschema -> match"
      *
      * Test ID: "anchor::Location-independent identifier with base URI change in subschema::match"
-     *
-     * TODO implement the schema functionality under test, then run this test by removing its
-     *   exclusion entry from [org.kson.jsonsuite.schemaTestSuiteExclusions]
      */
-    @Ignore
     @Test
     fun jsonSchemaSuiteTest_5() {
         
@@ -192,11 +171,7 @@ class SchemaDraft2020_12SuiteTest_anchor : JsonSchemaTest {
      *     "Location-independent identifier with base URI change in subschema -> mismatch"
      *
      * Test ID: "anchor::Location-independent identifier with base URI change in subschema::mismatch"
-     *
-     * TODO implement the schema functionality under test, then run this test by removing its
-     *   exclusion entry from [org.kson.jsonsuite.schemaTestSuiteExclusions]
      */
-    @Ignore
     @Test
     fun jsonSchemaSuiteTest_6() {
         
@@ -231,11 +206,7 @@ class SchemaDraft2020_12SuiteTest_anchor : JsonSchemaTest {
      *     "same $anchor with different base uri -> $ref resolves to /$defs/A/allOf/1"
      *
      * Test ID: "anchor::same $anchor with different base uri::$ref resolves to /$defs/A/allOf/1"
-     *
-     * TODO implement the schema functionality under test, then run this test by removing its
-     *   exclusion entry from [org.kson.jsonsuite.schemaTestSuiteExclusions]
      */
-    @Ignore
     @Test
     fun jsonSchemaSuiteTest_7() {
         
@@ -275,11 +246,7 @@ class SchemaDraft2020_12SuiteTest_anchor : JsonSchemaTest {
      *     "same $anchor with different base uri -> $ref does not resolve to /$defs/A/allOf/0"
      *
      * Test ID: "anchor::same $anchor with different base uri::$ref does not resolve to /$defs/A/allOf/0"
-     *
-     * TODO implement the schema functionality under test, then run this test by removing its
-     *   exclusion entry from [org.kson.jsonsuite.schemaTestSuiteExclusions]
      */
-    @Ignore
     @Test
     fun jsonSchemaSuiteTest_8() {
         
@@ -319,11 +286,7 @@ class SchemaDraft2020_12SuiteTest_anchor : JsonSchemaTest {
      *     "Reference an anchor with a non-relative URI -> match"
      *
      * Test ID: "anchor::Reference an anchor with a non-relative URI::match"
-     *
-     * TODO implement the schema functionality under test, then run this test by removing its
-     *   exclusion entry from [org.kson.jsonsuite.schemaTestSuiteExclusions]
      */
-    @Ignore
     @Test
     fun jsonSchemaSuiteTest_9() {
         
@@ -357,11 +320,7 @@ class SchemaDraft2020_12SuiteTest_anchor : JsonSchemaTest {
      *     "Reference an anchor with a non-relative URI -> mismatch"
      *
      * Test ID: "anchor::Reference an anchor with a non-relative URI::mismatch"
-     *
-     * TODO implement the schema functionality under test, then run this test by removing its
-     *   exclusion entry from [org.kson.jsonsuite.schemaTestSuiteExclusions]
      */
-    @Ignore
     @Test
     fun jsonSchemaSuiteTest_10() {
         
@@ -395,11 +354,7 @@ class SchemaDraft2020_12SuiteTest_anchor : JsonSchemaTest {
      *     "URN base URI with URN and anchor ref -> a string is valid"
      *
      * Test ID: "anchor::URN base URI with URN and anchor ref::a string is valid"
-     *
-     * TODO implement the schema functionality under test, then run this test by removing its
-     *   exclusion entry from [org.kson.jsonsuite.schemaTestSuiteExclusions]
      */
-    @Ignore
     @Test
     fun jsonSchemaSuiteTest_11() {
         
@@ -435,11 +390,7 @@ class SchemaDraft2020_12SuiteTest_anchor : JsonSchemaTest {
      *     "URN base URI with URN and anchor ref -> a non-string is invalid"
      *
      * Test ID: "anchor::URN base URI with URN and anchor ref::a non-string is invalid"
-     *
-     * TODO implement the schema functionality under test, then run this test by removing its
-     *   exclusion entry from [org.kson.jsonsuite.schemaTestSuiteExclusions]
      */
-    @Ignore
     @Test
     fun jsonSchemaSuiteTest_12() {
         
@@ -475,11 +426,7 @@ class SchemaDraft2020_12SuiteTest_anchor : JsonSchemaTest {
      *     "anchor within remote ref -> remote anchor valid"
      *
      * Test ID: "anchor::anchor within remote ref::remote anchor valid"
-     *
-     * TODO implement the schema functionality under test, then run this test by removing its
-     *   exclusion entry from [org.kson.jsonsuite.schemaTestSuiteExclusions]
      */
-    @Ignore
     @Test
     fun jsonSchemaSuiteTest_13() {
         
@@ -518,11 +465,7 @@ class SchemaDraft2020_12SuiteTest_anchor : JsonSchemaTest {
      *     "anchor within remote ref -> remote anchor invalid"
      *
      * Test ID: "anchor::anchor within remote ref::remote anchor invalid"
-     *
-     * TODO implement the schema functionality under test, then run this test by removing its
-     *   exclusion entry from [org.kson.jsonsuite.schemaTestSuiteExclusions]
      */
-    @Ignore
     @Test
     fun jsonSchemaSuiteTest_14() {
         
@@ -561,11 +504,7 @@ class SchemaDraft2020_12SuiteTest_anchor : JsonSchemaTest {
      *     "Location-independent identifier in remote ref -> integer is valid"
      *
      * Test ID: "anchor::Location-independent identifier in remote ref::integer is valid"
-     *
-     * TODO implement the schema functionality under test, then run this test by removing its
-     *   exclusion entry from [org.kson.jsonsuite.schemaTestSuiteExclusions]
      */
-    @Ignore
     @Test
     fun jsonSchemaSuiteTest_15() {
         
@@ -643,11 +582,7 @@ class SchemaDraft2020_12SuiteTest_anchor : JsonSchemaTest {
      *     "$ref to $ref finds detached $anchor -> number is valid"
      *
      * Test ID: "anchor::$ref to $ref finds detached $anchor::number is valid"
-     *
-     * TODO implement the schema functionality under test, then run this test by removing its
-     *   exclusion entry from [org.kson.jsonsuite.schemaTestSuiteExclusions]
      */
-    @Ignore
     @Test
     fun jsonSchemaSuiteTest_17() {
         

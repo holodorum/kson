@@ -12,6 +12,8 @@ import org.kson.value.KsonString
  * @param metaSchemaUri The URI that names this draft in a schema's `$schema`
  * @param refHidesSiblings Whether a string `$ref` hides every keyword beside it.  That includes `$id`, so an `$id`
  *   beside such a `$ref` doesn't identify its schema.
+ * @param supportsAnchors Whether the draft supports the `$anchor` keyword, which allows `$ref`s to a schema via
+ *   `$anchor` in addition to `$id`.
  * @param keywords The keywords the draft compiles, in the order validation applies them and reports their errors
  * @param metaSchemas The draft's meta-schemas, which a schema can reference without supplying them.  It is a function
  *   so that they are only parsed when needed.  Each meta-schema is identified by its `$id`.
@@ -20,6 +22,7 @@ import org.kson.value.KsonString
 internal class SchemaDraft(
     val metaSchemaUri: UriReference,
     val refHidesSiblings: Boolean,
+    val supportsAnchors: Boolean,
     val keywords: List<SchemaKeyword>,
     val metaSchemas: () -> List<SchemaDocument>
 ) {
@@ -36,6 +39,7 @@ internal class SchemaDraft(
         val DRAFT_7 = SchemaDraft(
             metaSchemaUri = UriReference.parse(KsonDraft7MetaSchema.ID),
             refHidesSiblings = true,
+            supportsAnchors = false,
             keywords = listOf(
                 RefKeyword,
                 DefinitionsKeyword("definitions"),
@@ -74,6 +78,7 @@ internal class SchemaDraft(
         val DRAFT_2020_12 = SchemaDraft(
             metaSchemaUri = UriReference.parse(KsonDraft202012MetaSchemas.ID),
             refHidesSiblings = false,
+            supportsAnchors = true,
             keywords = listOf(
                 RefKeyword,
                 DefinitionsKeyword($$"$defs"),

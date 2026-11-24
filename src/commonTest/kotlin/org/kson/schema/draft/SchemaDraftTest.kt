@@ -25,6 +25,7 @@ class SchemaDraftTest {
     private val withoutMaximum = SchemaDraft(
         metaSchemaUri = UriReference.parse("urn:example:without-maximum"),
         refHidesSiblings = true,
+        supportsAnchors = false,
         keywords = SchemaDraft.DRAFT_7.keywords.filterNot { "maximum" in it.names },
         metaSchemas = { emptyList() }
     )
@@ -33,6 +34,7 @@ class SchemaDraftTest {
     private val keepsSiblings = SchemaDraft(
         metaSchemaUri = UriReference.parse("urn:example:keeps-siblings"),
         refHidesSiblings = false,
+        supportsAnchors = false,
         keywords = SchemaDraft.DRAFT_7.keywords,
         metaSchemas = { emptyList() }
     )
@@ -153,6 +155,7 @@ class SchemaDraftTest {
         val draft = SchemaDraft(
             metaSchemaUri = UriReference.parse("urn:example:nested-draft"),
             refHidesSiblings = true,
+            supportsAnchors = false,
             keywords = listOf(nested),
             metaSchemas = { listOf(metaSchema) }
         )
@@ -534,6 +537,7 @@ class SchemaDraftTest {
             SchemaDraft(
                 metaSchemaUri = UriReference.parse("urn:example:two-minimums"),
                 refHidesSiblings = true,
+                supportsAnchors = false,
                 keywords = listOf(NumberKeyword("minimum", ::MinimumValidator), NumberKeyword("minimum", ::MinimumValidator)),
                 metaSchemas = { emptyList() }
             )
